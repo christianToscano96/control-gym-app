@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { authenticateJWT, requireAdmin, requireSuperAdmin, AuthRequest } from "../middleware/auth";
+import {
+  authenticateJWT,
+  requireAdmin,
+  requireRole,
+  AuthRequest,
+} from "../middleware/auth";
 import { Gym } from "../models/Gym";
 import { Membership } from "../models/Membership";
 
@@ -49,7 +54,7 @@ router.post(
 router.get(
   "/",
   authenticateJWT,
-  requireSuperAdmin,
+  requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
       let memberships;
@@ -60,7 +65,9 @@ router.get(
       }
       res.json(memberships);
     } catch (err) {
-      res.status(500).json({ message: "Error al obtener membresías", error: err });
+      res
+        .status(500)
+        .json({ message: "Error al obtener membresías", error: err });
     }
   },
 );
@@ -69,12 +76,18 @@ router.get(
 router.post(
   "/",
   authenticateJWT,
-  requireSuperAdmin,
+  requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
       const { gym, plan, startDate, endDate, active } = req.body;
       const gymId = req.user.role === "superadmin" ? gym : req.user.gym;
-      const membership = new Membership({ gym: gymId, plan, startDate, endDate, active });
+      const membership = new Membership({
+        gym: gymId,
+        plan,
+        startDate,
+        endDate,
+        active,
+      });
       await membership.save();
       res.status(201).json(membership);
     } catch (err) {
@@ -87,15 +100,23 @@ router.post(
 router.put(
   "/:id",
   authenticateJWT,
-  requireSuperAdmin,
+  requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gym: req.user.gym };
-      const membership = await Membership.findOneAndUpdate(filter, req.body, { new: true });
-      if (!membership) return res.status(404).json({ message: "Membresía no encontrada" });
+      const filter =
+        req.user.role === "superadmin"
+          ? { _id: req.params.id }
+          : { _id: req.params.id, gym: req.user.gym };
+      const membership = await Membership.findOneAndUpdate(filter, req.body, {
+        new: true,
+      });
+      if (!membership)
+        return res.status(404).json({ message: "Membresía no encontrada" });
       res.json(membership);
     } catch (err) {
-      res.status(500).json({ message: "Error al editar membresía", error: err });
+      res
+        .status(500)
+        .json({ message: "Error al editar membresía", error: err });
     }
   },
 );
@@ -104,15 +125,21 @@ router.put(
 router.delete(
   "/:id",
   authenticateJWT,
-  requireSuperAdmin,
+  requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gym: req.user.gym };
+      const filter =
+        req.user.role === "superadmin"
+          ? { _id: req.params.id }
+          : { _id: req.params.id, gym: req.user.gym };
       const membership = await Membership.findOneAndDelete(filter);
-      if (!membership) return res.status(404).json({ message: "Membresía no encontrada" });
+      if (!membership)
+        return res.status(404).json({ message: "Membresía no encontrada" });
       res.json({ message: "Membresía eliminada" });
     } catch (err) {
-      res.status(500).json({ message: "Error al eliminar membresía", error: err });
+      res
+        .status(500)
+        .json({ message: "Error al eliminar membresía", error: err });
     }
   },
 );

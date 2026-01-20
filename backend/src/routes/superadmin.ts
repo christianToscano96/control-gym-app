@@ -1,3 +1,20 @@
+import { Router } from "express";
+import bcrypt from "bcryptjs";
+import {
+  authenticateJWT,
+  requireSuperAdmin,
+  AuthRequest,
+} from "../middleware/auth";
+import { Gym } from "../models/Gym";
+import { User } from "../models/User";
+import { Membership } from "../models/Membership";
+import { Client } from "../models/Client";
+
+const router = Router();
+
+// Todas las rutas requieren superadmin
+router.use(authenticateJWT, requireSuperAdmin);
+
 // Reporte: gimnasios activos/inactivos
 router.get("/report/gyms-status", async (req, res) => {
   const activos = await Gym.countDocuments({ active: true });
@@ -20,7 +37,6 @@ router.get("/report/memberships-by-plan", async (req, res) => {
 });
 
 // Reporte: clientes totales y por gimnasio
-import { Client } from "../models/Client";
 router.get("/report/clients", async (req, res) => {
   const total = await Client.countDocuments({ active: true });
   // Clientes por gimnasio
@@ -30,6 +46,7 @@ router.get("/report/clients", async (req, res) => {
   ]);
   res.json({ total, porGimnasio });
 });
+
 // Activar/desactivar gimnasio
 router.put("/gyms/:gymId/active", async (req, res) => {
   const { active } = req.body;
@@ -43,7 +60,6 @@ router.put("/gyms/:gymId/active", async (req, res) => {
 });
 
 // Resetear contraseña de admin
-import bcrypt from "bcryptjs";
 router.put("/admins/:id/reset-password", async (req, res) => {
   const { newPassword } = req.body;
   if (!newPassword || newPassword.length < 6)
@@ -57,20 +73,6 @@ router.put("/admins/:id/reset-password", async (req, res) => {
   if (!admin) return res.status(404).json({ message: "Admin no encontrado" });
   res.json({ message: "Contraseña reseteada correctamente" });
 });
-import { Router } from "express";
-import {
-  authenticateJWT,
-  requireSuperAdmin,
-  AuthRequest,
-} from "../middleware/auth";
-import { Gym } from "../models/Gym";
-import { User } from "../models/User";
-import { Membership } from "../models/Membership";
-
-const router = Router();
-
-// Todas las rutas requieren superadmin
-router.use(authenticateJWT, requireSuperAdmin);
 
 // Listar todos los gimnasios
 router.get("/gyms", async (req, res) => {

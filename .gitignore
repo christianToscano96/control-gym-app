@@ -1,0 +1,24 @@
+# Node modules
+backend/node_modules/
+control-gym/node_modules/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Build outputs
+control-gym/ios/build/
+
+# Expo
+control-gym/.expo/
+control-gym/.expo-shared/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.env
+backend/.env
+control-gym/.env

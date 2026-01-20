@@ -16,6 +16,7 @@ import staffRoutes from "./routes/staff";
 import auditRoutes from "./routes/audit";
 import accessRoutes from "./routes/access";
 import exportRoutes from "./routes/export";
+import userRoutes from "./routes/user";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -57,6 +58,9 @@ app.use("/api/auth", authRoutes);
 
 // Rutas para clientes de gimnasio
 app.use("/api/clients", clientRoutes);
+
+// Rutas para usuarios
+app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Gym SaaS funcionando");

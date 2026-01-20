@@ -1,3 +1,12 @@
+---
+## Cambios recientes importantes (enero 2026)
+
+- Se integraron las carpetas `backend` y `control-gym` directamente al repositorio principal, eliminando su gestión como submódulos o repositorios independientes.
+  - Ahora todo el código del backend y frontend está versionado y gestionado desde este repositorio principal.
+  - Se eliminaron las carpetas `.git` internas de ambos proyectos y se realizó un commit global para incluir todos los archivos.
+- A partir de ahora, toda la documentación, configuración y registro de trabajo del proyecto se centraliza en este archivo `StructureProject.md`.
+---
+
 ## Mejoras futuras
 
 - Exportación avanzada de datos: filtros, formatos personalizados, integración con Google Sheets, exportación masiva, etc.
@@ -118,3 +127,22 @@ Cada cambio relevante y conversación será documentado aquí para mantener el f
 - Se creó middleware de autenticación/autorización (simulado, listo para JWT en producción).
 - Se instaló y configuró Zustand en el frontend (`control-gym/`).
 - Se creó un store Zustand básico para usuario (roles admin y superadmin).
+
+---
+
+## Endpoints CRUD implementados (enero 2026)
+
+### Membresías (`/api/membership`)
+- **GET /**: Listar membresías (admin: solo su gimnasio, superadmin: todas)
+- **POST /**: Crear membresía (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+- **PUT /:id**: Editar membresía (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+- **DELETE /:id**: Eliminar membresía (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+- **POST /change-plan**: Cambiar plan de gimnasio (admin)
+
+### Usuarios (`/api/users`)
+- **GET /**: Listar usuarios (admin: solo su gimnasio, superadmin: todos)
+- **POST /**: Crear usuario (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+- **PUT /:id**: Editar usuario (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+- **DELETE /:id**: Eliminar usuario (admin: solo su gimnasio, superadmin: cualquier gimnasio)
+
+> Todos los endpoints requieren autenticación JWT y permisos de rol adecuados (`admin` o `superadmin`).

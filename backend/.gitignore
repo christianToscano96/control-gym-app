@@ -1,0 +1,33 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# Others
+*.log
+coverage/
+
+# Exclude generated files
+*.tsbuildinfo
+
+# Exclude uploads and temp
+uploads/
+tmp/

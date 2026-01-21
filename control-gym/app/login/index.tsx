@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
@@ -11,6 +10,8 @@ import {
   Alert,
   Image,
 } from "react-native";
+import TextField from "../../components/ui/TextField";
+import PrimaryButton from "../../components/ui/ButtonCustom";
 import { MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -63,160 +64,123 @@ export default function LoginScreen() {
   };
 
   return (
-    <>
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar style="dark" />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1"
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View className="flex-1 max-w-[430px] w-full mx-auto bg-white">
-              {/* Contenido Principal */}
-              <View className="flex-1 px-8 pt-20 pb-10">
-                {/* Logo y Título */}
-                <View className="items-center mb-12">
-                  <View className="w-100 h-240 rounded-3xl items-center justify-center mb-6  rotate-3">
-                    <Image
-                      source={require("../../assets/images/gymm-logo.png")}
-                      style={{
-                        width: 400,
-                        height: 120,
-                        resizeMode: "contain",
-                        transform: [{ rotate: "-3deg" }],
-                      }}
-                    />
-                  </View>
-
-                  <Text className="text-dark-blue/50 text-xs font-bold tracking-widest uppercase mb-2">
-                    CONTROL GYM
-                  </Text>
-                  <Text className="text-dark-blue text-3xl font-bold">
-                    Bienvenido
-                  </Text>
+          <View className="flex-1 max-w-[430px] w-full mx-auto bg-white">
+            {/* Contenido Principal */}
+            <View className="flex-1 px-8 pt-20 pb-10">
+              {/* Logo y Título */}
+              <View className="items-center mb-12">
+                <View className="w-100 h-240 rounded-3xl items-center justify-center mb-6  rotate-3">
+                  <Image
+                    source={require("../../assets/images/gymm-logo.png")}
+                    style={{
+                      width: 400,
+                      height: 120,
+                      resizeMode: "contain",
+                      transform: [{ rotate: "-3deg" }],
+                    }}
+                  />
                 </View>
 
-                {/* Formulario */}
-                <View className="space-y-5 flex-1">
-                  {/* Email Input */}
-                  <View>
-                    <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
-                      Email
-                    </Text>
-                    <View className="relative">
-                      <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                        <MaterialIcons
-                          name="alternate-email"
-                          size={20}
-                          color="#94a3b8"
-                        />
-                      </View>
-                      <TextInput
-                        className="w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-4 text-base font-normal border-0"
-                        placeholder="admin@gym.com"
-                        placeholderTextColor="#94a3b8"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        style={{
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 1 },
-                          shadowOpacity: 0.02,
-                          shadowRadius: 2,
-                          elevation: 1,
-                        }}
+                <Text className="text-dark-blue/50 text-xs font-bold tracking-widest uppercase mb-2">
+                  CONTROL GYM
+                </Text>
+                <Text className="text-dark-blue text-3xl font-bold">
+                  Bienvenido
+                </Text>
+              </View>
+
+              {/* Formulario */}
+              <View className="space-y-5 flex-1">
+                {/* Email Input */}
+                <View>
+                  <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
+                    Email
+                  </Text>
+                  <View className="relative">
+                    <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                      <MaterialIcons
+                        name="alternate-email"
+                        size={20}
+                        color="#94a3b8"
                       />
                     </View>
+                    <TextField
+                      placeholder="admin@gym.com"
+                      value={email}
+                      onChangeText={setEmail}
+                      className="w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-4 text-base font-normal border-0"
+                    />
                   </View>
+                </View>
 
-                  {/* Password Input */}
-                  <View className="pt-4 mt-4">
-                    <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
-                      Password
-                    </Text>
-                    <View className="relative">
-                      <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                        <MaterialIcons name="lock" size={20} color="#94a3b8" />
-                      </View>
-                      <TextInput
-                        className="w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-12 text-base font-normal border-0"
-                        placeholder="••••••••"
-                        placeholderTextColor="#94a3b8"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        style={{
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 1 },
-                          shadowOpacity: 0.02,
-                          shadowRadius: 2,
-                          elevation: 1,
-                        }}
-                      />
-                      <TouchableOpacity
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-                        onPress={() => setShowPassword(!showPassword)}
-                      >
+                {/* Password Input */}
+                <View className="pt-4 mt-4">
+                  <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
+                    Password
+                  </Text>
+                  <View className="relative">
+                    <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                      <MaterialIcons name="lock" size={20} color="#94a3b8" />
+                    </View>
+                    <TextField
+                      placeholder="••••••••"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      rightIcon={
                         <MaterialIcons
                           name={showPassword ? "visibility-off" : "visibility"}
                           size={20}
                           color="#94a3b8"
                         />
-                      </TouchableOpacity>
-                    </View>
+                      }
+                      onRightIconPress={() => setShowPassword(!showPassword)}
+                      className="w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-12 text-base font-normal border-0"
+                    />
                   </View>
+                </View>
 
-                  {/* Forgot Password */}
-                  <View className="items-end">
-                    <TouchableOpacity>
-                      <Text className="text-dark-blue/60 hover:text-dark-blue text-sm font-medium">
-                        Forgot Password?
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Login Button */}
-                  <View className="pt-4 mt-4">
-                    <TouchableOpacity
-                      className="w-full bg-[#13ec5b] py-4 rounded-2xl items-center justify-center"
-                      onPress={handleLogin}
-                      activeOpacity={0.9}
-                      style={{
-                        shadowColor: "#13ec5b",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 6,
-                      }}
-                    >
-                      <Text className="text-dark-blue font-bold text-base uppercase tracking-wider">
-                        Ingresar
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Sign Up Link */}
-                  <View className="pt-2 mt-4">
-                    <Text className="text-dark-blue/40 text-sm text-center">
-                      Nuevo Administrador?{" "}
-                      <Text
-                        className="text-[#13ec5b] font-bold"
-                        onPress={() => router.push("/login/register")}
-                      >
-                        Crear cuenta
-                      </Text>
+                {/* Forgot Password */}
+                <View className="items-end">
+                  <TouchableOpacity>
+                    <Text className="text-dark-blue/60 hover:text-dark-blue text-sm font-medium">
+                      Olvidó su contraseña?
                     </Text>
-                  </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Login Button */}
+                <View className="pt-4 mt-4">
+                  <PrimaryButton title="Ingresar" onPress={handleLogin} />
+                </View>
+
+                {/* Sign Up Link */}
+                <View className="pt-2 mt-4">
+                  <Text className="text-dark-blue/40 text-lg text-center">
+                    Nuevo Administrador?{" "}
+                    <Text
+                      className="text-[#13ec5b] font-bold"
+                      onPress={() => router.push("/login/register")}
+                    >
+                      Crear cuenta
+                    </Text>
+                  </Text>
                 </View>
               </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

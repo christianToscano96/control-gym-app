@@ -47,6 +47,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="qrscanner"
+        options={{
+          title: "QR Scanner",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="qrcode.viewfinder" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: "Reports",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chart.bar.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="config"
         options={{
           title: "Config",

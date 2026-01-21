@@ -40,10 +40,19 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ title: "Registro" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
+          name="profile"
+          options={{ title: "Perfil", headerBackTitle: "Volver" }}
+        />
+        <Stack.Screen
+          name="membership"
+          options={{ title: "Membresía", headerBackTitle: "Volver" }}
+        />
+        <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
       </Stack>
+
       <StatusBar style="auto" />
     </ThemeProvider>
   );

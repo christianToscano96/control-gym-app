@@ -18,7 +18,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Dashboard",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
           ),
@@ -30,24 +30,6 @@ export default function TabLayout() {
           title: "Clientes",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="person.2.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="memberships"
-        options={{
-          title: "Membresías",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="creditcard.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="choose-membership"
-        options={{
-          title: "Elegir Membresía",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="star.fill" color={color} />
           ),
         }}
       />
@@ -65,15 +47,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="config"
         options={{
-          title: "Perfil",
+          title: "Config",
           tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="person.crop.square.fill"
-              color={color}
-            />
+            <IconSymbol size={28} name="gearshape.fill" color={color} />
           ),
         }}
       />

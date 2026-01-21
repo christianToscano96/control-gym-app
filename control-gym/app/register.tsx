@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert, ScrollView } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  ScrollView,
+  Modal,
+  TouchableOpacity,
+  Text,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 export default function RegisterScreen() {
@@ -9,6 +18,7 @@ export default function RegisterScreen() {
   const [gymName, setGymName] = useState("");
   const [gymAddress, setGymAddress] = useState("");
   const [plan, setPlan] = useState("basico");
+  const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
 
   const handleRegister = async () => {
@@ -76,13 +86,72 @@ export default function RegisterScreen() {
         onChangeText={setGymAddress}
         style={{ borderWidth: 1, marginBottom: 12, padding: 8 }}
       />
-      <TextInput
-        placeholder="Plan (basico, pro, proplus)"
-        value={plan}
-        onChangeText={setPlan}
-        style={{ borderWidth: 1, marginBottom: 12, padding: 8 }}
-      />
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        style={{
+          borderWidth: 1,
+          marginBottom: 12,
+          padding: 8,
+          backgroundColor: "#f0f0f0",
+        }}
+      >
+        <Text style={{ color: plan ? "#000" : "#888" }}>
+          {plan ? `Plan: ${plan}` : "Selecciona un plan"}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.3)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              padding: 24,
+              minWidth: 250,
+            }}
+          >
+            <Text
+              style={{ fontWeight: "bold", fontSize: 18, marginBottom: 16 }}
+            >
+              Selecciona un plan
+            </Text>
+            {["basico", "pro", "proplus"].map((p) => (
+              <TouchableOpacity
+                key={p}
+                onPress={() => {
+                  setPlan(p);
+                  setModalVisible(false);
+                }}
+                style={{
+                  padding: 12,
+                  marginBottom: 8,
+                  backgroundColor: plan === p ? "#e0e0e0" : "#fafafa",
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <Button title="Cancelar" onPress={() => setModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
       <Button title="Registrarse" onPress={handleRegister} />
+      <Button title="Login" onPress={() => router.replace("/login")} />
     </ScrollView>
   );
 }

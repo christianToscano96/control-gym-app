@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "@/store";
 
@@ -63,6 +70,12 @@ export default function LoginScreen() {
         style={{ borderWidth: 1, marginBottom: 12, padding: 8 }}
       />
       <Button title="Iniciar sesión" onPress={handleLogin} />
+      <TouchableOpacity
+        onPress={() => router.replace("/register")}
+        style={{ marginTop: 16, alignItems: "center" }}
+      >
+        <Text style={{ color: "#007bff" }}>¿No tienes cuenta? Regístrate</Text>
+      </TouchableOpacity>
     </View>
   );
 }

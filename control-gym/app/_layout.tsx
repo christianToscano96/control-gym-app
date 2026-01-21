@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import {
   DarkTheme,
   DefaultTheme,
@@ -6,7 +7,6 @@ import {
 import { Stack, useRouter, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import React, { useEffect } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useUserStore } from "@/store";
 
@@ -23,7 +23,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Evitar navegación prematura: usar setTimeout para esperar montaje
     const timeout = setTimeout(() => {
-      if (!user && pathname !== "/login" && pathname !== "/register") {
+      if (!user && pathname !== "/login" && pathname !== "/login/register") {
         router.replace("/login");
       }
       if (user && pathname === "/login") {
@@ -35,7 +35,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName="login">
+      <Stack>
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ title: "Registro" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

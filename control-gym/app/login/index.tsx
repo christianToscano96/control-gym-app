@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import {
   View,
+  Text,
   TextInput,
+  TouchableOpacity,
   Button,
   Alert,
-  Text,
-  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "@/store";
@@ -17,6 +17,7 @@ export default function LoginScreen() {
   const setHasActiveMembership = useMembershipStore(
     (s) => s.setHasActiveMembership,
   );
+
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -42,9 +43,9 @@ export default function LoginScreen() {
         Array.isArray(memberships) && memberships.some((m) => m.active);
       setHasActiveMembership(hasMembership);
       if (!hasMembership) {
-        router.replace({ pathname: "/(tabs)/choose-membership" });
+        router.replace("/choose-membership");
       } else {
-        router.replace({ pathname: "/(tabs)" });
+        router.replace("/(tabs)");
       }
     } catch (err) {
       let message = "No se pudo iniciar sesión";
@@ -71,7 +72,7 @@ export default function LoginScreen() {
       />
       <Button title="Iniciar sesión" onPress={handleLogin} />
       <TouchableOpacity
-        onPress={() => router.replace("/register")}
+        onPress={() => router.push("/login/register")}
         style={{ marginTop: 16, alignItems: "center" }}
       >
         <Text style={{ color: "#007bff" }}>¿No tienes cuenta? Regístrate</Text>

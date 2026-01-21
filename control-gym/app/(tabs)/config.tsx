@@ -16,7 +16,7 @@ export default function ConfigScreen() {
         style: "destructive",
         onPress: () => {
           logout();
-          router.replace("/login");
+          router.replace("./login");
         },
       },
     ]);

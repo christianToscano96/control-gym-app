@@ -1,6 +1,6 @@
 import React from "react";
-import { ThemedText } from "@/components/themed-text";
+import { Text } from "react-native";
 
 export default function QrScannerScreen() {
-  return <ThemedText>QR Scanner</ThemedText>;
+  return <Text>QR Scanner</Text>;
 }

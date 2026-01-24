@@ -1,6 +1,6 @@
 import React from "react";
-import { ThemedText } from "@/components/themed-text";
+import { Text } from "react-native";
 
 export default function ReportsScreen() {
-  return <ThemedText>Reports</ThemedText>;
+  return <Text>Reports</Text>;
 }

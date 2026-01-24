@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { View, Button, Alert } from "react-native";
+import { View, Button, Alert, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "@/store";
-import { ThemedText } from "@/components/themed-text";
 
 const plans = [
   { key: "basico", label: "Básico (100 clientes)" },
@@ -48,7 +47,7 @@ export default function ChooseMembershipScreen() {
 
   return (
     <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-      <ThemedText type="title">Elige tu plan de membresía</ThemedText>
+      <Text>Elige tu plan de membresía</Text>
       {plans.map((plan) => (
         <View key={plan.key} style={{ marginVertical: 12 }}>
           <Button

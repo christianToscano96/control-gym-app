@@ -1,26 +1,19 @@
-import { Image } from "expo-image";
-import { Platform, StyleSheet } from "react-native";
-
-import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { Link } from "expo-router";
+import Header from "@/components/ui/Header";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View className="px-4 mt-4">
+        <Header username="Control Gym User" />
+        <ScrollView className="mt-8">
+          <View style={styles.titleContainer}>
+            <Text>Welcome!</Text>
+          </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 

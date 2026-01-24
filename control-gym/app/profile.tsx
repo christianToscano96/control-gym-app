@@ -1,6 +1,5 @@
-import React from 'react';
-import { ThemedText } from '@/components/themed-text';
-
+import React from "react";
+import { Text } from "react-native";
 export default function ProfileScreen() {
-  return <ThemedText>Perfil</ThemedText>;
+  return <Text>Perfil</Text>;
 }

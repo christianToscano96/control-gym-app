@@ -13,8 +13,8 @@ const Header = ({ avatarUrl, username }: HeaderProps) => {
         <Avatar uri={avatarUrl} name={username} size="md" />
       </View>
       <View>
-        <Text>Bienvenido,</Text>
-        <Text>{username || "Usuario"}</Text>
+        <Text className="font-bold text-gray-500 text-md">Bienvenido,</Text>
+        <Text className="text-lg font-bold">{username || "Usuario"}</Text>
       </View>
     </View>
   );

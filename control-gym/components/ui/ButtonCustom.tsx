@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  TouchableOpacity,
-  Text,
-  TouchableOpacityProps,
-  ViewStyle,
-  TextStyle,
-} from "react-native";
+import { TouchableOpacity, Text, TouchableOpacityProps } from "react-native";
+import { useTheme } from "../constants/ThemeContext";
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -28,6 +23,8 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   children,
   ...props
 }) => {
+  const { primaryColor } = useTheme();
+
   let sizeClass = "py-4";
   let textSizeClass = "text-base";
   if (sm) {
@@ -41,10 +38,16 @@ const PrimaryButton: React.FC<ButtonProps> = ({
     textSizeClass = "text-lg";
   }
 
-  const primaryClass = `w-full bg-[#13ec5b] ${sizeClass} rounded-2xl items-center justify-center`;
-  const secondaryClass = `w-full bg-white border-2 border-[#13ec5b] ${sizeClass} rounded-2xl items-center justify-center`;
+  const primaryClass =
+    `w-full` +
+    ` bg-[${primaryColor}]` +
+    ` ${sizeClass} rounded-2xl items-center justify-center`;
+  const secondaryClass =
+    `w-full bg-white border-2` +
+    ` border-[${primaryColor}]` +
+    ` ${sizeClass} rounded-2xl items-center justify-center`;
   const primaryTextClass = `text-dark-blue font-bold ${textSizeClass} uppercase tracking-wider`;
-  const secondaryTextClass = `text-[#13ec5b] font-bold ${textSizeClass} uppercase tracking-wider`;
+  const secondaryTextClass = `text-[${primaryColor}] font-bold ${textSizeClass} uppercase tracking-wider`;
 
   return (
     <TouchableOpacity

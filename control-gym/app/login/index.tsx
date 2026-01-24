@@ -15,7 +15,7 @@ import PrimaryButton from "../../components/ui/ButtonCustom";
 import { MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { useUserStore, useMembershipStore } from "@/store";
+import { useUserStore, useMembershipStore } from "../../stores/store";
 export const options = { headerShown: false };
 
 export default function LoginScreen() {

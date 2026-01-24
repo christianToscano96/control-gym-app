@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Button, Alert, Text } from "react-native";
 import { useRouter } from "expo-router";
-import { useUserStore, useMembershipStore } from "@/store";
+import { useUserStore, useMembershipStore } from "../stores/store";
 
 const plans = [
   { key: "basico", label: "Básico (100 clientes)" },

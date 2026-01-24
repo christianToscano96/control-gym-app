@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Button, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useUserStore } from "@/store";
+import { useUserStore } from "../../stores/store";
 
 export default function ConfigScreen() {
   const router = useRouter();

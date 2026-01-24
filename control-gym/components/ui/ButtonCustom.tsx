@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, Text, TouchableOpacityProps } from "react-native";
-import { useTheme } from "../constants/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -49,9 +49,15 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   const primaryTextClass = `text-dark-blue font-bold ${textSizeClass} uppercase tracking-wider`;
   const secondaryTextClass = `text-[${primaryColor}] font-bold ${textSizeClass} uppercase tracking-wider`;
 
+  // Estilos dinámicos para fondo y borde
+  const dynamicStyle = secondary
+    ? { borderColor: primaryColor, borderWidth: 2, backgroundColor: "#fff" }
+    : { backgroundColor: primaryColor };
+
   return (
     <TouchableOpacity
       className={className || (secondary ? secondaryClass : primaryClass)}
+      style={dynamicStyle}
       activeOpacity={0.9}
       {...props}
     >
@@ -59,6 +65,7 @@ const PrimaryButton: React.FC<ButtonProps> = ({
         className={
           textClassName || (secondary ? secondaryTextClass : primaryTextClass)
         }
+        style={secondary ? { color: primaryColor } : undefined}
       >
         {title}
       </Text>

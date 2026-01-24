@@ -38,7 +38,7 @@ const TextField: React.FC<Props> = ({
       )}
       <View className="relative">
         {leftIcon && (
-          <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+          <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-14 w-8 flex items-center justify-center">
             {leftIcon}
           </View>
         )}
@@ -58,13 +58,13 @@ const TextField: React.FC<Props> = ({
         {rightIcon &&
           (onRightIconPress ? (
             <TouchableOpacity
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-14 w-8 flex items-center justify-center"
               onPress={onRightIconPress}
             >
               {rightIcon}
             </TouchableOpacity>
           ) : (
-            <View className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+            <View className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-14 w-8 flex items-center justify-center">
               {rightIcon}
             </View>
           ))}

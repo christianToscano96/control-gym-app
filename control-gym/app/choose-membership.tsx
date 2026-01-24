@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Button, Alert, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "../stores/store";
+import { API_BASE_URL } from "../constants/api";
 
 const plans = [
   { key: "basico", label: "Básico (100 clientes)" },
@@ -23,7 +24,7 @@ export default function ChooseMembershipScreen() {
     try {
       // Llamada a la API para cambiar/crear membresía
       const res = await fetch(
-        "http://localhost:4000/api/membership/change-plan",
+        `${API_BASE_URL}/api/membership/change-plan`,
         {
           method: "POST",
           headers: {

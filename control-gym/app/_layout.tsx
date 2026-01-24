@@ -10,7 +10,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useUserStore } from "../stores/store";
-import { ThemeProvider as CustomThemeProvider } from "../components/constants/ThemeContext";
+import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -36,7 +36,7 @@ export default function RootLayout() {
   }, [user, pathname]);
 
   return (
-    <CustomThemeProvider primaryColor="#13ec5b">
+    <CustomThemeProvider primaryColor="#78e08f">
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="login/index" options={{ headerShown: false }} />

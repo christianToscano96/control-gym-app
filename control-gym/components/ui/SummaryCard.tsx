@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useTheme } from "../constants/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 
 interface SummaryCardProps {
   icon: string;
@@ -19,11 +19,11 @@ export const SummaryCard = ({
   const { primaryColor } = useTheme();
 
   return (
-    <View className="flex-1 bg-white rounded-lg p-4 shadow mb-1 ">
+    <View className="flex-1 bg-white rounded-2xl p-5 my-2 shadow-sm shadow-black/5 mb-1 ">
       <View className="flex flex-row items-center justify-between mb-2">
         <MaterialIcons name={icon as any} size={24} color={primaryColor} />
 
-        <View className="bg-green-100 px-2 py-1 rounded">
+        <View className="bg-green-50 px-2 py-1 rounded">
           <Text style={{ color: primaryColor, fontWeight: "bold" }}>
             +{persent || "12%"}
           </Text>

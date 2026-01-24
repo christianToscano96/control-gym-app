@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import Chip from "@/components/ui/Chip";
+import { API_BASE_URL } from "../../constants/api";
 
 export default function RegisterScreen() {
   const [adminName, setAdminName] = useState("");
@@ -26,7 +27,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/register", {
+      const res = await fetch(`${API_BASE_URL}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

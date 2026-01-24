@@ -16,9 +16,13 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "../../stores/store";
+import { API_BASE_URL } from "../../constants/api";
+import { useTheme } from "@/context/ThemeContext";
+
 export const options = { headerShown: false };
 
 export default function LoginScreen() {
+  const { primaryColor } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +36,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       // Llamada real a la API de login
-      const res = await fetch("http://localhost:4000/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -41,12 +45,9 @@ export default function LoginScreen() {
       const data = await res.json();
       setUser(data.user);
       // Consultar membresía activa
-      const membershipsRes = await fetch(
-        "http://localhost:4000/api/membership",
-        {
-          headers: { Authorization: `Bearer ${data.token}` },
-        },
-      );
+      const membershipsRes = await fetch(`${API_BASE_URL}/api/membership`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
       const memberships = await membershipsRes.json();
       const hasMembership =
         Array.isArray(memberships) && memberships.some((m) => m.active);
@@ -169,7 +170,8 @@ export default function LoginScreen() {
                   <Text className="text-dark-blue/40 text-lg text-center">
                     Nuevo Administrador?{" "}
                     <Text
-                      className="text-[#13ec5b] font-bold"
+                      style={{ color: primaryColor }}
+                      className="font-bold"
                       onPress={() => router.push("/login/register")}
                     >
                       Crear cuenta

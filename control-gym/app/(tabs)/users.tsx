@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Text } from "react-native";
-import { ThemedText } from "@/components/themed-text";
 
 const TAB_CLIENTES = "Clientes";
 const TAB_STAFF = "Staff";
@@ -40,12 +39,12 @@ export default function UsersScreen() {
       {/* Content */}
       {tab === TAB_CLIENTES ? (
         <View style={{ flex: 1 }}>
-          <ThemedText>Lista de clientes</ThemedText>
+          <Text>Lista de clientes</Text>
           {/* Aquí va la lógica/lista de clientes */}
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <ThemedText>Lista de staff/personal</ThemedText>
+          <Text>Lista de staff/personal</Text>
           {/* Aquí va la lógica/lista de staff */}
         </View>
       )}

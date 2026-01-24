@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, Button, Alert } from "react-native";
-import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 import { useUserStore } from "@/store";
 
@@ -24,7 +23,7 @@ export default function ConfigScreen() {
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <ThemedText>Configuración</ThemedText>
+      <Text>Configuración</Text>
       <Text style={{ marginTop: 12, color: "#888" }}>
         Aquí podrás ajustar las opciones de la app.
       </Text>

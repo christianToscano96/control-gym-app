@@ -108,7 +108,7 @@ export default function LoginScreen() {
                     Email
                   </Text>
                   <View className="relative">
-                    <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                    <View className="absolute left-4 top-8 -translate-y-1/2 z-10">
                       <MaterialIcons
                         name="alternate-email"
                         size={20}
@@ -130,7 +130,7 @@ export default function LoginScreen() {
                     Password
                   </Text>
                   <View className="relative">
-                    <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                    <View className="absolute left-4 top-8 -translate-y-1/2 z-10 ">
                       <MaterialIcons name="lock" size={20} color="#94a3b8" />
                     </View>
                     <TextField

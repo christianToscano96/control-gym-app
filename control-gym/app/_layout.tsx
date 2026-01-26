@@ -53,10 +53,6 @@ export default function RootLayout() {
             name="membership"
             options={{ title: "Membresía", headerBackTitle: "Volver" }}
           />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

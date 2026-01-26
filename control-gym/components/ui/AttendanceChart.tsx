@@ -28,13 +28,23 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
     item.label === highlightLabel
       ? {
           ...item,
-          labelTextStyle:
-            "text-[10px] text-green-500 font-bold text-center w-10",
+          labelTextStyle: {
+            fontSize: 10,
+            color: "#22c55e",
+            fontWeight: "700",
+            textAlign: "center",
+            width: 40,
+          },
         }
       : {
           ...item,
-          labelTextStyle:
-            "text-[10px] text-slate-400 font-bold text-center w-10",
+          labelTextStyle: {
+            fontSize: 10,
+            color: "#94a3b8", // slate-400
+            fontWeight: "700",
+            textAlign: "center",
+            width: 40,
+          },
         },
   );
 
@@ -56,14 +66,21 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
           </Text>
         </View>
       </View>
-      <View className="mt-2 w-full">
+      <View
+        style={{
+          marginTop: 8,
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <LineChart
           areaChart
           curved
           data={chartData}
-          height={120}
-          spacing={45}
-          initialSpacing={10}
+          height={100}
+          spacing={50}
+          initialSpacing={20}
           color="#2ECC71"
           thickness={3}
           startFillColor="rgba(46, 204, 113, 0.3)"
@@ -77,12 +94,20 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
           pointerConfig={{
             pointerStripColor: "#2ECC71",
             pointerLabelComponent: (items: AttendanceChartData[]) => (
-              <View className="bg-green-500 px-1 rounded">
-                <Text className="text-white font-bold">{items[0].value}</Text>
+              <View
+                style={{
+                  backgroundColor: "#22c55e",
+                  paddingHorizontal: 4,
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {items[0].value}
+                </Text>
               </View>
             ),
           }}
-          style={{ width: "100%" }}
+          style={{ width: 320, alignSelf: "center" }}
         />
       </View>
     </View>

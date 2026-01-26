@@ -9,7 +9,8 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useUserStore } from "@/store";
+import { useUserStore } from "../stores/store";
+import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -35,26 +36,26 @@ export default function RootLayout() {
   }, [user, pathname]);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="login/index" options={{ headerShown: false }} />
-        <Stack.Screen name="login/register" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="profile"
-          options={{ title: "Perfil", headerBackTitle: "Volver" }}
-        />
-        <Stack.Screen
-          name="membership"
-          options={{ title: "Membresía", headerBackTitle: "Volver" }}
-        />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
-      </Stack>
-
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <CustomThemeProvider primaryColor="#78e08f">
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="login/index" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="login/register"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="profile"
+            options={{ title: "Perfil", headerBackTitle: "Volver" }}
+          />
+          <Stack.Screen
+            name="membership"
+            options={{ title: "Membresía", headerBackTitle: "Volver" }}
+          />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </CustomThemeProvider>
   );
 }

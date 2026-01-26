@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import Avatar from "./Avatar";
+import { MaterialIcons } from "@expo/vector-icons";
 
 interface HeaderProps {
   avatarUrl?: string;
@@ -8,13 +9,21 @@ interface HeaderProps {
 }
 const Header = ({ avatarUrl, username }: HeaderProps) => {
   return (
-    <View className="flex flex-row items-center gap-4">
-      <View>
+    <View className="flex-row items-center justify-between">
+      <View className="flex flex-row items-center gap-4">
         <Avatar uri={avatarUrl} name={username} size="md" />
+        <View>
+          <Text className="font-bold text-gray-500 text-md">Bienvenido,</Text>
+          <Text className="text-lg font-bold">{username || "Usuario"}</Text>
+        </View>
       </View>
       <View>
-        <Text>Bienvenido,</Text>
-        <Text>{username || "Usuario"}</Text>
+        <MaterialIcons
+          name="notifications-none"
+          size={30}
+          color="#64748B"
+          style={{ marginLeft: 8 }}
+        />
       </View>
     </View>
   );

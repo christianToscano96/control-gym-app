@@ -1,21 +1,14 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import SearchInput from "@/components/ui/SearchInput";
 import ListUSers from "./ListUSers";
+import { fetchClients } from "@/api/clients";
+import { useUserStore } from "@/stores/store";
 import { useTheme } from "@/context/ThemeContext";
-
-// Datos ficticios de usuarios
-const fakeUsers = [
-  {
-    avatarUri: "https://i.pravatar.cc/300?img=1",
-    name: "Juan Pérez",
-    status: "Activo",
-  },
-];
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
@@ -24,6 +17,27 @@ const TAB_EXPIRED = "Expirados";
 export default function UsersScreen() {
   const [tab, setTab] = useState(TAB_ALL);
   const { primaryColor } = useTheme();
+  const { user } = useUserStore();
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadClients = async () => {
+      if (!user?.token) return;
+      setLoading(true);
+      setError("");
+      try {
+        const data = await fetchClients(user.token);
+        setClients(data);
+      } catch (err: any) {
+        setError(err.message || "Error al cargar clientes");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadClients();
+  }, [user]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
@@ -83,7 +97,19 @@ export default function UsersScreen() {
           />
         </View>
 
-        <ListUSers users={fakeUsers} />
+        {loading ? (
+          <Text className="text-center mt-10">Cargando clientes...</Text>
+        ) : error ? (
+          <Text className="text-center mt-10 text-red-500">{error}</Text>
+        ) : (
+          <ListUSers
+            users={clients.map((c) => ({
+              name: c.firstName + " " + c.lastName,
+              status: c.active ? "Activo" : "Inactivo",
+              avatarUri: undefined, // Puedes mapear un campo de avatar si existe
+            }))}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

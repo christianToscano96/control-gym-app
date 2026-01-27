@@ -53,6 +53,7 @@ export default function RootLayout() {
             name="membership"
             options={{ title: "Membresía", headerBackTitle: "Volver" }}
           />
+          <Stack.Screen name="NewUserScreen" options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

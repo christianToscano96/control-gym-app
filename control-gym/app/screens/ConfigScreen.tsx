@@ -13,8 +13,8 @@ export default function ConfigScreen() {
       {
         text: "Cerrar sesión",
         style: "destructive",
-        onPress: () => {
-          logout();
+        onPress: async () => {
+          await logout();
           router.replace("/login");
         },
       },

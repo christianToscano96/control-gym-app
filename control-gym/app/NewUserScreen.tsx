@@ -31,7 +31,7 @@ export default function NewUserScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${(user as any)?.token}`,
+          Authorization: user?.token ? `Bearer ${user.token}` : "",
         },
         body: JSON.stringify({
           firstName,

@@ -10,13 +10,13 @@ import {
   Alert,
   Image,
 } from "react-native";
-import TextField from "../../../components/ui/TextField";
-import PrimaryButton from "../../../components/ui/ButtonCustom";
+import TextField from "../../components/ui/TextField";
+import PrimaryButton from "../../components/ui/ButtonCustom";
 import { MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { useUserStore, useMembershipStore } from "../../../stores/store";
-import { API_BASE_URL } from "../../../constants/api";
+import { useUserStore, useMembershipStore } from "../../stores/store";
+import { API_BASE_URL } from "../../constants/api";
 import { useTheme } from "@/context/ThemeContext";
 
 export const options = { headerShown: false };
@@ -43,7 +43,7 @@ export default function LoginScreen() {
       });
       if (!res.ok) throw new Error("Credenciales incorrectas");
       const data = await res.json();
-      setUser(data.user);
+      setUser(data.user, data.token);
       // Consultar membresía activa
       const membershipsRes = await fetch(`${API_BASE_URL}/api/membership`, {
         headers: { Authorization: `Bearer ${data.token}` },
@@ -82,7 +82,7 @@ export default function LoginScreen() {
               <View className="items-center mb-12">
                 <View className="w-100 h-240 rounded-3xl items-center justify-center mb-6  rotate-3">
                   <Image
-                    source={require("../../../assets/images/gymm-logo.png")}
+                    source={require("../../assets/images/gymm-logo.png")}
                     style={{
                       width: 400,
                       height: 120,

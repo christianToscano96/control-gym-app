@@ -23,14 +23,16 @@ export default function RootLayout() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!user && pathname !== "/login" && pathname !== "/login/register") {
-      router.replace("/login");
-    } else if (
-      user &&
-      (pathname === "/login" || pathname === "/login/register")
-    ) {
-      router.replace("/(tabs)");
-    }
+    // Evitar navegación prematura: usar setTimeout para esperar montaje
+    const timeout = setTimeout(() => {
+      if (!user && pathname !== "/login" && pathname !== "/login/register") {
+        router.replace("/login");
+      }
+      if (user && pathname === "/login") {
+        router.replace("/(tabs)");
+      }
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [user, pathname]);
 
   return (
@@ -50,12 +52,6 @@ export default function RootLayout() {
           <Stack.Screen
             name="membership"
             options={{ title: "Membresía", headerBackTitle: "Volver" }}
-          />
-          <Stack.Screen
-            name="NewUserScreen"
-            options={{
-              headerShown: false,
-            }}
           />
         </Stack>
         <StatusBar style="auto" />

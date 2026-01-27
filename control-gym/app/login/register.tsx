@@ -7,13 +7,13 @@ import {
   Text,
   SafeAreaView,
 } from "react-native";
-import ModalCustom from "../../../components/ui/ModalCustom";
-import TextField from "../../../components/ui/TextField";
+import ModalCustom from "../../components/ui/ModalCustom";
+import TextField from "../../components/ui/TextField";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import Chip from "@/components/ui/Chip";
-import { API_BASE_URL } from "../../../constants/api";
+import { API_BASE_URL } from "../../constants/api";
 
 export default function RegisterScreen() {
   const [adminName, setAdminName] = useState("");

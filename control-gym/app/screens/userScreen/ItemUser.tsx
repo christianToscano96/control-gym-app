@@ -13,7 +13,7 @@ interface ItemUserProps {
 const ItemUser = ({ avatarUri, name, status }: ItemUserProps) => {
   return (
     <View className="w-full h-20 bg-white rounded-2xl mb-3  border border-gray-100 flex-row items-center p-3 relative">
-      <Avatar size="sm" uri={avatarUri || "https://i.pravatar.cc/300"} />
+      <Avatar size="sm" uri={avatarUri} />
       <Text className="flex-1 text-lg font-semibold ml-4">
         {name || "John Doe"}
       </Text>

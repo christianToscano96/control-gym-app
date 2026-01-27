@@ -110,7 +110,8 @@ export default function UsersScreen() {
             users={clients.map((c) => ({
               name: c.firstName + " " + c.lastName,
               status: c.active ? "Activo" : "Inactivo",
-              avatarUri: undefined, // Puedes mapear un campo de avatar si existe
+              avatarUri:
+                "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128",
             }))}
           />
         )}

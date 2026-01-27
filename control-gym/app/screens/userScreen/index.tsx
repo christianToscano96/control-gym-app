@@ -1,6 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusReload } from "./useFocusReload";
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonCustom from "@/components/ui/ButtonCustom";
@@ -22,22 +23,25 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const loadClients = async () => {
-      if (!user?.token) return;
-      setLoading(true);
-      setError("");
-      try {
-        const data = await fetchClients(user.token);
-        setClients(data);
-      } catch (err: any) {
-        setError(err.message || "Error al cargar clientes");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadClients();
+  const loadClients = useCallback(async () => {
+    if (!user?.token) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchClients(user.token);
+      setClients(data);
+    } catch (err: any) {
+      setError(err.message || "Error al cargar clientes");
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
+
+  useFocusReload(loadClients);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
@@ -106,7 +110,8 @@ export default function UsersScreen() {
             users={clients.map((c) => ({
               name: c.firstName + " " + c.lastName,
               status: c.active ? "Activo" : "Inactivo",
-              avatarUri: undefined, // Puedes mapear un campo de avatar si existe
+              avatarUri:
+                "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128",
             }))}
           />
         )}

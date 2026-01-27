@@ -9,7 +9,7 @@ interface BadgeProps {
 
 const Badge: React.FC<BadgeProps> = ({ label, color, backgroundColor }) => {
   // Si el label es 'Expirado', usa rojo, si no, verde
-  const isExpired = label?.toLowerCase() === "expirado";
+  const isExpired = label?.toLowerCase() === "inactivo";
   const badgeColor = color || (isExpired ? "#DC2626" : "#059669");
   const badgeBg = backgroundColor || (isExpired ? "#FECACA" : "#D1FAE5");
   return (

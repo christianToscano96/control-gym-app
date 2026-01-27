@@ -2,10 +2,13 @@ import { Schema, model, Document } from "mongoose";
 
 export interface IClient extends Document {
   gym: Schema.Types.ObjectId;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string;
-  membershipType: "basico" | "pro" | "proplus";
+  instagramLink?: string;
+  paymentMethod: "transferencia" | "efectivo";
+  membershipType?: "basico" | "pro" | "proplus";
   active: boolean;
   startDate: Date;
   endDate?: Date;
@@ -14,9 +17,16 @@ export interface IClient extends Document {
 const ClientSchema = new Schema<IClient>(
   {
     gym: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
-    name: { type: String, required: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String },
+    instagramLink: { type: String },
+    paymentMethod: {
+      type: String,
+      enum: ["transferencia", "efectivo"],
+      required: true,
+    },
     membershipType: {
       type: String,
       enum: ["basico", "pro", "proplus"],

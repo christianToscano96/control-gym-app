@@ -43,7 +43,7 @@ export default function LoginScreen() {
       });
       if (!res.ok) throw new Error("Credenciales incorrectas");
       const data = await res.json();
-      setUser(data.user);
+      setUser(data.user, data.token);
       // Consultar membresía activa
       const membershipsRes = await fetch(`${API_BASE_URL}/api/membership`, {
         headers: { Authorization: `Bearer ${data.token}` },
@@ -172,7 +172,7 @@ export default function LoginScreen() {
                     <Text
                       style={{ color: primaryColor }}
                       className="font-bold"
-                      onPress={() => router.push("/login/register")}
+                      onPress={() => router.push("./login/register")}
                     >
                       Crear cuenta
                     </Text>

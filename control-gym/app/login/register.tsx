@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Button,
   Alert,
   ScrollView,
   TouchableOpacity,
@@ -43,7 +42,7 @@ export default function RegisterScreen() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error en el registro");
       Alert.alert("Éxito", "Cuenta y gimnasio creados correctamente");
-      router.replace("/login");
+      router.push("/login");
     } catch (err) {
       let message = "No se pudo registrar";
       if (err instanceof Error) message = err.message;
@@ -59,7 +58,7 @@ export default function RegisterScreen() {
             name="arrow-back"
             size={24}
             color="#686868"
-            onPress={() => router.replace("/login")}
+            onPress={() => router.push("/login")}
           />
           <Text style={{ fontSize: 24, fontWeight: "bold" }}>Nueva cuenta</Text>
         </View>
@@ -221,7 +220,7 @@ export default function RegisterScreen() {
                           name="check-circle"
                           size={24}
                           color="#13ec5b"
-                          onPress={() => router.replace("/login")}
+                          onPress={() => router.push("/login")}
                         />
                         <Text className={planItem.textClass}>{feature}</Text>
                       </View>

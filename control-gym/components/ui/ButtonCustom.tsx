@@ -7,6 +7,8 @@ interface ButtonProps extends TouchableOpacityProps {
   className?: string;
   textClassName?: string;
   secondary?: boolean;
+  tertiary?: boolean;
+  isActive?: boolean;
   sm?: boolean;
   md?: boolean;
   lg?: boolean;
@@ -17,6 +19,8 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   className,
   textClassName,
   secondary = false,
+  tertiary = false,
+  isActive = false,
   sm = false,
   md = false,
   lg = false,
@@ -24,6 +28,11 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const { primaryColor } = useTheme();
+
+  let widthClass = "w-full";
+  if (sm) widthClass = "w-32";
+  else if (md) widthClass = "w-48";
+  else if (lg) widthClass = "w-64";
 
   let sizeClass = "py-4";
   let textSizeClass = "text-base";
@@ -39,33 +48,84 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   }
 
   const primaryClass =
-    `w-full` +
+    `${widthClass}` +
     ` bg-[${primaryColor}]` +
     ` ${sizeClass} rounded-2xl items-center justify-center`;
   const secondaryClass =
-    `w-full bg-white border-2` +
+    `${widthClass} bg-white border-2` +
     ` border-[${primaryColor}]` +
     ` ${sizeClass} rounded-2xl items-center justify-center`;
+  const tertiaryClass = `${widthClass} bg-gray-200 border-2 border-gray-400 ${sizeClass} rounded-2xl items-center justify-center`;
+
   const primaryTextClass = `text-dark-blue font-bold ${textSizeClass} uppercase tracking-wider`;
   const secondaryTextClass = `text-[${primaryColor}] font-bold ${textSizeClass} uppercase tracking-wider`;
+  const tertiaryTextClass = `text-gray-700 font-bold ${textSizeClass} uppercase tracking-wider`;
 
-  // Estilos dinámicos para fondo y borde
-  const dynamicStyle = secondary
-    ? { borderColor: primaryColor, borderWidth: 2, backgroundColor: "#fff" }
-    : { backgroundColor: primaryColor };
+  let dynamicStyle = {};
+  let textDynamicStyle = undefined;
+  if (tertiary) {
+    dynamicStyle = {
+      backgroundColor: "#e5e7eb", // gray-200
+      borderColor: "#9ca3af", // gray-400
+      borderWidth: 2,
+      borderRadius: 16,
+    };
+    textDynamicStyle = { color: "#374151" }; // gray-700
+  } else if (secondary) {
+    dynamicStyle = {
+      borderColor: primaryColor,
+      borderWidth: 2,
+      backgroundColor: "#fff",
+      borderRadius: 16,
+    };
+    textDynamicStyle = { color: primaryColor };
+  } else {
+    dynamicStyle = { backgroundColor: primaryColor, borderRadius: 16 };
+  }
+
+  const [pressed, setPressed] = React.useState(false);
+
+  const handlePressIn = () => {
+    if (tertiary) setPressed(true);
+    if (props.onPressIn) props.onPressIn();
+  };
+  const handlePressOut = () => {
+    if (tertiary) setPressed(false);
+    if (props.onPressOut) props.onPressOut();
+  };
+
+  if (tertiary && (pressed || isActive)) {
+    dynamicStyle = {
+      backgroundColor: "#111827", // black
+      borderColor: "#111827",
+      borderWidth: 2,
+      borderRadius: 16,
+    };
+    textDynamicStyle = { color: "#fff" };
+  }
 
   return (
     <TouchableOpacity
-      className={className || (secondary ? secondaryClass : primaryClass)}
+      className={
+        className ||
+        (tertiary ? tertiaryClass : secondary ? secondaryClass : primaryClass)
+      }
       style={dynamicStyle}
       activeOpacity={0.9}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       {...props}
     >
       <Text
         className={
-          textClassName || (secondary ? secondaryTextClass : primaryTextClass)
+          textClassName ||
+          (tertiary
+            ? tertiaryTextClass
+            : secondary
+              ? secondaryTextClass
+              : primaryTextClass)
         }
-        style={secondary ? { color: primaryColor } : undefined}
+        style={textDynamicStyle}
       >
         {title}
       </Text>

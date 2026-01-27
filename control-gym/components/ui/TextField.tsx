@@ -13,6 +13,7 @@ interface Props {
   value?: string;
   onChangeText?: (text: string) => void;
   secureTextEntry?: boolean;
+  width?: "full" | "auto" | "sm" | "md" | "lg" | string;
 }
 
 const TextField: React.FC<Props> = ({
@@ -27,10 +28,33 @@ const TextField: React.FC<Props> = ({
   placeholder,
   onChangeText,
   secureTextEntry,
+  width = "full",
   ...props
 }) => {
+  // Definir clases de ancho según la prop width
+  let widthClass = "";
+  switch (width) {
+    case "sm":
+      widthClass = "w-32";
+      break;
+    case "md":
+      widthClass = "w-64";
+      break;
+    case "lg":
+      widthClass = "w-96";
+      break;
+    case "auto":
+      widthClass = "w-auto";
+      break;
+    case "full":
+      widthClass = "w-full";
+      break;
+    default:
+      widthClass = typeof width === "string" ? width : "w-full";
+      break;
+  }
   return (
-    <View className={`mb-4 w-full ${containerClassName || ""}`}>
+    <View className={`mb-4 ${widthClass} ${containerClassName || ""}`}>
       {label && (
         <Text className="mb-1 font-semibold text-dark-blue/70 text-sm px-1">
           {label}

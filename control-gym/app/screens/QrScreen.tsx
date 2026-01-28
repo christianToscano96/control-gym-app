@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 const QrScreen = () => {
   return (
     <View>
-      <Text>QrScreen</Text>
+      <Text>QrScreensss</Text>
     </View>
   );
 };

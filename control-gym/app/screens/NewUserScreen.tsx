@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TextField from "../components/ui/TextField";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
-import { API_BASE_URL } from "../constants/api";
-import { useUserStore } from "../stores/store";
+import { API_BASE_URL } from "../../constants/api";
+import { useUserStore } from "../../stores/store";
+import TextField from "@/components/ui/TextField";
 
 export default function NewUserScreen() {
   const [firstName, setFirstName] = useState("");
@@ -16,7 +16,9 @@ export default function NewUserScreen() {
   const [email, setEmail] = useState("");
   const [cell, setCell] = useState("");
   const [instagram, setInstagram] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("efectivo");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "efectivo" | "transferencia"
+  >("efectivo");
   const [loading, setLoading] = useState(false);
   const user = useUserStore((s) => s.user);
 
@@ -131,7 +133,7 @@ export default function NewUserScreen() {
               autoCapitalize="none"
             />
             <PaymentMethodSelector
-              selected={paymentMethod}
+              value={paymentMethod}
               onChange={setPaymentMethod}
             />
           </View>

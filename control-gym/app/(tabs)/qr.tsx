@@ -1,8 +1,8 @@
 import React from "react";
-import QrScannerScreen from "../qrscanner";
+import QrScreen from "../screens/QrScreen";
 
 const qr = () => {
-  return <QrScannerScreen />;
+  return <QrScreen />;
 };
 
 export default qr;

@@ -1,4 +1,4 @@
-import React, { useState, FC } from "react";
+import React, { FC } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
@@ -8,7 +8,7 @@ interface PaymentOptionProps {
   id: PaymentMethod;
   label: string;
   iconName: keyof typeof MaterialIcons.glyphMap;
-  selected: boolean;
+  selected: string | boolean;
   onSelect: (id: PaymentMethod) => void;
 }
 
@@ -45,12 +45,12 @@ const PaymentOption: FC<PaymentOptionProps> = ({
 };
 
 interface PaymentMethodSelectorProps {
-  selected: PaymentMethod;
+  value: PaymentMethod;
   onChange: (method: PaymentMethod) => void;
 }
 
 const PaymentMethodSelector: FC<PaymentMethodSelectorProps> = ({
-  selected,
+  value,
   onChange,
 }) => {
   return (
@@ -59,14 +59,14 @@ const PaymentMethodSelector: FC<PaymentMethodSelectorProps> = ({
         id="efectivo"
         label="Efectivo"
         iconName="attach-money"
-        selected={selected === "efectivo"}
+        selected={value === "efectivo"}
         onSelect={onChange}
       />
       <PaymentOption
         id="transferencia"
         label="Transferencia"
         iconName="account-balance"
-        selected={selected === "transferencia"}
+        selected={value === "transferencia"}
         onSelect={onChange}
       />
     </View>

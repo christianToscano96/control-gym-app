@@ -14,6 +14,8 @@ interface Props {
   onChangeText?: (text: string) => void;
   secureTextEntry?: boolean;
   width?: "full" | "auto" | "sm" | "md" | "lg" | string;
+  keyboardType?: string;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
 }
 
 const TextField: React.FC<Props> = ({
@@ -29,6 +31,7 @@ const TextField: React.FC<Props> = ({
   onChangeText,
   secureTextEntry,
   width = "full",
+  autoCapitalize = "none",
   ...props
 }) => {
   // Definir clases de ancho según la prop width
@@ -72,11 +75,12 @@ const TextField: React.FC<Props> = ({
             `w-full rounded-2xl text-dark-blue bg-slate-50 h-14 ${leftIcon ? "pl-12" : "pl-4"} pr-4 text-base font-normal border-0`
           }
           placeholderTextColor="#94a3b8"
-          autoCapitalize="none"
+          autoCapitalize={autoCapitalize}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
           placeholder={placeholder}
+          keyboardType={props.keyboardType}
           {...props}
         />
         {rightIcon &&

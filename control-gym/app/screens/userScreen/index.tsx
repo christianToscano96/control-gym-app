@@ -44,7 +44,6 @@ export default function UsersScreen() {
 
   useFocusReload(loadClients);
 
-  // Filtrado combinado por búsqueda de texto y botón
   const filteredClients = clients.filter((c) => {
     const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(search.toLowerCase());
@@ -75,7 +74,7 @@ export default function UsersScreen() {
               name="add"
               size={24}
               color="white"
-              onPress={() => router.push("/NewUserScreen")}
+              onPress={() => router.push("/screens/NewUserScreen")}
             />
           </View>
         </View>

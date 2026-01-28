@@ -116,14 +116,7 @@ export default function UsersScreen() {
         ) : error ? (
           <Text className="text-center mt-10 text-red-500">{error}</Text>
         ) : (
-          <ListUSers
-            users={filteredClients.map((c) => ({
-              name: c.firstName + " " + c.lastName,
-              status: c.active ? "Activo" : "Inactivo",
-              avatarUri:
-                "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128",
-            }))}
-          />
+          <ListUSers users={filteredClients} />
         )}
       </View>
     </SafeAreaView>

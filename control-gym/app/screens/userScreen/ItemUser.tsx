@@ -1,16 +1,19 @@
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import { View, Text } from "react-native";
 
 interface ItemUserProps {
+  userId: string;
   avatarUri?: string;
-  name?: string;
-  status?: string;
+  name: string;
+  status: string;
 }
 
-const ItemUser = ({ avatarUri, name, status }: ItemUserProps) => {
+const ItemUser = ({ userId, avatarUri, name, status }: ItemUserProps) => {
+  console.log(userId);
   return (
     <View className="w-full h-20 bg-white rounded-2xl mb-3  border border-gray-100 flex-row items-center p-3 relative">
       <Avatar size="sm" uri={avatarUri} />
@@ -25,7 +28,12 @@ const ItemUser = ({ avatarUri, name, status }: ItemUserProps) => {
           name="chevron-right"
           size={28}
           color="#686868"
-          className=""
+          onPress={() =>
+            router.push({
+              pathname: "/screens/details-user",
+              params: { userId },
+            })
+          }
         />
       </View>
     </View>

@@ -5,6 +5,7 @@ interface ListUSersProps {
   users?: any[];
 }
 const ListUSers = ({ users }: ListUSersProps) => {
+  console.log(users);
   return (
     <View className=" p-5 mt-5  flex-1">
       <View className="flex flex-row justify-between mb-4">
@@ -17,10 +18,14 @@ const ListUSers = ({ users }: ListUSersProps) => {
         <ScrollView showsVerticalScrollIndicator={false}>
           {users?.map((user, index) => (
             <ItemUser
-              key={index}
-              name={user.name}
+              key={user._id}
+              name={user.firstName + " " + user.lastName}
               status={user.status}
-              avatarUri={user.avatarUri}
+              avatarUri={
+                user.avatarUri ||
+                "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
+              }
+              userId={user._id}
             />
           ))}
         </ScrollView>

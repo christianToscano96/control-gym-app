@@ -37,11 +37,9 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
     active: true,
   });
   if (currentClients >= maxClients) {
-    return res
-      .status(403)
-      .json({
-        message: `Límite de clientes alcanzado para el plan ${gym.plan}`,
-      });
+    return res.status(403).json({
+      message: `Límite de clientes alcanzado para el plan ${gym.plan}`,
+    });
   }
 
   const client = new Client({ ...req.body, gym: gymId });
@@ -75,6 +73,15 @@ router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
   if (!client)
     return res.status(404).json({ message: "Cliente no encontrado" });
   res.json({ message: "Cliente eliminado" });
+});
+
+// Obtener un cliente por ID (solo si pertenece al gimnasio del admin)
+router.get("/:id", requireAdmin, async (req: AuthRequest, res) => {
+  const gymId = req.user.gym;
+  const client = await Client.findOne({ _id: req.params.id, gym: gymId });
+  if (!client)
+    return res.status(404).json({ message: "Cliente no encontrado" });
+  res.json(client);
 });
 
 export default router;

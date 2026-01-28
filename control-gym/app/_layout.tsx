@@ -57,6 +57,10 @@ export default function RootLayout() {
             name="screens/NewUserScreen"
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="screens/details-user/index"
+            options={{ headerShown: false }}
+          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

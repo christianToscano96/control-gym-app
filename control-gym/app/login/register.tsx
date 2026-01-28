@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  View,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-  SafeAreaView,
-} from "react-native";
+import { View, Alert, ScrollView, TouchableOpacity, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ModalCustom from "../../components/ui/ModalCustom";
 import TextField from "../../components/ui/TextField";
 import { useRouter } from "expo-router";
@@ -14,6 +8,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import Chip from "@/components/ui/Chip";
 import { API_BASE_URL } from "../../constants/api";
+import HeaderTop from "@/components/ui/HeaderTop";
 
 export default function RegisterScreen() {
   const [adminName, setAdminName] = useState("");
@@ -53,16 +48,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-white">
       <ScrollView className="p-4 bg-white mb-4">
-        <View className=" flex flex-row items-center mb-6 gap-4 border-b-2 pb-6 border-gray-100">
-          <MaterialIcons
-            name="arrow-back"
-            size={24}
-            color="#686868"
-            onPress={() => router.push("/login")}
-          />
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>Nueva cuenta</Text>
-        </View>
-
+        <HeaderTop title="Registro" icon="arrow-back" />
         <View className="mb-4 p-4 mt-6">
           <TextField
             placeholder="Nombre completo"
@@ -119,19 +105,7 @@ export default function RegisterScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View className="bg-gray-50 rounded-2xl p-6 w-full h-full pt-20">
-            <View className="flex flex-row gap-2">
-              <MaterialIcons
-                name="arrow-back"
-                size={24}
-                color="#686868"
-                onPress={() => setModalVisible(false)}
-              />
-              <Text
-                style={{ fontWeight: "bold", fontSize: 18, marginBottom: 16 }}
-              >
-                Selecciona un plan
-              </Text>
-            </View>
+            <HeaderTop title="Seleccionar Plan" icon="arrow-back" />
             <ScrollView
               showsVerticalScrollIndicator={false}
               showsHorizontalScrollIndicator={false}

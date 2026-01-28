@@ -30,7 +30,7 @@ const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
           color="#686868"
           onPress={() =>
             router.push({
-              pathname: "/screens/client-details",
+              pathname: "/screens/client-screen/client-details",
               params: { clientId },
             })
           }

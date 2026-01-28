@@ -5,11 +5,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
-import { API_BASE_URL } from "../../constants/api";
-import { useUserStore } from "../../stores/store";
+import { API_BASE_URL } from "../../../constants/api";
+import { useUserStore } from "../../../stores/store";
 import TextField from "@/components/ui/TextField";
 import DateSelect from "@/components/ui/DateSelect";
 import { BadgeButton } from "@/components/ui/BadgeButton";
+import HeaderTop from "@/components/ui/HeaderTop";
 
 export default function NewClientScreen() {
   const [firstName, setFirstName] = useState("");
@@ -76,17 +77,7 @@ export default function NewClientScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
-      <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-3 border-gray-100 pr-4">
-        <MaterialIcons
-          name="arrow-back"
-          size={24}
-          color="#686868"
-          onPress={() => router.back()}
-        />
-        <Text style={{ fontSize: 24, fontWeight: "bold", flex: 1 }}>
-          Nuevo Usuario
-        </Text>
-      </View>
+      <HeaderTop title="Nuevo Cliente" icon="arrow-back" />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

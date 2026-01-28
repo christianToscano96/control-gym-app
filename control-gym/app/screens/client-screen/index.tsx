@@ -1,15 +1,13 @@
-import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useFocusReload } from "./useFocusReload";
+import { useFocusReload } from "@/hooks/useFocusReload";
 import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import SearchInput from "@/components/ui/SearchInput";
 import { fetchClients } from "@/api/clients";
 import { useUserStore } from "@/stores/store";
-import { useTheme } from "@/context/ThemeContext";
 import ListClients from "./ListClients";
+import HeaderTop from "@/components/ui/HeaderTop";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
@@ -26,7 +24,6 @@ interface Client {
 
 export default function ClientsScreen() {
   const [tab, setTab] = useState(TAB_ALL);
-  const { primaryColor } = useTheme();
   const { user } = useUserStore();
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
@@ -66,7 +63,7 @@ export default function ClientsScreen() {
       { key: TAB_ACTIVE, label: "Activos" },
       { key: TAB_EXPIRED, label: "Inactivos" },
     ],
-    []
+    [],
   );
 
   const filteredClients = useMemo(() => {
@@ -83,29 +80,8 @@ export default function ClientsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
+      <HeaderTop title="Clientes" icon="people" addIcon showBackButton={false} />
       <View className="flex-1">
-        <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-2 border-gray-100 pr-4">
-          <MaterialIcons
-            name="arrow-back"
-            size={24}
-            color="#686868"
-            onPress={() => router.back()}
-          />
-          <Text style={{ fontSize: 24, fontWeight: "bold", flex: 1 }}>
-            Usuarios
-          </Text>
-          <View
-            className="w-9 h-9 rounded-full justify-center items-center"
-            style={{ backgroundColor: primaryColor }}
-          >
-            <MaterialIcons
-              name="add"
-              size={24}
-              color="white"
-              onPress={() => router.push("/screens/NewClientScreen")}
-            />
-          </View>
-        </View>
         <View className="mt-4 px-4">
           <SearchInput
             value={search}

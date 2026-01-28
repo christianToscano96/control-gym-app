@@ -6,10 +6,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Alert,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import TextField from "../../components/ui/TextField";
 import PrimaryButton from "../../components/ui/ButtonCustom";
 import { MaterialIcons } from "@expo/vector-icons";

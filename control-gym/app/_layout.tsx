@@ -46,19 +46,12 @@ export default function RootLayout() {
           />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
-            name="profile"
-            options={{ title: "Perfil", headerBackTitle: "Volver" }}
-          />
-          <Stack.Screen
-            name="membership"
-            options={{ title: "Membresía", headerBackTitle: "Volver" }}
-          />
-          <Stack.Screen
-            name="screens/NewClientScreen"
+            name="screens/client-screen/NewClientScreen"
             options={{ headerShown: false }}
           />
+
           <Stack.Screen
-            name="screens/client-details/index"
+            name="screens/client-screen/client-details/index"
             options={{ headerShown: false }}
           />
         </Stack>

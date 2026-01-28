@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useFocusReload } from "./useFocusReload";
 import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,12 +15,22 @@ const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
 const TAB_EXPIRED = "Inactivos";
 
+interface Client {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUri?: string;
+  status?: string;
+  active?: boolean;
+}
+
 export default function ClientsScreen() {
   const [tab, setTab] = useState(TAB_ALL);
   const { primaryColor } = useTheme();
   const { user } = useUserStore();
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,7 +42,8 @@ export default function ClientsScreen() {
       const data = await fetchClients(user.token);
       setClients(data);
     } catch (err: any) {
-      setError(err.message || "Error al cargar clientes");
+      if (err instanceof Error) setError(err.message);
+      else setError(String(err) || "Error al cargar clientes");
     } finally {
       setLoading(false);
     }
@@ -44,14 +55,31 @@ export default function ClientsScreen() {
 
   useFocusReload(loadClients);
 
-  const filteredClients = clients.filter((c) => {
-    const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
-    const matchesSearch = fullName.includes(search.toLowerCase());
-    let matchesTab = true;
-    if (tab === TAB_ACTIVE) matchesTab = c.active;
-    else if (tab === TAB_EXPIRED) matchesTab = !c.active;
-    return matchesSearch && matchesTab;
-  });
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const tabOptions = useMemo(
+    () => [
+      { key: TAB_ALL, label: "Todos" },
+      { key: TAB_ACTIVE, label: "Activos" },
+      { key: TAB_EXPIRED, label: "Inactivos" },
+    ],
+    []
+  );
+
+  const filteredClients = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return clients.filter((c) => {
+      const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
+      const matchesSearch = q ? fullName.includes(q) : true;
+      let matchesTab = true;
+      if (tab === TAB_ACTIVE) matchesTab = !!c.active;
+      else if (tab === TAB_EXPIRED) matchesTab = !c.active;
+      return matchesSearch && matchesTab;
+    });
+  }, [clients, debouncedSearch, tab]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
@@ -88,27 +116,16 @@ export default function ClientsScreen() {
         </View>
 
         <View className="mt-3 px-4 flex flex-row flex-wrap justify-start space-x-2 gap-2 ">
-          <ButtonCustom
-            tertiary
-            title="Todos"
-            sm
-            isActive={tab === TAB_ALL}
-            onPress={() => setTab(TAB_ALL)}
-          />
-          <ButtonCustom
-            tertiary
-            title="Activos"
-            sm
-            isActive={tab === TAB_ACTIVE}
-            onPress={() => setTab(TAB_ACTIVE)}
-          />
-          <ButtonCustom
-            tertiary
-            title="Inactivos"
-            sm
-            isActive={tab === TAB_EXPIRED}
-            onPress={() => setTab(TAB_EXPIRED)}
-          />
+          {tabOptions.map((t) => (
+            <ButtonCustom
+              key={t.key}
+              tertiary
+              title={t.label}
+              sm
+              isActive={tab === t.key}
+              onPress={() => setTab(t.key)}
+            />
+          ))}
         </View>
 
         {loading ? (

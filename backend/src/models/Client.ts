@@ -12,6 +12,7 @@ export interface IClient extends Document {
   active: boolean;
   startDate: Date;
   endDate?: Date;
+  selected_period?: string;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -35,6 +36,7 @@ const ClientSchema = new Schema<IClient>(
     active: { type: Boolean, default: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
+    selected_period: { type: String },
   },
   { timestamps: true },
 );

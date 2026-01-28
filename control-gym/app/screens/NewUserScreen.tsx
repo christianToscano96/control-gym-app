@@ -8,6 +8,8 @@ import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
 import { API_BASE_URL } from "../../constants/api";
 import { useUserStore } from "../../stores/store";
 import TextField from "@/components/ui/TextField";
+import DateSelect from "@/components/ui/DateSelect";
+import { BadgeButton } from "@/components/ui/BadgeButton";
 
 export default function NewUserScreen() {
   const [firstName, setFirstName] = useState("");
@@ -19,6 +21,8 @@ export default function NewUserScreen() {
   const [paymentMethod, setPaymentMethod] = useState<
     "efectivo" | "transferencia"
   >("efectivo");
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  const [period, setPeriod] = useState<string>("mensual");
   const [loading, setLoading] = useState(false);
   const user = useUserStore((s) => s.user);
 
@@ -44,7 +48,8 @@ export default function NewUserScreen() {
           paymentMethod,
           membershipType: "basico", // O puedes permitir elegirlo
           active: true,
-          startDate: new Date(),
+          startDate: startDate,
+          selected_period: period,
           dni,
         }),
       });
@@ -58,6 +63,7 @@ export default function NewUserScreen() {
       setCell("");
       setInstagram("");
       setPaymentMethod("efectivo");
+      setPeriod("mensual");
     } catch (err) {
       let message = "No se pudo agregar";
       if (err instanceof Error) message = err.message;
@@ -125,13 +131,34 @@ export default function NewUserScreen() {
               onChangeText={setCell}
               keyboardType="phone-pad"
             />
-            <TextField
-              label="Instagram"
-              placeholder="Enter Instagram handle"
-              value={instagram}
-              onChangeText={setInstagram}
-              autoCapitalize="none"
+
+            <DateSelect
+              label="Fecha de inicio"
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Selecciona la fecha de inicio"
+              width="full"
             />
+            <Text className="mb-2 font-bold">Seleccionar Periodo</Text>
+            <View className="flex flex-row gap-2">
+              <BadgeButton
+                label="1 dia"
+                onPress={() => setPeriod("1 dia")}
+                isSelected={period === "1 dia"}
+              />
+              <BadgeButton
+                label="15 dias"
+                onPress={() => setPeriod("15 dias")}
+                isSelected={period === "15 dias"}
+              />
+              <BadgeButton
+                label="Mensual"
+                onPress={() => setPeriod("mensual")}
+                isSelected={period === "mensual"}
+              />
+            </View>
+            <Text className="mt-4 font-bold">Seleccionar Método de Pago</Text>
+
             <PaymentMethodSelector
               value={paymentMethod}
               onChange={setPaymentMethod}

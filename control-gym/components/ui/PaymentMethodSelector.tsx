@@ -23,7 +23,7 @@ const PaymentOption: FC<PaymentOptionProps> = ({
     <TouchableOpacity
       onPress={() => onSelect(id)}
       activeOpacity={0.7}
-      className={`flex-1 aspect-square max-w-[160px] m-2 rounded-[32px] border-2 items-center justify-center relative ${
+      className={`flex-1 aspect-square max-w-[140px] m-2 rounded-[32px] border-2 items-center justify-center relative ${
         selected ? "bg-green-50 border-green-500" : "bg-white border-gray-100"
       }`}
     >
@@ -54,7 +54,7 @@ const PaymentMethodSelector: FC<PaymentMethodSelectorProps> = ({
   onChange,
 }) => {
   return (
-    <View className="flex-row justify-center p-4">
+    <View className="flex-row justify-center p-2">
       <PaymentOption
         id="efectivo"
         label="Efectivo"

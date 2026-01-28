@@ -9,8 +9,10 @@ import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import FAB from "@/components/ui/FAB";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
+import { useRouter } from "expo-router";
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const user = useUserStore((state) => state.user);
   const hasActiveMembership = useMembershipStore(
     (state) => state.hasActiveMembership,
@@ -18,7 +20,9 @@ export default function DashboardScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleActionPress = (action: string) => {
-    console.log(`Acción seleccionada: ${action}`);
+    if (action === "Nuevo Cliente") {
+      router.push("/NewUserScreen");
+    }
     setIsMenuOpen(false);
   };
 

@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import { useFocusReload } from "./useFocusReload";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import SearchInput from "@/components/ui/SearchInput";
@@ -13,13 +13,14 @@ import { useTheme } from "@/context/ThemeContext";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
-const TAB_EXPIRED = "Expirados";
+const TAB_EXPIRED = "Inactivos";
 
 export default function UsersScreen() {
   const [tab, setTab] = useState(TAB_ALL);
   const { primaryColor } = useTheme();
   const { user } = useUserStore();
   const [clients, setClients] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,6 +43,16 @@ export default function UsersScreen() {
   }, [loadClients]);
 
   useFocusReload(loadClients);
+
+  // Filtrado combinado por búsqueda de texto y botón
+  const filteredClients = clients.filter((c) => {
+    const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+    const matchesSearch = fullName.includes(search.toLowerCase());
+    let matchesTab = true;
+    if (tab === TAB_ACTIVE) matchesTab = c.active;
+    else if (tab === TAB_EXPIRED) matchesTab = !c.active;
+    return matchesSearch && matchesTab;
+  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
@@ -70,10 +81,10 @@ export default function UsersScreen() {
         </View>
         <View className="mt-4 px-4">
           <SearchInput
-            value={""}
-            onChangeText={() => {}}
+            value={search}
+            onChangeText={setSearch}
             placeholder="Buscar usuarios..."
-            onClear={() => {}}
+            onClear={() => setSearch("")}
           />
         </View>
 
@@ -94,7 +105,7 @@ export default function UsersScreen() {
           />
           <ButtonCustom
             tertiary
-            title="Expirados"
+            title="Inactivos"
             sm
             isActive={tab === TAB_EXPIRED}
             onPress={() => setTab(TAB_EXPIRED)}
@@ -107,7 +118,7 @@ export default function UsersScreen() {
           <Text className="text-center mt-10 text-red-500">{error}</Text>
         ) : (
           <ListUSers
-            users={clients.map((c) => ({
+            users={filteredClients.map((c) => ({
               name: c.firstName + " " + c.lastName,
               status: c.active ? "Activo" : "Inactivo",
               avatarUri:

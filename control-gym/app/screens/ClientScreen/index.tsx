@@ -6,16 +6,16 @@ import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import SearchInput from "@/components/ui/SearchInput";
-import ListUSers from "./ListUSers";
 import { fetchClients } from "@/api/clients";
 import { useUserStore } from "@/stores/store";
 import { useTheme } from "@/context/ThemeContext";
+import ListClients from "./ListClients";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
 const TAB_EXPIRED = "Inactivos";
 
-export default function UsersScreen() {
+export default function ClientsScreen() {
   const [tab, setTab] = useState(TAB_ALL);
   const { primaryColor } = useTheme();
   const { user } = useUserStore();
@@ -74,7 +74,7 @@ export default function UsersScreen() {
               name="add"
               size={24}
               color="white"
-              onPress={() => router.push("/screens/NewUserScreen")}
+              onPress={() => router.push("/screens/NewClientScreen")}
             />
           </View>
         </View>
@@ -116,7 +116,7 @@ export default function UsersScreen() {
         ) : error ? (
           <Text className="text-center mt-10 text-red-500">{error}</Text>
         ) : (
-          <ListUSers users={filteredClients} />
+          <ListClients clients={filteredClients} />
         )}
       </View>
     </SafeAreaView>

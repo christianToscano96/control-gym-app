@@ -1,31 +1,31 @@
 import { ScrollView, Text, View } from "react-native";
-import ItemUser from "./ItemUser";
+import ItemClient from "./ItemClient";
 
-interface ListUSersProps {
-  users?: any[];
+interface ListClientsProps {
+  clients?: any[];
 }
-const ListUSers = ({ users }: ListUSersProps) => {
-  console.log(users);
+const ListClients = ({ clients }: ListClientsProps) => {
+  console.log(clients);
   return (
     <View className=" p-5 mt-5  flex-1">
       <View className="flex flex-row justify-between mb-4">
         <Text className="text-lg text-gray-400 font-bold">
-          TOTAL: {users?.length || 0}
+          TOTAL: {clients?.length || 0}
         </Text>
         <Text className="text-lg text-gray-400 font-bold">ULTIMOS 30 DIAS</Text>
       </View>
       <View className="">
         <ScrollView showsVerticalScrollIndicator={false}>
-          {users?.map((user, index) => (
-            <ItemUser
-              key={user._id}
-              name={user.firstName + " " + user.lastName}
-              status={user.status}
+          {clients?.map((client, index) => (
+            <ItemClient
+              key={client._id}
+              name={client.firstName + " " + client.lastName}
+              status={client.status}
               avatarUri={
-                user.avatarUri ||
+                client.avatarUri ||
                 "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
               }
-              userId={user._id}
+              clientId={client._id}
             />
           ))}
         </ScrollView>
@@ -34,4 +34,4 @@ const ListUSers = ({ users }: ListUSersProps) => {
   );
 };
 
-export default ListUSers;
+export default ListClients;

@@ -11,7 +11,7 @@ import TextField from "@/components/ui/TextField";
 import DateSelect from "@/components/ui/DateSelect";
 import { BadgeButton } from "@/components/ui/BadgeButton";
 
-export default function NewUserScreen() {
+export default function NewClientScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dni, setDni] = useState("");

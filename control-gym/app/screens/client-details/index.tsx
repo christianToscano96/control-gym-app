@@ -6,20 +6,20 @@ import { fetchClientById } from "@/api/clients";
 import { useUserStore } from "@/stores/store";
 
 const UserDetailsScreen = () => {
-  const { userId } = useLocalSearchParams();
+  const { clientId } = useLocalSearchParams();
   const { user } = useUserStore();
-  const [userData, setUserData] = useState<any>(null);
+  const [clientData, setClientData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.token || !userId) return;
+      if (!user?.token || !clientId) return;
       setLoading(true);
       setError("");
       try {
-        const data = await fetchClientById(user.token, String(userId));
-        setUserData(data);
+        const data = await fetchClientById(user.token, String(clientId));
+        setClientData(data);
       } catch (err: any) {
         setError(err.message || "Error al obtener usuario");
       } finally {
@@ -27,25 +27,27 @@ const UserDetailsScreen = () => {
       }
     };
     fetchData();
-  }, [userId, user]);
+  }, [clientId, user]);
 
   return (
     <SafeAreaView className="flex-1 px-5">
       <View>
-        <Text>User Details Screen</Text>
+        <Text>Client Details Screen</Text>
         {loading ? (
           <ActivityIndicator size="large" />
         ) : error ? (
           <Text style={{ color: "red" }}>{error}</Text>
-        ) : userData ? (
+        ) : clientData ? (
           <View>
-            <Text>Nombre: {userData.name}</Text>
-            <Text>Email: {userData.email}</Text>
-            <Text>Rol: {userData.role}</Text>
-            <Text>Activo: {userData.active ? "Sí" : "No"}</Text>
+            <Text>
+              Nombre: {clientData.firstName + " " + clientData.lastName}
+            </Text>
+            <Text>Email: {clientData.email}</Text>
+            <Text>Rol: {clientData.role}</Text>
+            <Text>Activo: {clientData.active ? "Sí" : "No"}</Text>
           </View>
         ) : (
-          <Text>No se encontró el usuario.</Text>
+          <Text>No se encontró el cliente.</Text>
         )}
       </View>
     </SafeAreaView>

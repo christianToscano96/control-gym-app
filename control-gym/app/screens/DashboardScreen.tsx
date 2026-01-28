@@ -21,7 +21,7 @@ export default function DashboardScreen() {
 
   const handleActionPress = (action: string) => {
     if (action === "Nuevo Cliente") {
-      router.push("/screens/NewUserScreen");
+      router.push("/screens/NewClientScreen");
     }
     setIsMenuOpen(false);
   };

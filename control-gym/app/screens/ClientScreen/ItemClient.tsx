@@ -5,15 +5,15 @@ import { router } from "expo-router";
 import React from "react";
 import { View, Text } from "react-native";
 
-interface ItemUserProps {
-  userId: string;
+interface ItemClientProps {
+  clientId: string;
   avatarUri?: string;
   name: string;
   status: string;
 }
 
-const ItemUser = ({ userId, avatarUri, name, status }: ItemUserProps) => {
-  console.log(userId);
+const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
+  console.log(clientId);
   return (
     <View className="w-full h-20 bg-white rounded-2xl mb-3  border border-gray-100 flex-row items-center p-3 relative">
       <Avatar size="sm" uri={avatarUri} />
@@ -30,8 +30,8 @@ const ItemUser = ({ userId, avatarUri, name, status }: ItemUserProps) => {
           color="#686868"
           onPress={() =>
             router.push({
-              pathname: "/screens/details-user",
-              params: { userId },
+              pathname: "/screens/client-details",
+              params: { clientId },
             })
           }
         />
@@ -40,4 +40,4 @@ const ItemUser = ({ userId, avatarUri, name, status }: ItemUserProps) => {
   );
 };
 
-export default ItemUser;
+export default ItemClient;

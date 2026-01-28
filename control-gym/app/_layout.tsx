@@ -54,11 +54,11 @@ export default function RootLayout() {
             options={{ title: "Membresía", headerBackTitle: "Volver" }}
           />
           <Stack.Screen
-            name="screens/NewUserScreen"
+            name="screens/NewClientScreen"
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="screens/details-user/index"
+            name="screens/client-details/index"
             options={{ headerShown: false }}
           />
         </Stack>

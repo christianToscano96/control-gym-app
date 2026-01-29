@@ -6,7 +6,14 @@ export async function fetchClients(token: string) {
       Authorization: `Bearer ${token}`,
     },
   });
-  if (!res.ok) throw new Error("Error al obtener clientes");
+  if (!res.ok) {
+    const errorData = await res
+      .json()
+      .catch(() => ({ message: "Error desconocido" }));
+    throw new Error(
+      `Error ${res.status}: ${errorData.message || "Error al obtener clientes"}`,
+    );
+  }
   return res.json();
 }
 

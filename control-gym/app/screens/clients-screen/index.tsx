@@ -1,15 +1,15 @@
-import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useFocusReload } from "./useFocusReload";
-import { View, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { fetchClients } from "@/api/clients";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import SearchInput from "@/components/ui/SearchInput";
-import { fetchClients } from "@/api/clients";
-import { useUserStore } from "@/stores/store";
 import { useTheme } from "@/context/ThemeContext";
+import { useUserStore } from "@/stores/store";
+import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ListClients from "./ListClients";
+import { useFocusReload } from "./useFocusReload";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
@@ -66,7 +66,7 @@ export default function ClientsScreen() {
       { key: TAB_ACTIVE, label: "Activos" },
       { key: TAB_EXPIRED, label: "Inactivos" },
     ],
-    []
+    [],
   );
 
   const filteredClients = useMemo(() => {
@@ -102,7 +102,9 @@ export default function ClientsScreen() {
               name="add"
               size={24}
               color="white"
-              onPress={() => router.push("/screens/NewClientScreen")}
+              onPress={() =>
+                router.push("/screens/clients-screen/NewClientScreen")
+              }
             />
           </View>
         </View>

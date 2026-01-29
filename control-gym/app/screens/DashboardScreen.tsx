@@ -1,15 +1,15 @@
-import { useState } from "react";
-import Header from "@/components/ui/Header";
-import { ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useUserStore, useMembershipStore } from "../../stores/store";
-import { SummaryCard } from "@/components/ui/SummaryCard";
 import AttendanceChart from "@/components/ui/AttendanceChart";
-import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import FAB from "@/components/ui/FAB";
+import Header from "@/components/ui/Header";
+import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
+import { SummaryCard } from "@/components/ui/SummaryCard";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useMembershipStore, useUserStore } from "../../stores/store";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function DashboardScreen() {
 
   const handleActionPress = (action: string) => {
     if (action === "Nuevo Cliente") {
-      router.push("/screens/NewClientScreen");
+      router.push("/screens/clients-screen/NewClientScreen");
     }
     setIsMenuOpen(false);
   };

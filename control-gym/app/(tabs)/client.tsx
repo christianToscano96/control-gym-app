@@ -1,4 +1,4 @@
-import ClientScreen from "../screens/ClientScreen";
+import ClientScreen from "../screens/clients-screen";
 
 const clientTab = () => {
   return <ClientScreen />;

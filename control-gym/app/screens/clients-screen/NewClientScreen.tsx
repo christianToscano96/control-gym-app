@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { BadgeButton } from "@/components/ui/BadgeButton";
+import ButtonCustom from "@/components/ui/ButtonCustom";
+import DateSelect from "@/components/ui/DateSelect";
+import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
+import TextField from "@/components/ui/TextField";
+import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import ButtonCustom from "@/components/ui/ButtonCustom";
-import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
-import { API_BASE_URL } from "../../constants/api";
-import { useUserStore } from "../../stores/store";
-import TextField from "@/components/ui/TextField";
-import DateSelect from "@/components/ui/DateSelect";
-import { BadgeButton } from "@/components/ui/BadgeButton";
-import { useToast } from "@/hooks/useToast";
-import Toast from "@/components/ui/Toast";
+import React, { useState } from "react";
+import { ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { API_BASE_URL } from "../../../constants/api";
+import { useUserStore } from "../../../stores/store";
 
 export default function NewClientScreen() {
   const [firstName, setFirstName] = useState("");

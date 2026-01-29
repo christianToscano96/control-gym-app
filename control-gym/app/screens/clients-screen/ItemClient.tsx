@@ -21,7 +21,7 @@ const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
         {name || "John Doe"}
       </Text>
       <View className="mr-1">
-        <Badge label={status || "Activo"} />
+        <Badge label={status || "None"} />
       </View>
       <View>
         <MaterialIcons

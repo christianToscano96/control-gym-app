@@ -20,7 +20,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
             <ItemClient
               key={client._id}
               name={client.firstName + " " + client.lastName}
-              status={client.status}
+              status={client.active ? "Activo" : "Inactivo"}
               avatarUri={
                 client.avatarUri ||
                 "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"

@@ -8,6 +8,7 @@ import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ListClients from "./ListClients";
 import { useFocusReload } from "./useFocusReload";
+import { useTheme } from "@/context/ThemeContext";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
@@ -23,6 +24,7 @@ interface Client {
 }
 
 export default function ClientsScreen() {
+  const { colors } = useTheme();
   const [tab, setTab] = useState(TAB_ALL);
   const { user } = useUserStore();
   const [clients, setClients] = useState<Client[]>([]);
@@ -79,7 +81,9 @@ export default function ClientsScreen() {
   }, [clients, debouncedSearch, tab]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 6 }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background, padding: 6 }}
+    >
       <HeaderTopScrenn title="Usuarios" isAddClient />
       <View className="flex-1">
         <View className="mt-4 px-4">
@@ -105,9 +109,13 @@ export default function ClientsScreen() {
         </View>
 
         {loading ? (
-          <Text className="text-center mt-10">Cargando clientes...</Text>
+          <Text style={{ color: colors.text }} className="text-center mt-10">
+            Cargando clientes...
+          </Text>
         ) : error ? (
-          <Text className="text-center mt-10 text-red-500">{error}</Text>
+          <Text style={{ color: colors.error }} className="text-center mt-10">
+            {error}
+          </Text>
         ) : (
           <ListClients clients={filteredClients} />
         )}

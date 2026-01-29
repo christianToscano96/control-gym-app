@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 
 interface StatsCardsProps {
   primaryColor: string;
@@ -23,11 +24,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   statusLabel,
   isActive,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View className="px-4 mb-3">
       <View className="flex flex-row gap-3 mb-3">
         {/* Asistencia Card */}
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm shadow-black/5">
+        <View
+          className="flex-1 rounded-2xl p-4 shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+        >
           <View className="flex-row items-center mb-2">
             <View
               className="w-10 h-10 rounded-full items-center justify-center"
@@ -40,15 +46,28 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               />
             </View>
           </View>
-          <Text className="text-xs text-gray-500 mb-1">Asistencias</Text>
-          <Text className="text-2xl font-bold text-neutral-900">
+          <Text
+            className="text-xs mb-1"
+            style={{ color: colors.textSecondary }}
+          >
+            Asistencias
+          </Text>
+          <Text className="text-2xl font-bold" style={{ color: colors.text }}>
             {attendanceCount}
           </Text>
-          <Text className="text-xs text-gray-400 mt-1">Este mes</Text>
+          <Text
+            className="text-xs mt-1"
+            style={{ color: colors.textSecondary }}
+          >
+            Este mes
+          </Text>
         </View>
 
         {/* Válido hasta Card */}
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm shadow-black/5">
+        <View
+          className="flex-1 rounded-2xl p-4 shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+        >
           <View className="flex-row items-center mb-2">
             <View
               className="w-10 h-10 rounded-full items-center justify-center"
@@ -73,7 +92,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               />
             </View>
           </View>
-          <Text className="text-xs text-gray-500 mb-1">{expirationLabel}</Text>
+          <Text
+            className="text-xs mb-1"
+            style={{ color: colors.textSecondary }}
+          >
+            {expirationLabel}
+          </Text>
           <Text
             className="text-xs font-semibold leading-tight"
             style={{
@@ -81,7 +105,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 ? "#DC2626"
                 : isExpiringSoon
                   ? "#D97706"
-                  : "#1F2937",
+                  : colors.text,
             }}
           >
             {expirationDateText}
@@ -95,7 +119,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </View>
 
         {/* Estado Card */}
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm shadow-black/5">
+        <View
+          className="flex-1 rounded-2xl p-4 shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+        >
           <View className="flex flex-col items-center">
             <View
               className="w-10 h-10 rounded-full items-center justify-center"
@@ -110,7 +137,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               />
             </View>
             <View className="mt-3 flex-1">
-              <Text className="text-xs text-gray-500 mb-0.5">Estado</Text>
+              <Text
+                className="text-xs mb-0.5"
+                style={{ color: colors.textSecondary }}
+              >
+                Estado
+              </Text>
               <Text
                 className="text-base font-bold"
                 style={{

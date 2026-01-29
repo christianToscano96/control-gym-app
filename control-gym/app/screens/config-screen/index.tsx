@@ -35,11 +35,12 @@ const SettingItem: React.FC<SettingItemProps> = ({
   toggleValue = false,
   onToggleChange,
 }) => {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
 
   return (
     <TouchableOpacity
-      className="flex-row items-center justify-between px-4 py-4 border-b border-gray-100"
+      className="flex-row items-center justify-between px-4 py-4"
+      style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       onPress={onPress}
       disabled={showToggle}
       activeOpacity={0.7}
@@ -51,14 +52,19 @@ const SettingItem: React.FC<SettingItemProps> = ({
         >
           <MaterialIcons name={icon} size={22} color={primaryColor} />
         </View>
-        <Text className="text-base font-normal text-gray-900 flex-1">
+        <Text
+          style={{ color: colors.text }}
+          className="text-base font-normal flex-1"
+        >
           {title}
         </Text>
       </View>
 
       <View className="flex-row items-center gap-2">
         {rightText && (
-          <Text className="text-sm text-gray-500">{rightText}</Text>
+          <Text style={{ color: colors.textSecondary }} className="text-sm">
+            {rightText}
+          </Text>
         )}
         {showToggle && onToggleChange && (
           <Switch
@@ -69,7 +75,11 @@ const SettingItem: React.FC<SettingItemProps> = ({
           />
         )}
         {showChevron && !showToggle && (
-          <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+          <MaterialIcons
+            name="chevron-right"
+            size={20}
+            color={colors.textSecondary}
+          />
         )}
       </View>
     </TouchableOpacity>
@@ -79,8 +89,8 @@ const SettingItem: React.FC<SettingItemProps> = ({
 export default function ConfigScreen() {
   const router = useRouter();
   const logout = useUserStore((s) => s.logout);
-  const { primaryColor } = useTheme();
-  const [darkMode, setDarkMode] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { primaryColor, colors, isDark, toggleTheme } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
 
   const handleLogout = () => {
@@ -98,17 +108,26 @@ export default function ConfigScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="px-6 bg-white">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      className="flex-1"
+    >
+      <View style={{ backgroundColor: colors.background }} className="px-6">
         <HeaderTopScrenn title="Configuración" />
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="mt-4">
-          <Text className="text-xs font-bold text-gray-500 px-6 pb-2 uppercase tracking-wider">
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="text-xs font-bold px-6 pb-2 uppercase tracking-wider"
+          >
             General
           </Text>
-          <View className="mx-4 bg-white rounded-xl overflow-hidden shadow-sm shadow-black/5">
+          <View
+            style={{ backgroundColor: colors.card }}
+            className="mx-4 rounded-xl overflow-hidden shadow-sm shadow-black/5"
+          >
             <SettingItem
               icon="palette"
               title="Tema de la App"
@@ -119,8 +138,8 @@ export default function ConfigScreen() {
               icon="dark-mode"
               title="Modo Oscuro"
               showToggle
-              toggleValue={darkMode}
-              onToggleChange={setDarkMode}
+              toggleValue={isDark}
+              onToggleChange={toggleTheme}
               showChevron={false}
             />
             <SettingItem
@@ -134,10 +153,16 @@ export default function ConfigScreen() {
 
         {/* SECTION: ACCOUNT */}
         <View className="mt-6">
-          <Text className="text-xs font-bold text-gray-500 px-6 pb-2 uppercase tracking-wider">
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="text-xs font-bold px-6 pb-2 uppercase tracking-wider"
+          >
             Cuenta
           </Text>
-          <View className="mx-4 bg-white rounded-xl overflow-hidden shadow-sm shadow-black/5">
+          <View
+            style={{ backgroundColor: colors.card }}
+            className="mx-4 rounded-xl overflow-hidden shadow-sm shadow-black/5"
+          >
             <SettingItem
               icon="person"
               title="Editar Perfil"
@@ -161,10 +186,16 @@ export default function ConfigScreen() {
 
         {/* SECTION: GYM RULES */}
         <View className="mt-6">
-          <Text className="text-xs font-bold text-gray-500 px-6 pb-2 uppercase tracking-wider">
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="text-xs font-bold px-6 pb-2 uppercase tracking-wider"
+          >
             Reglas del Gimnasio
           </Text>
-          <View className="mx-4 bg-white rounded-xl overflow-hidden shadow-sm shadow-black/5">
+          <View
+            style={{ backgroundColor: colors.card }}
+            className="mx-4 rounded-xl overflow-hidden shadow-sm shadow-black/5"
+          >
             <SettingItem
               icon="schedule"
               title="Horarios de Acceso"
@@ -206,7 +237,10 @@ export default function ConfigScreen() {
             </Text>
           </TouchableOpacity>
 
-          <Text className="text-center text-gray-400 text-xs mt-6 font-medium">
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="text-center text-xs mt-6 font-medium"
+          >
             App Version 1.0.0
           </Text>
         </View>

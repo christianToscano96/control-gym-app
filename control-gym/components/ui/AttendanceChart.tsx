@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
+import { useTheme } from "@/context/ThemeContext";
 
 export interface AttendanceChartData {
   value: number;
@@ -24,6 +25,7 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
   trendText = "+8.2% VS LA SEMANA PASADA",
   highlightLabel = "VIERNES",
 }) => {
+  const { colors } = useTheme();
   const chartData = data.map((item) =>
     item.label === highlightLabel
       ? {
@@ -40,7 +42,7 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
           ...item,
           labelTextStyle: {
             fontSize: 10,
-            color: "#94a3b8", // slate-400
+            color: colors.textSecondary,
             fontWeight: "700",
             textAlign: "center",
             width: 40,
@@ -49,16 +51,27 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
   );
 
   return (
-    <View className="bg-white rounded-2xl p-5 mx-1 my-2 shadow-sm shadow-black/5">
+    <View
+      style={{ backgroundColor: colors.card }}
+      className="rounded-2xl p-5 mx-1 my-2 shadow-sm shadow-black/5"
+    >
       <View className="flex-row justify-between items-start mb-5">
         <View>
-          <Text className="text-lg font-extrabold text-neutral-900">
+          <Text
+            style={{ color: colors.text }}
+            className="text-lg font-extrabold"
+          >
             {title}
           </Text>
-          <Text className="text-xs text-slate-400 mt-0.5">{subtitle}</Text>
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="text-xs mt-0.5"
+          >
+            {subtitle}
+          </Text>
         </View>
         <View className="items-end">
-          <Text className="text-2xl font-black text-neutral-900">
+          <Text style={{ color: colors.text }} className="text-2xl font-black">
             {totalValue}
           </Text>
           <Text className="text-[10px] font-bold text-green-500 mt-0.5">

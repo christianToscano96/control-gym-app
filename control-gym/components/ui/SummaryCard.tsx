@@ -16,10 +16,13 @@ export const SummaryCard = ({
   value,
   persent,
 }: SummaryCardProps) => {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
 
   return (
-    <View className="flex-1 bg-white rounded-2xl p-5 my-2 shadow-sm shadow-black/5 mb-1 ">
+    <View
+      style={{ backgroundColor: colors.card }}
+      className="flex-1 rounded-2xl p-5 my-2 shadow-sm shadow-black/5 mb-1 "
+    >
       <View className="flex flex-row items-center justify-between mb-2">
         <MaterialIcons name={icon as any} size={24} color={primaryColor} />
 
@@ -30,8 +33,12 @@ export const SummaryCard = ({
         </View>
       </View>
       <View>
-        <Text className="text-lg color-gray-500">{title || "Members"}</Text>
-        <Text className="text-3xl font-bold">{value || "1234"}</Text>
+        <Text style={{ color: colors.textSecondary }} className="text-lg">
+          {title || "Members"}
+        </Text>
+        <Text style={{ color: colors.text }} className="text-3xl font-bold">
+          {value || "1234"}
+        </Text>
       </View>
     </View>
   );

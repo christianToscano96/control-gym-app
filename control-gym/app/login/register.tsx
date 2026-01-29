@@ -9,8 +9,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ModalCustom from "../../components/ui/ModalCustom";
 import TextField from "../../components/ui/TextField";
 import { API_BASE_URL } from "../../constants/api";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function RegisterScreen() {
+  const { colors } = useTheme();
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -46,7 +48,10 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white p-5">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}
+      className="flex-1"
+    >
       <ScrollView className=" mb-4">
         <HeaderTopScrenn title="Nueva Cuenta" isBackButton />
 
@@ -79,15 +84,13 @@ export default function RegisterScreen() {
           />
           <TouchableOpacity
             onPress={() => setModalVisible(true)}
-            className="w-full mb-4 py-3 px-4 rounded-2xl border-2 border-[#13ec5b] bg-slate-50 flex flex-row items-center justify-between"
+            className="w-full mb-4 py-3 px-4 rounded-2xl border-2 border-[#13ec5b] flex flex-row items-center justify-between"
+            style={{ backgroundColor: colors.card }}
             activeOpacity={0.85}
           >
             <Text
-              className={
-                plan
-                  ? "text-dark-blue font-bold text-base"
-                  : "text-gray-400 font-semibold text-base"
-              }
+              style={{ color: plan ? colors.text : colors.textSecondary }}
+              className="font-bold text-base"
             >
               {plan
                 ? `Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}`

@@ -13,6 +13,7 @@ import { useUserStore } from "../../../stores/store";
 import { getProfile } from "@/api/user";
 import { getDashboardStats, DashboardStats } from "@/api/dashboard";
 import { API_BASE_URL } from "@/constants/api";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function DashboardScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const { colors } = useTheme();
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -68,7 +70,10 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      className="flex-1"
+    >
       <View className="px-4 mt-4">
         <Header username={user?.name} avatarUrl={user?.avatar} />
         <ScrollView className="my-4" showsVerticalScrollIndicator={false}>

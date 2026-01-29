@@ -25,7 +25,7 @@ import { PaymentHistory } from "./components/PaymentHistory";
 const UserDetailsScreen = () => {
   const { clientId } = useLocalSearchParams();
   const { user } = useUserStore();
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   // Custom hooks
@@ -63,10 +63,15 @@ const UserDetailsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView
+        className="flex-1"
+        style={{ backgroundColor: colors.background }}
+      >
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={primaryColor} />
-          <Text className="mt-4 text-gray-500">Cargando información...</Text>
+          <Text className="mt-4" style={{ color: colors.textSecondary }}>
+            Cargando información...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -74,11 +79,19 @@ const UserDetailsScreen = () => {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white px-6">
+      <SafeAreaView
+        className="flex-1 px-6"
+        style={{ backgroundColor: colors.background }}
+      >
         <HeaderTopScrenn title="Detalles" isBackButton />
         <View className="flex-1 justify-center items-center">
-          <MaterialIcons name="error-outline" size={64} color="#DC2626" />
-          <Text className="mt-4 text-red-600 text-center text-lg">{error}</Text>
+          <MaterialIcons name="error-outline" size={64} color={colors.error} />
+          <Text
+            className="mt-4 text-center text-lg"
+            style={{ color: colors.error }}
+          >
+            {error}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -86,11 +99,21 @@ const UserDetailsScreen = () => {
 
   if (!clientData) {
     return (
-      <SafeAreaView className="flex-1 bg-white px-6">
+      <SafeAreaView
+        className="flex-1 px-6"
+        style={{ backgroundColor: colors.background }}
+      >
         <HeaderTopScrenn title="Detalles" isBackButton />
         <View className="flex-1 justify-center items-center">
-          <MaterialIcons name="person-off" size={64} color="#94A3B8" />
-          <Text className="mt-4 text-gray-500 text-center text-lg">
+          <MaterialIcons
+            name="person-off"
+            size={64}
+            color={colors.textSecondary}
+          />
+          <Text
+            className="mt-4 text-center text-lg"
+            style={{ color: colors.textSecondary }}
+          >
             No se encontró el cliente.
           </Text>
         </View>
@@ -98,8 +121,11 @@ const UserDetailsScreen = () => {
     );
   }
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="px-6 bg-white">
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
+      <View className="px-6" style={{ backgroundColor: colors.background }}>
         <HeaderTopScrenn title="Detalles" isBackButton />
       </View>
 

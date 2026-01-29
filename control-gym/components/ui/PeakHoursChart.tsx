@@ -22,7 +22,7 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({
   subtitle = "Niveles de ocupación durante el día",
   maxValue = 100,
 }) => {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
   const chartData = data.map((item) =>
     item.label === "6PM"
       ? { ...item, frontColor: primaryColor }
@@ -30,10 +30,20 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({
   );
 
   return (
-    <View className="bg-white rounded-2xl p-5 my-2 shadow-sm shadow-black/5">
-      <Text className="text-xl font-extrabold text-neutral-900">{title}</Text>
-      <Text className="text-sm mb-6 text-gray-500">{subtitle}</Text>
-      <View className="items-center justify-center w-full bg-slate-50 rounded-xl py-2 px-2">
+    <View
+      style={{ backgroundColor: colors.card }}
+      className="rounded-2xl p-5 my-2 shadow-sm shadow-black/5"
+    >
+      <Text style={{ color: colors.text }} className="text-xl font-extrabold">
+        {title}
+      </Text>
+      <Text style={{ color: colors.textSecondary }} className="text-sm mb-6">
+        {subtitle}
+      </Text>
+      <View
+        style={{ backgroundColor: colors.background }}
+        className="items-center justify-center w-full rounded-xl py-2 px-2"
+      >
         <BarChart
           data={chartData}
           barWidth={22}

@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity, Text, TouchableOpacityProps } from "react-native";
+import { Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 
 interface ButtonProps extends TouchableOpacityProps {
@@ -9,9 +9,7 @@ interface ButtonProps extends TouchableOpacityProps {
   secondary?: boolean;
   tertiary?: boolean;
   isActive?: boolean;
-  sm?: boolean;
-  md?: boolean;
-  lg?: boolean;
+  width?: "sm" | "md" | "lg" | "full" | "flex" | string;
 }
 
 const PrimaryButton: React.FC<ButtonProps> = ({
@@ -21,30 +19,40 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   secondary = false,
   tertiary = false,
   isActive = false,
-  sm = false,
-  md = false,
-  lg = false,
+  width = "full",
   children,
   ...props
 }) => {
   const { primaryColor } = useTheme();
 
   let widthClass = "w-full";
-  if (sm) widthClass = "w-32";
-  else if (md) widthClass = "w-48";
-  else if (lg) widthClass = "w-64";
+  switch (width) {
+    case "sm":
+      widthClass = "w-32";
+      break;
+    case "md":
+      widthClass = "w-48";
+      break;
+    case "lg":
+      widthClass = "w-64";
+      break;
+    case "flex":
+      widthClass = "flex-1";
+      break;
+    case "full":
+      widthClass = "w-full";
+      break;
+    default:
+      widthClass = width; // Permite clases custom como "w-1/2", "w-40", etc.
+      break;
+  }
 
   let sizeClass = "py-4";
   let textSizeClass = "text-base";
-  if (sm) {
+
+  if (width === "sm") {
     sizeClass = "py-2";
     textSizeClass = "text-sm";
-  } else if (md) {
-    sizeClass = "py-3";
-    textSizeClass = "text-base";
-  } else if (lg) {
-    sizeClass = "py-5";
-    textSizeClass = "text-lg";
   }
 
   const primaryClass =
@@ -85,13 +93,13 @@ const PrimaryButton: React.FC<ButtonProps> = ({
 
   const [pressed, setPressed] = React.useState(false);
 
-  const handlePressIn = () => {
+  const handlePressIn = (e: any) => {
     if (tertiary) setPressed(true);
-    if (props.onPressIn) props.onPressIn();
+    if (props.onPressIn) props.onPressIn(e);
   };
-  const handlePressOut = () => {
+  const handlePressOut = (e: any) => {
     if (tertiary) setPressed(false);
-    if (props.onPressOut) props.onPressOut();
+    if (props.onPressOut) props.onPressOut(e);
   };
 
   if (tertiary && (pressed || isActive)) {

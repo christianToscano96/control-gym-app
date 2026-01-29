@@ -1,16 +1,16 @@
-import React, { useEffect } from "react";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import "../global.css";
-import { Stack, useRouter, usePathname } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import React, { useEffect } from "react";
 import "react-native-reanimated";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useUserStore } from "../stores/store";
 import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
+import "../global.css";
+import { useUserStore } from "../stores/store";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -54,11 +54,11 @@ export default function RootLayout() {
             options={{ title: "Membresía", headerBackTitle: "Volver" }}
           />
           <Stack.Screen
-            name="screens/NewClientScreen"
+            name="screens/clients-screen/NewClientScreen"
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="screens/client-details/index"
+            name="screens/clients-screen/client-details/index"
             options={{ headerShown: false }}
           />
         </Stack>

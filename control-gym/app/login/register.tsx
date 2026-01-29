@@ -1,18 +1,13 @@
-import React, { useState } from "react";
-import {
-  View,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-  SafeAreaView,
-} from "react-native";
-import ModalCustom from "../../components/ui/ModalCustom";
-import TextField from "../../components/ui/TextField";
-import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import Chip from "@/components/ui/Chip";
+import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ModalCustom from "../../components/ui/ModalCustom";
+import TextField from "../../components/ui/TextField";
 import { API_BASE_URL } from "../../constants/api";
 
 export default function RegisterScreen() {
@@ -51,17 +46,9 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-white">
-      <ScrollView className="p-4 bg-white mb-4">
-        <View className=" flex flex-row items-center mb-6 gap-4 border-b-2 pb-6 border-gray-100">
-          <MaterialIcons
-            name="arrow-back"
-            size={24}
-            color="#686868"
-            onPress={() => router.push("/login")}
-          />
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>Nueva cuenta</Text>
-        </View>
+    <SafeAreaView className="flex-1 bg-white p-5">
+      <ScrollView className=" mb-4">
+        <HeaderTopScrenn title="Nueva Cuenta" isBackButton />
 
         <View className="mb-4 p-4 mt-6">
           <TextField
@@ -241,8 +228,8 @@ export default function RegisterScreen() {
             </ScrollView>
           </View>
         </ModalCustom>
-        <ButtonCustom title="Registrarse" onPress={handleRegister} />
       </ScrollView>
+      <ButtonCustom title="Registrarse" onPress={handleRegister} />
     </SafeAreaView>
   );
 }

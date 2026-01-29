@@ -3,7 +3,7 @@ import Badge from "@/components/ui/Badge";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
-import { View, Text } from "react-native";
+import { Text, View } from "react-native";
 
 interface ItemClientProps {
   clientId: string;
@@ -30,7 +30,7 @@ const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
           color="#686868"
           onPress={() =>
             router.push({
-              pathname: "/screens/client-details",
+              pathname: "/screens/clients-screen/client-details",
               params: { clientId },
             })
           }

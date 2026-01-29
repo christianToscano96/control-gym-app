@@ -1,15 +1,13 @@
-import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useFocusReload } from "./useFocusReload";
-import { View, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import ButtonCustom from "@/components/ui/ButtonCustom";
-import SearchInput from "@/components/ui/SearchInput";
 import { fetchClients } from "@/api/clients";
+import ButtonCustom from "@/components/ui/ButtonCustom";
+import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
+import SearchInput from "@/components/ui/SearchInput";
 import { useUserStore } from "@/stores/store";
-import { useTheme } from "@/context/ThemeContext";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ListClients from "./ListClients";
+import { useFocusReload } from "./useFocusReload";
 
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
@@ -26,7 +24,6 @@ interface Client {
 
 export default function ClientsScreen() {
   const [tab, setTab] = useState(TAB_ALL);
-  const { primaryColor } = useTheme();
   const { user } = useUserStore();
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
@@ -66,7 +63,7 @@ export default function ClientsScreen() {
       { key: TAB_ACTIVE, label: "Activos" },
       { key: TAB_EXPIRED, label: "Inactivos" },
     ],
-    []
+    [],
   );
 
   const filteredClients = useMemo(() => {
@@ -82,30 +79,9 @@ export default function ClientsScreen() {
   }, [clients, debouncedSearch, tab]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 5 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 6 }}>
+      <HeaderTopScrenn title="Usuarios" isAddClient />
       <View className="flex-1">
-        <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-2 border-gray-100 pr-4">
-          <MaterialIcons
-            name="arrow-back"
-            size={24}
-            color="#686868"
-            onPress={() => router.back()}
-          />
-          <Text style={{ fontSize: 24, fontWeight: "bold", flex: 1 }}>
-            Usuarios
-          </Text>
-          <View
-            className="w-9 h-9 rounded-full justify-center items-center"
-            style={{ backgroundColor: primaryColor }}
-          >
-            <MaterialIcons
-              name="add"
-              size={24}
-              color="white"
-              onPress={() => router.push("/screens/NewClientScreen")}
-            />
-          </View>
-        </View>
         <View className="mt-4 px-4">
           <SearchInput
             value={search}
@@ -121,7 +97,7 @@ export default function ClientsScreen() {
               key={t.key}
               tertiary
               title={t.label}
-              sm
+              width="sm"
               isActive={tab === t.key}
               onPress={() => setTab(t.key)}
             />

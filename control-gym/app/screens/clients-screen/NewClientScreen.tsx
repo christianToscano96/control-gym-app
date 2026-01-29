@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import ButtonCustom from "@/components/ui/ButtonCustom";
-import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
-import { API_BASE_URL } from "../../constants/api";
-import { useUserStore } from "../../stores/store";
-import TextField from "@/components/ui/TextField";
-import DateSelect from "@/components/ui/DateSelect";
 import { BadgeButton } from "@/components/ui/BadgeButton";
-import { useToast } from "@/hooks/useToast";
+import ButtonCustom from "@/components/ui/ButtonCustom";
+import DateSelect from "@/components/ui/DateSelect";
+import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
+import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
+import TextField from "@/components/ui/TextField";
 import Toast from "@/components/ui/Toast";
+import { useToast } from "@/hooks/useToast";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { API_BASE_URL } from "../../../constants/api";
+import { useUserStore } from "../../../stores/store";
 
 export default function NewClientScreen() {
   const [firstName, setFirstName] = useState("");
@@ -81,17 +81,7 @@ export default function NewClientScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
-      <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-3 border-gray-100 pr-4">
-        <MaterialIcons
-          name="arrow-back"
-          size={24}
-          color="#686868"
-          onPress={() => router.back()}
-        />
-        <Text style={{ fontSize: 24, fontWeight: "bold", flex: 1 }}>
-          Nuevo Usuario
-        </Text>
-      </View>
+      <HeaderTopScrenn isBackButton title="Agregar Cliente" />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

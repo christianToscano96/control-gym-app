@@ -2,6 +2,7 @@ import { Router } from "express";
 import { User } from "../models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { authenticateJWT, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -21,6 +22,49 @@ router.post("/login", async (req, res) => {
     token,
     user: { id: user._id, name: user.name, role: user.role, gym: user.gym },
   });
+});
+
+// Obtener perfil del usuario autenticado
+router.get("/profile", authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Error al obtener perfil", error: err });
+  }
+});
+
+// Actualizar perfil del usuario autenticado
+router.put("/profile", authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const updateData: any = {};
+
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+
+    // Verificar si el email ya existe (si se está cambiando)
+    if (email && email !== req.user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "El email ya está en uso" });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, updateData, {
+      new: true,
+    }).select("-password");
+
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Error al actualizar perfil", error: err });
+  }
 });
 
 export default router;

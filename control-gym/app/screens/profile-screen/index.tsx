@@ -16,7 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import { API_BASE_URL } from "@/constants/api";
 
 export default function EditProfile() {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
   const { user, setUser } = useUserStore();
   const { toast, showSuccess, showError, hideToast } = useToast();
 
@@ -178,13 +178,16 @@ export default function EditProfile() {
       const result = await uploadAvatar(user.token, imageUri);
       const avatarUrl = `${API_BASE_URL}${result.avatar}`;
       setAvatarUri(avatarUrl);
-      
+
       // Actualizar el store con el nuevo avatar
-      setUser({
-        ...user,
-        avatar: avatarUrl,
-      }, user.token);
-      
+      setUser(
+        {
+          ...user,
+          avatar: avatarUrl,
+        },
+        user.token,
+      );
+
       showSuccess("Foto actualizada correctamente");
     } catch (error: any) {
       showError(error.message || "Error al subir foto");
@@ -194,14 +197,19 @@ export default function EditProfile() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white px-5">
-      <View className="bg-white">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      className="flex-1 px-5"
+    >
+      <View style={{ backgroundColor: colors.background }}>
         <HeaderTopScrenn title="Editar Perfil" isBackButton />
       </View>
 
       {loadingProfile ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Cargando perfil...</Text>
+          <Text style={{ color: colors.textSecondary }}>
+            Cargando perfil...
+          </Text>
         </View>
       ) : (
         <>
@@ -213,7 +221,13 @@ export default function EditProfile() {
             {/* Avatar Section */}
             <View className="items-center justify-center py-8">
               <View className="relative">
-                <View className="w-32 h-32 rounded-full bg-white border-4 border-white overflow-hidden shadow-lg">
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  }}
+                  className="w-32 h-32 rounded-full border-4 overflow-hidden shadow-lg"
+                >
                   <Avatar
                     size="lg"
                     name={fullName}
@@ -222,8 +236,11 @@ export default function EditProfile() {
                   />
                 </View>
                 <TouchableOpacity
-                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full items-center justify-center border-4 border-white shadow-md active:opacity-80"
-                  style={{ backgroundColor: primaryColor }}
+                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full items-center justify-center border-4 shadow-md active:opacity-80"
+                  style={{
+                    backgroundColor: primaryColor,
+                    borderColor: colors.border,
+                  }}
                   onPress={handleChangePhoto}
                 >
                   <MaterialIcons
@@ -233,7 +250,10 @@ export default function EditProfile() {
                   />
                 </TouchableOpacity>
               </View>
-              <Text className="mt-3 text-xs font-medium text-gray-500">
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="mt-3 text-xs font-medium"
+              >
                 Cambiar Foto de Perfil
               </Text>
             </View>
@@ -285,7 +305,10 @@ export default function EditProfile() {
               onPress={handleDiscardChanges}
               disabled={loading}
             >
-              <Text className="text-gray-500 font-semibold text-sm">
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="font-semibold text-sm"
+              >
                 Descartar Cambios
               </Text>
             </TouchableOpacity>

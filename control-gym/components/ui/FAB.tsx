@@ -1,6 +1,6 @@
 import React from "react";
 import { ViewStyle, Pressable } from "react-native";
-import { useThemeColor } from "@/hooks/use-theme-color";
+import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -16,8 +16,8 @@ interface FABProps {
 }
 
 const FAB = ({ onPress, style, isOpen = false }: FABProps) => {
-  const primary = useThemeColor({}, "tint");
-  const openBg = isOpen ? "#90EE90" : primary;
+  const { primaryColor } = useTheme();
+  const openBg = isOpen ? "#90EE90" : primaryColor;
 
   // Animation values
   const scale = useSharedValue(1);
@@ -25,7 +25,7 @@ const FAB = ({ onPress, style, isOpen = false }: FABProps) => {
 
   React.useEffect(() => {
     rotate.value = withTiming(isOpen ? 45 : 0, { duration: 300 });
-  }, [isOpen]);
+  }, [isOpen, rotate]);
 
   const animatedButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

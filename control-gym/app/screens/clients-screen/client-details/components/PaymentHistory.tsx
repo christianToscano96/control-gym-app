@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Payment {
   _id: string;
@@ -19,10 +20,12 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   payments,
   primaryColor,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View className="px-4 mb-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-bold text-neutral-900">
+        <Text className="text-lg font-bold" style={{ color: colors.text }}>
           Historial de Pagos
         </Text>
         <View
@@ -36,13 +39,18 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       </View>
 
       {payments.length > 0 ? (
-        <View className="bg-white rounded-2xl overflow-hidden shadow-sm shadow-black/5">
+        <View
+          className="rounded-2xl overflow-hidden shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+        >
           {payments.map((payment, index) => (
             <View
               key={payment._id}
-              className={`flex-row items-center justify-between p-4 ${
-                index !== payments.length - 1 ? "border-b border-gray-100" : ""
-              }`}
+              className="flex-row items-center justify-between p-4"
+              style={{
+                borderBottomWidth: index !== payments.length - 1 ? 1 : 0,
+                borderBottomColor: colors.border,
+              }}
             >
               <View className="flex-row items-center flex-1">
                 <View
@@ -60,10 +68,16 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                   />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="text-base font-semibold text-neutral-900">
+                  <Text
+                    className="text-base font-semibold"
+                    style={{ color: colors.text }}
+                  >
                     ${payment.amount}
                   </Text>
-                  <Text className="text-xs text-gray-500">
+                  <Text
+                    className="text-xs"
+                    style={{ color: colors.textSecondary }}
+                  >
                     {new Date(payment.date).toLocaleDateString("es-ES", {
                       day: "numeric",
                       month: "short",
@@ -72,7 +86,10 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                   </Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-sm text-gray-600 mb-1">
+                  <Text
+                    className="text-sm mb-1"
+                    style={{ color: colors.textSecondary }}
+                  >
                     {payment.method}
                   </Text>
                   <View
@@ -89,9 +106,18 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           ))}
         </View>
       ) : (
-        <View className="bg-white rounded-2xl p-6 items-center shadow-sm shadow-black/5">
-          <MaterialIcons name="receipt-long" size={48} color="#CBD5E1" />
-          <Text className="text-gray-500 mt-3">No hay pagos registrados</Text>
+        <View
+          className="rounded-2xl p-6 items-center shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+        >
+          <MaterialIcons
+            name="receipt-long"
+            size={48}
+            color={colors.textSecondary}
+          />
+          <Text className="mt-3" style={{ color: colors.textSecondary }}>
+            No hay pagos registrados
+          </Text>
         </View>
       )}
     </View>

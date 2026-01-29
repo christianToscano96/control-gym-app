@@ -1,18 +1,28 @@
 import { ScrollView, Text, View } from "react-native";
 import ItemClient from "./ItemClient";
+import { useTheme } from "@/context/ThemeContext";
 
 interface ListClientsProps {
   clients?: any[];
 }
 const ListClients = ({ clients }: ListClientsProps) => {
+  const { colors } = useTheme();
   console.log(clients);
   return (
     <View className=" p-5 mt-5  flex-1">
       <View className="flex flex-row justify-between mb-4">
-        <Text className="text-lg text-gray-400 font-bold">
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
           TOTAL: {clients?.length || 0}
         </Text>
-        <Text className="text-lg text-gray-400 font-bold">ULTIMOS 30 DIAS</Text>
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
+          ULTIMOS 30 DIAS
+        </Text>
       </View>
       <View className="">
         <ScrollView showsVerticalScrollIndicator={false}>

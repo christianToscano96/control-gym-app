@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import Avatar from "./Avatar";
+import { useTheme } from "@/context/ThemeContext";
 
 type CheckIn = {
   id: string;
@@ -28,11 +29,15 @@ const CHECK_INS: CheckIn[] = [
 ];
 
 const RecentCheckIns: React.FC = () => {
+  const { colors } = useTheme();
   return (
     <View className="my-5 px-1">
       {/* Header de la sección */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-[20px] font-extrabold text-[#1A1A1A]">
+        <Text
+          style={{ color: colors.text }}
+          className="text-[20px] font-extrabold"
+        >
           Check-ins Recientes
         </Text>
         <TouchableOpacity>
@@ -46,24 +51,37 @@ const RecentCheckIns: React.FC = () => {
       {CHECK_INS.map((item) => (
         <View
           key={item.id}
-          className="bg-white rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
+          style={{ backgroundColor: colors.card }}
+          className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
         >
           <Avatar size="md" uri={item.image} />
 
           <View className="flex-1 ml-4">
-            <Text className="text-[16px] font-bold text-[#1A1A1A] mb-0.5">
+            <Text
+              style={{ color: colors.text }}
+              className="text-[16px] font-bold mb-0.5"
+            >
               {item.name}
             </Text>
-            <Text className="text-[13px] text-[#94A3B8]">
+            <Text
+              style={{ color: colors.textSecondary }}
+              className="text-[13px]"
+            >
               Membresía:{" "}
-              <Text className="text-[#64748B] font-medium">
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="font-medium"
+              >
                 {item.membership}
               </Text>
             </Text>
           </View>
 
           <View className="items-end justify-between h-10">
-            <Text className="text-[12px] font-bold text-[#1A1A1A]">
+            <Text
+              style={{ color: colors.text }}
+              className="text-[12px] font-bold"
+            >
               {item.time}
             </Text>
             {/* Punto verde de estado activo */}

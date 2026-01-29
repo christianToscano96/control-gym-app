@@ -12,8 +12,10 @@ import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../../../constants/api";
 import { useUserStore } from "../../../stores/store";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function NewClientScreen() {
+  const { colors } = useTheme();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dni, setDni] = useState("");
@@ -80,7 +82,9 @@ export default function NewClientScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}
+    >
       <HeaderTopScrenn isBackButton title="Agregar Cliente" />
       <ScrollView
         keyboardShouldPersistTaps="handled"
@@ -134,7 +138,9 @@ export default function NewClientScreen() {
               placeholder="Selecciona la fecha de inicio"
               width="full"
             />
-            <Text className="mb-2 font-bold">Seleccionar Periodo</Text>
+            <Text style={{ color: colors.text }} className="mb-2 font-bold">
+              Seleccionar Periodo
+            </Text>
             <View className="flex flex-row gap-2">
               <BadgeButton
                 label="1 dia"
@@ -152,7 +158,9 @@ export default function NewClientScreen() {
                 isSelected={period === "mensual"}
               />
             </View>
-            <Text className="mt-4 font-bold">Seleccionar Método de Pago</Text>
+            <Text style={{ color: colors.text }} className="mt-4 font-bold">
+              Seleccionar Método de Pago
+            </Text>
 
             <PaymentMethodSelector
               value={paymentMethod}

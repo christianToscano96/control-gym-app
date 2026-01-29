@@ -22,7 +22,7 @@ import { useMembershipStore, useUserStore } from "../../stores/store";
 export const options = { headerShown: false };
 
 export default function LoginScreen() {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -65,7 +65,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      className="flex-1"
+    >
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -75,7 +78,10 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 max-w-[430px] w-full mx-auto bg-white">
+          <View
+            style={{ backgroundColor: colors.background }}
+            className="flex-1 max-w-[430px] w-full mx-auto"
+          >
             {/* Contenido Principal */}
             <View className="flex-1 px-8 pt-20 pb-10">
               {/* Logo y Título */}
@@ -92,10 +98,16 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                <Text className="text-dark-blue/50 text-xs font-bold tracking-widest uppercase mb-2">
+                <Text
+                  style={{ color: colors.textSecondary }}
+                  className="text-xs font-bold tracking-widest uppercase mb-2"
+                >
                   CONTROL GYM
                 </Text>
-                <Text className="text-dark-blue text-3xl font-bold">
+                <Text
+                  style={{ color: colors.text }}
+                  className="text-3xl font-bold"
+                >
                   Bienvenido
                 </Text>
               </View>
@@ -104,7 +116,10 @@ export default function LoginScreen() {
               <View className="space-y-5 flex-1">
                 {/* Email Input */}
                 <View>
-                  <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
+                  <Text
+                    style={{ color: colors.text }}
+                    className="text-sm font-semibold pb-2 px-1"
+                  >
                     Email
                   </Text>
                   <View className="relative">
@@ -126,7 +141,10 @@ export default function LoginScreen() {
 
                 {/* Password Input */}
                 <View className="pt-4 mt-4">
-                  <Text className="text-dark-blue/70 text-sm font-semibold pb-2 px-1">
+                  <Text
+                    style={{ color: colors.text }}
+                    className="text-sm font-semibold pb-2 px-1"
+                  >
                     Password
                   </Text>
                   <View className="relative">
@@ -154,7 +172,10 @@ export default function LoginScreen() {
                 {/* Forgot Password */}
                 <View className="items-end">
                   <TouchableOpacity>
-                    <Text className="text-dark-blue/60 hover:text-dark-blue text-sm font-medium">
+                    <Text
+                      style={{ color: colors.textSecondary }}
+                      className="text-sm font-medium"
+                    >
                       Olvidó su contraseña?
                     </Text>
                   </TouchableOpacity>
@@ -167,7 +188,10 @@ export default function LoginScreen() {
 
                 {/* Sign Up Link */}
                 <View className="pt-2 mt-4">
-                  <Text className="text-dark-blue/40 text-lg text-center">
+                  <Text
+                    style={{ color: colors.textSecondary }}
+                    className="text-lg text-center"
+                  >
                     Nuevo Administrador?{" "}
                     <Text
                       style={{ color: primaryColor }}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 
 interface ClientInfoCardProps {
   email?: string;
@@ -15,25 +16,45 @@ export const ClientInfoCard: React.FC<ClientInfoCardProps> = ({
   membershipType,
   selectedPeriod,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View className="px-4 mb-3">
-      <View className="bg-white rounded-2xl p-4 shadow-sm shadow-black/5">
-        <View className="flex-row items-center justify-between mb-3 pb-3 border-b border-gray-100">
+      <View
+        className="rounded-2xl p-4 shadow-sm shadow-black/5"
+        style={{ backgroundColor: colors.card }}
+      >
+        <View
+          className="flex-row items-center justify-between mb-3 pb-3"
+          style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
+        >
           <View className="flex-row items-center flex-1">
-            <MaterialIcons name="email" size={18} color="#64748B" />
+            <MaterialIcons
+              name="email"
+              size={18}
+              color={colors.textSecondary}
+            />
             <Text
-              className="text-sm text-gray-900 ml-2 flex-1"
+              className="text-sm ml-2 flex-1"
               numberOfLines={1}
+              style={{ color: colors.text }}
             >
               {email || "No registrado"}
             </Text>
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between mb-3 pb-3 border-b border-gray-100">
+        <View
+          className="flex-row items-center justify-between mb-3 pb-3"
+          style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
+        >
           <View className="flex-row items-center">
-            <MaterialIcons name="phone" size={18} color="#64748B" />
-            <Text className="text-sm text-gray-900 ml-2">
+            <MaterialIcons
+              name="phone"
+              size={18}
+              color={colors.textSecondary}
+            />
+            <Text className="text-sm ml-2" style={{ color: colors.text }}>
               {phone || "No registrado"}
             </Text>
           </View>
@@ -41,8 +62,12 @@ export const ClientInfoCard: React.FC<ClientInfoCardProps> = ({
 
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <MaterialIcons name="card-membership" size={18} color="#64748B" />
-            <Text className="text-sm text-gray-900 ml-2">
+            <MaterialIcons
+              name="card-membership"
+              size={18}
+              color={colors.textSecondary}
+            />
+            <Text className="text-sm ml-2" style={{ color: colors.text }}>
               {membershipType || "Básico"} • {selectedPeriod || "Mensual"}
             </Text>
           </View>

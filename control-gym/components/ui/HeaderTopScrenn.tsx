@@ -17,22 +17,34 @@ const HeaderTopScrenn = ({
   isAddClient,
   isBackButton,
 }: HeaderTopScrennProps) => {
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
 
   return (
-    <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-2 border-gray-100 pr-4">
+    <View
+      style={{ borderBottomColor: colors.border }}
+      className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-2 pr-4"
+    >
       {isBackButton ? (
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons
             name={icon || "arrow-back"}
             size={24}
-            color="#686868"
+            color={colors.text}
           />
         </TouchableOpacity>
       ) : (
         <View style={{ width: 4 }} />
       )}
-      <Text style={{ fontSize: 24, fontWeight: "bold", flex: 1 }}>{title}</Text>
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          flex: 1,
+          color: colors.text,
+        }}
+      >
+        {title}
+      </Text>
       {isAddClient && (
         <View
           className="w-9 h-9 rounded-full justify-center items-center"

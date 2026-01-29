@@ -1,23 +1,23 @@
+import { useTheme } from "@/context/ThemeContext";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import TextField from "../../components/ui/TextField";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../../components/ui/ButtonCustom";
-import { MaterialIcons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
-import { useUserStore, useMembershipStore } from "../../stores/store";
+import TextField from "../../components/ui/TextField";
 import { API_BASE_URL } from "../../constants/api";
-import { useTheme } from "@/context/ThemeContext";
+import { useMembershipStore, useUserStore } from "../../stores/store";
 
 export const options = { headerShown: false };
 

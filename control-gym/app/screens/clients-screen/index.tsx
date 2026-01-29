@@ -97,7 +97,7 @@ export default function ClientsScreen() {
               key={t.key}
               tertiary
               title={t.label}
-              sm
+              width="sm"
               isActive={tab === t.key}
               onPress={() => setTab(t.key)}
             />

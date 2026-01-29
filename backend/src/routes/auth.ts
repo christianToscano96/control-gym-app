@@ -39,20 +39,11 @@ router.get("/profile", authenticateJWT, async (req: AuthRequest, res) => {
 // Actualizar perfil del usuario autenticado
 router.put("/profile", authenticateJWT, async (req: AuthRequest, res) => {
   try {
-    const { name, email, phone } = req.body;
+    const { name, phone } = req.body;
     const updateData: any = {};
 
     if (name) updateData.name = name;
-    if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
-
-    // Verificar si el email ya existe (si se está cambiando)
-    if (email && email !== req.user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: "El email ya está en uso" });
-      }
-    }
 
     const user = await User.findByIdAndUpdate(req.user.id, updateData, {
       new: true,

@@ -2,7 +2,6 @@ import { API_BASE_URL } from "@/constants/api";
 
 export interface UpdateProfileData {
   name?: string;
-  email?: string;
   phone?: string;
 }
 

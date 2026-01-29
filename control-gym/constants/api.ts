@@ -4,5 +4,5 @@
 // - IP de red local (para dispositivo físico): "http://192.168.100.143:4000"
 // - IP especial para emulador Android: "http://10.0.2.2:4000"
 
-//export const API_BASE_URL = "http://192.168.100.143:4000";
-export const API_BASE_URL = "http://localhost:4000"; // Descomenta para usar con simulador iOS
+export const API_BASE_URL = "http://192.168.100.145:4000";
+//export const API_BASE_URL = "http://localhost:4000"; // Descomenta para usar con simulador iOS

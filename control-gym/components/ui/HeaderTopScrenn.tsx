@@ -2,7 +2,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface HeaderTopScrennProps {
   icon?: keyof typeof MaterialIcons.glyphMap;
@@ -22,12 +22,13 @@ const HeaderTopScrenn = ({
   return (
     <View className="flex flex-row items-center mb-5 gap-4 border-b-2 pb-2 border-gray-100 pr-4">
       {isBackButton ? (
-        <MaterialIcons
-          name={icon || "arrow-back"}
-          size={24}
-          color="#686868"
-          onPress={() => router.back()}
-        />
+        <TouchableOpacity onPress={() => router.back()}>
+          <MaterialIcons
+            name={icon || "arrow-back"}
+            size={24}
+            color="#686868"
+          />
+        </TouchableOpacity>
       ) : (
         <View style={{ width: 4 }} />
       )}

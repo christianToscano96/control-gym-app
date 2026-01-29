@@ -3,12 +3,15 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
+import Toast from "@/components/ui/Toast";
+import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/store";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface Payment {
@@ -23,10 +26,12 @@ const UserDetailsScreen = () => {
   const { clientId } = useLocalSearchParams();
   const { user } = useUserStore();
   const { primaryColor } = useTheme();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [clientData, setClientData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +75,47 @@ const UserDetailsScreen = () => {
     };
     fetchData();
   }, [clientId, user]);
+
+  const handleDeleteClient = () => {
+    Alert.alert(
+      "Eliminar Cliente",
+      `¿Estás seguro de que deseas eliminar a ${clientData?.firstName || "este cliente"}? Esta acción no se puede deshacer.`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            if (!user?.token || !clientId) return;
+            setDeleting(true);
+            try {
+              const res = await fetch(
+                `${API_BASE_URL}/api/clients/${clientId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    Authorization: `Bearer ${user.token}`,
+                  },
+                },
+              );
+              if (!res.ok) throw new Error("No se pudo eliminar el cliente");
+              showSuccess("Cliente eliminado correctamente");
+              setTimeout(() => {
+                router.back();
+              }, 1000);
+            } catch (err: any) {
+              showError(err.message || "No se pudo eliminar el cliente");
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (loading) {
     return (
@@ -257,24 +303,32 @@ const UserDetailsScreen = () => {
           )}
         </View>
       </ScrollView>
-      {/* Action Button */}
+      {/* Action Buttons */}
       <View className="px-4 pb-8 flex-row gap-4 mt-2">
         <ButtonCustom
           title="Editar Cliente"
           onPress={() => {
-            console.log("Editar clientee");
+            // TODO: Implementar edición
+            console.log("Editar cliente");
           }}
           width="flex"
+          disabled={deleting}
         />
         <ButtonCustom
-          title="Eliminar"
+          title={deleting ? "Eliminando..." : "Eliminar"}
           secondary
-          onPress={() => {
-            console.log("Ver historial");
-          }}
+          onPress={handleDeleteClient}
           width="flex"
+          disabled={deleting}
         />
       </View>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        duration={3000}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 };

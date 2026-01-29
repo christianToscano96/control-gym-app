@@ -9,7 +9,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useUserStore } from "../../stores/store";
+import { useUserStore } from "../../../stores/store";
 import { getProfile } from "@/api/user";
 import { getDashboardStats, DashboardStats } from "@/api/dashboard";
 import { API_BASE_URL } from "@/constants/api";

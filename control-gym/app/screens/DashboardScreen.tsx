@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/ui/Header";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import FAB from "@/components/ui/FAB";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { useRouter } from "expo-router";
+import { fetchClients } from "@/api/clients";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -18,6 +19,22 @@ export default function DashboardScreen() {
     (state) => state.hasActiveMembership,
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [totalClients, setTotalClients] = useState(0);
+  const [activeClients, setActiveClients] = useState(0);
+
+  useEffect(() => {
+    const loadClientsData = async () => {
+      if (!user?.token) return;
+      try {
+        const clients = await fetchClients(user.token);
+        setTotalClients(clients.length);
+        setActiveClients(clients.filter((c: any) => c.active).length);
+      } catch (error) {
+        console.error("Error al cargar clientes:", error);
+      }
+    };
+    loadClientsData();
+  }, [user?.token]);
 
   const handleActionPress = (action: string) => {
     if (action === "Nuevo Cliente") {
@@ -35,8 +52,8 @@ export default function DashboardScreen() {
             <SummaryCard
               icon="people"
               title="CLIENTES"
-              value="1500"
-              persent="8%"
+              value={totalClients.toString()}
+              persent={activeClients > 0 ? `${activeClients} activos` : "0%"}
             />
             <SummaryCard
               icon="fitness-center"

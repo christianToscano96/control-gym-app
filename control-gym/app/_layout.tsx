@@ -61,6 +61,10 @@ export default function RootLayout() {
             name="screens/clients-screen/client-details/index"
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="screens/profile-screen/index"
+            options={{ headerShown: false }}
+          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

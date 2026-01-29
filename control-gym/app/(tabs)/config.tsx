@@ -1,4 +1,4 @@
-import ConfigScreen from "../screens/ConfigScreen";
+import ConfigScreen from "../screens/config-screen/index";
 
 const configTab = () => {
   return <ConfigScreen />;

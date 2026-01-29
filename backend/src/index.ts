@@ -1,6 +1,7 @@
 import express from "express";
 import { connectDB } from "./db";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(express.json());
+
+// Servir archivos estáticos (avatares)
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Registro de gimnasio + admin + plan
 app.use("/api/register", registerRoutes);

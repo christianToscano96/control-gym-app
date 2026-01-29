@@ -8,6 +8,7 @@ export interface IUser extends Document {
   gym?: Schema.Types.ObjectId;
   active: boolean;
   phone?: string;
+  avatar?: string;
   resetToken?: string;
   resetTokenExpires?: number;
 }
@@ -25,6 +26,7 @@ const UserSchema = new Schema<IUser>(
     gym: { type: Schema.Types.ObjectId, ref: "Gym" },
     active: { type: Boolean, default: true },
     phone: { type: String },
+    avatar: { type: String },
     resetToken: { type: String },
     resetTokenExpires: { type: Number },
   },

@@ -6,18 +6,59 @@ import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMembershipStore, useUserStore } from "../../stores/store";
+import { useUserStore } from "../../stores/store";
+import { getProfile } from "@/api/user";
+import { getDashboardStats, DashboardStats } from "@/api/dashboard";
+import { API_BASE_URL } from "@/constants/api";
 
 export default function DashboardScreen() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const hasActiveMembership = useMembershipStore(
-    (state) => state.hasActiveMembership,
-  );
+  const setUser = useUserStore((state) => state.setUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.token) return;
+
+      try {
+        const profile = await getProfile(user.token);
+        if (profile.avatar) {
+          setUser(
+            {
+              ...user,
+              avatar: `${API_BASE_URL}${profile.avatar}`,
+            },
+            user.token,
+          );
+        }
+      } catch (error) {
+        console.error("Error al cargar perfil:", error);
+      }
+    };
+
+    const loadStats = async () => {
+      if (!user?.token) return;
+
+      try {
+        const dashboardStats = await getDashboardStats(user.token);
+        setStats(dashboardStats);
+      } catch (error) {
+        console.error("Error al cargar estadísticas:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    loadUserProfile();
+    loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleActionPress = (action: string) => {
     if (action === "Nuevo Cliente") {
@@ -29,20 +70,24 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
       <View className="px-4 mt-4">
-        <Header username={user?.name} />
+        <Header username={user?.name} avatarUrl={user?.avatar} />
         <ScrollView className="my-4" showsVerticalScrollIndicator={false}>
           <View className="flex flex-row justify-between gap-4 p-2">
             <SummaryCard
               icon="people"
               title="CLIENTES"
-              value="1500"
-              persent="8%"
+              value={
+                loadingStats ? "..." : stats?.totalClients.toString() || "0"
+              }
+              persent={loadingStats ? "..." : stats?.clientsPercent || "0%"}
             />
             <SummaryCard
               icon="fitness-center"
-              title="INGRESOS DEL DIA"
-              value="75"
-              persent="12%"
+              title="INGRESARON HOY"
+              value={
+                loadingStats ? "..." : stats?.todayCheckIns.toString() || "0"
+              }
+              persent={loadingStats ? "..." : stats?.checkInsPercent || "0%"}
             />
           </View>
           <AttendanceChart

@@ -6,6 +6,7 @@ interface AvatarProps extends ViewProps {
   name?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
+  onPress?: () => void;
 }
 
 const sizeMap = {
@@ -26,6 +27,7 @@ const Avatar: React.FC<AvatarProps> = ({
   name,
   size = "md",
   className = "",
+  onPress,
   ...props
 }) => {
   const sizeClass = sizeMap[size] || sizeMap.md;

@@ -9,9 +9,11 @@ import { router } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { updateProfile, getProfile } from "@/api/user";
+import { updateProfile, getProfile, uploadAvatar } from "@/api/user";
 import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/ui/Toast";
+import * as ImagePicker from "expo-image-picker";
+import { API_BASE_URL } from "@/constants/api";
 
 export default function EditProfile() {
   const { primaryColor } = useTheme();
@@ -21,6 +23,7 @@ export default function EditProfile() {
   const [fullName, setFullName] = useState(user?.name || "");
   const [phone, setPhone] = useState("");
   const [jobTitle, setJobTitle] = useState(user?.role || "");
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -35,6 +38,9 @@ export default function EditProfile() {
       setFullName(profile.name || "");
       setPhone(profile.phone || "");
       setJobTitle(profile.role || "");
+      if (profile.avatar) {
+        setAvatarUri(`${API_BASE_URL}${profile.avatar}`);
+      }
     } catch (error) {
       console.error("Error al cargar perfil:", error);
     } finally {
@@ -104,12 +110,87 @@ export default function EditProfile() {
   const handleChangePhoto = () => {
     Alert.alert("Cambiar foto", "Selecciona una opción", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Tomar foto", onPress: () => console.log("Take photo") },
+      { text: "Tomar foto", onPress: handleTakePhoto },
       {
         text: "Elegir de galería",
-        onPress: () => console.log("Pick from gallery"),
+        onPress: handlePickImage,
       },
     ]);
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        showError("Se necesitan permisos de cámara");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await handleUploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error al tomar foto:", error);
+      showError("Error al tomar foto");
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        showError("Se necesitan permisos de galería");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await handleUploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error al seleccionar imagen:", error);
+      showError("Error al seleccionar imagen");
+    }
+  };
+
+  const handleUploadAvatar = async (imageUri: string) => {
+    if (!user?.token) {
+      showError("No hay sesión activa");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await uploadAvatar(user.token, imageUri);
+      const avatarUrl = `${API_BASE_URL}${result.avatar}`;
+      setAvatarUri(avatarUrl);
+      
+      // Actualizar el store con el nuevo avatar
+      setUser({
+        ...user,
+        avatar: avatarUrl,
+      }, user.token);
+      
+      showSuccess("Foto actualizada correctamente");
+    } catch (error: any) {
+      showError(error.message || "Error al subir foto");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -133,7 +214,12 @@ export default function EditProfile() {
             <View className="items-center justify-center py-8">
               <View className="relative">
                 <View className="w-32 h-32 rounded-full bg-white border-4 border-white overflow-hidden shadow-lg">
-                  <Avatar size="lg" name={fullName} className="w-full h-full" />
+                  <Avatar
+                    size="lg"
+                    name={fullName}
+                    uri={avatarUri || undefined}
+                    className="w-full h-full"
+                  />
                 </View>
                 <TouchableOpacity
                   className="absolute bottom-0 right-0 w-10 h-10 rounded-full items-center justify-center border-4 border-white shadow-md active:opacity-80"

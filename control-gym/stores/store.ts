@@ -7,6 +7,7 @@ interface UserState {
     id: string;
     name: string;
     role: "admin" | "superadmin";
+    avatar?: string;
     token?: string;
   };
   setUser: (user: UserState["user"], token?: string) => void;

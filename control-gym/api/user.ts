@@ -32,3 +32,33 @@ export async function updateProfile(token: string, data: UpdateProfileData) {
 
   return res.json();
 }
+
+export async function uploadAvatar(token: string, imageUri: string) {
+  const formData = new FormData();
+
+  // Obtener el nombre del archivo y extensión
+  const filename = imageUri.split("/").pop() || "avatar.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : "image/jpeg";
+
+  formData.append("avatar", {
+    uri: imageUri,
+    name: filename,
+    type,
+  } as any);
+
+  const res = await fetch(`${API_BASE_URL}/api/auth/profile/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Error al subir avatar");
+  }
+
+  return res.json();
+}

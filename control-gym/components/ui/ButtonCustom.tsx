@@ -8,6 +8,7 @@ interface ButtonProps extends TouchableOpacityProps {
   textClassName?: string;
   secondary?: boolean;
   tertiary?: boolean;
+  danger?: boolean;
   isActive?: boolean;
   sm?: boolean;
   md?: boolean;
@@ -20,6 +21,7 @@ const PrimaryButton: React.FC<ButtonProps> = ({
   textClassName,
   secondary = false,
   tertiary = false,
+  danger = false,
   isActive = false,
   sm = false,
   md = false,
@@ -63,7 +65,13 @@ const PrimaryButton: React.FC<ButtonProps> = ({
 
   let dynamicStyle = {};
   let textDynamicStyle = undefined;
-  if (tertiary) {
+  if (danger) {
+    dynamicStyle = {
+      backgroundColor: "#DC2626", // red-600
+      borderRadius: 16,
+    };
+    textDynamicStyle = { color: "#fff" };
+  } else if (tertiary) {
     dynamicStyle = {
       backgroundColor: "#e5e7eb", // gray-200
       borderColor: "#9ca3af", // gray-400

@@ -10,6 +10,8 @@ import { useUserStore } from "../../stores/store";
 import TextField from "@/components/ui/TextField";
 import DateSelect from "@/components/ui/DateSelect";
 import { BadgeButton } from "@/components/ui/BadgeButton";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/ui/Toast";
 
 export default function NewClientScreen() {
   const [firstName, setFirstName] = useState("");
@@ -25,10 +27,11 @@ export default function NewClientScreen() {
   const [period, setPeriod] = useState<string>("mensual");
   const [loading, setLoading] = useState(false);
   const user = useUserStore((s) => s.user);
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
   const handleAddClient = async () => {
     if (!firstName || !lastName || !email || !paymentMethod) {
-      Alert.alert("Faltan datos", "Completa todos los campos obligatorios");
+      showWarning("Completa todos los campos obligatorios");
       return;
     }
     setLoading(true);
@@ -55,7 +58,7 @@ export default function NewClientScreen() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "No se pudo agregar");
-      Alert.alert("Éxito", "Cliente agregado correctamente");
+      showSuccess("Cliente agregado correctamente");
       setFirstName("");
       setLastName("");
       setDni("");
@@ -64,14 +67,16 @@ export default function NewClientScreen() {
       setInstagram("");
       setPaymentMethod("efectivo");
       setPeriod("mensual");
+      setTimeout(() => {
+        router.back();
+      }, 1000);
     } catch (err) {
       let message = "No se pudo agregar";
       if (err instanceof Error) message = err.message;
-      Alert.alert("Error", message);
+      showError(message);
     } finally {
       setLoading(false);
     }
-    router.back();
   };
 
   return (
@@ -194,6 +199,13 @@ export default function NewClientScreen() {
         title={loading ? "Guardando..." : "Agregar"}
         onPress={handleAddClient}
         disabled={loading}
+      />
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        duration={3000}
+        onHide={hideToast}
       />
     </SafeAreaView>
   );

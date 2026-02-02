@@ -5,8 +5,8 @@ import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
-import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useState, useCallback } from "react";
 import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "../../../stores/store";
@@ -24,43 +24,44 @@ export default function DashboardScreen() {
   const [loadingStats, setLoadingStats] = useState(true);
   const { colors } = useTheme();
 
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (!user?.token) return;
+  const loadUserProfile = useCallback(async () => {
+    if (!user?.token) return;
 
-      try {
-        const profile = await getProfile(user.token);
-        if (profile.avatar) {
-          setUser(
-            {
-              ...user,
-              avatar: `${API_BASE_URL}${profile.avatar}`,
-            },
-            user.token,
-          );
-        }
-      } catch (error) {
-        console.error("Error al cargar perfil:", error);
+    try {
+      const profile = await getProfile(user.token);
+      if (profile.avatar) {
+        setUser(
+          {
+            ...user,
+            avatar: `${API_BASE_URL}${profile.avatar}`,
+          },
+          user.token,
+        );
       }
-    };
+    } catch (error) {
+      console.error("Error al cargar perfil:", error);
+    }
+  }, [user?.token, setUser]);
 
-    const loadStats = async () => {
-      if (!user?.token) return;
+  const loadStats = useCallback(async () => {
+    if (!user?.token) return;
 
-      try {
-        const dashboardStats = await getDashboardStats(user.token);
-        setStats(dashboardStats);
-      } catch (error) {
-        console.error("Error al cargar estadísticas:", error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
+    try {
+      const dashboardStats = await getDashboardStats(user.token);
+      setStats(dashboardStats);
+    } catch (error) {
+      console.error("Error al cargar estadísticas:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [user?.token]);
 
-    loadUserProfile();
-    loadStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUserProfile();
+      loadStats();
+    }, [loadUserProfile, loadStats]),
+  );
 
   const handleActionPress = (action: string) => {
     if (action === "Nuevo Cliente") {

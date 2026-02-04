@@ -23,6 +23,7 @@ export default function DashboardScreen() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const { colors } = useTheme();
+  const isStaff = user?.role === "empleado";
 
   const loadUserProfile = useCallback(async () => {
     if (!user?.token) return;
@@ -46,6 +47,12 @@ export default function DashboardScreen() {
   const loadStats = useCallback(async () => {
     if (!user?.token) return;
 
+    // Solo cargar estadísticas si es admin o superadmin
+    if (isStaff) {
+      setLoadingStats(false);
+      return;
+    }
+
     try {
       const dashboardStats = await getDashboardStats(user.token);
       setStats(dashboardStats);
@@ -54,7 +61,7 @@ export default function DashboardScreen() {
     } finally {
       setLoadingStats(false);
     }
-  }, [user?.token]);
+  }, [user?.token, isStaff]);
 
   useFocusEffect(
     useCallback(() => {
@@ -64,8 +71,11 @@ export default function DashboardScreen() {
   );
 
   const handleActionPress = (action: string) => {
-    if (action === "Nuevo Cliente") {
+    if (action === "new-client") {
       router.push("/screens/clients-screen/NewClientScreen");
+    }
+    if (action === "staff") {
+      router.push("/screens/staff-screen");
     }
     setIsMenuOpen(false);
   };
@@ -78,54 +88,64 @@ export default function DashboardScreen() {
       <View className="px-4 mt-4">
         <Header username={user?.name} avatarUrl={user?.avatar} />
         <ScrollView className="my-4" showsVerticalScrollIndicator={false}>
-          <View className="flex flex-row justify-between gap-4 p-2">
-            <SummaryCard
-              icon="people"
-              title="CLIENTES"
-              value={
-                loadingStats ? "..." : stats?.totalClients.toString() || "0"
-              }
-              persent={loadingStats ? "..." : stats?.clientsPercent || "0%"}
-            />
-            <SummaryCard
-              icon="fitness-center"
-              title="INGRESARON HOY"
-              value={
-                loadingStats ? "..." : stats?.todayCheckIns.toString() || "0"
-              }
-              persent={loadingStats ? "..." : stats?.checkInsPercent || "0%"}
-            />
-          </View>
-          <AttendanceChart
-            data={[
-              { value: 50, label: "MON" },
-              { value: 80, label: "TUE" },
-              { value: 40, label: "WED" },
-              { value: 95, label: "THU" },
-              { value: 85, label: "FRI" },
-              { value: 35, label: "SAT" },
-              { value: 75, label: "SUN" },
-            ]}
-          />
-          <PeakHoursChart
-            data={[
-              { value: 60, label: "6AM" },
-              { value: 70, label: "9AM" },
-              { value: 80, label: "12PM" },
-              { value: 90, label: "3PM" },
-              { value: 100, label: "6PM" },
-              { value: 70, label: "9PM" },
-            ]}
-          />
+          {!isStaff && (
+            <>
+              <View className="flex flex-row justify-between gap-4 p-2">
+                <SummaryCard
+                  icon="people"
+                  title="CLIENTES"
+                  value={
+                    loadingStats ? "..." : stats?.totalClients.toString() || "0"
+                  }
+                  persent={loadingStats ? "..." : stats?.clientsPercent || "0%"}
+                />
+                <SummaryCard
+                  icon="fitness-center"
+                  title="INGRESARON HOY"
+                  value={
+                    loadingStats
+                      ? "..."
+                      : stats?.todayCheckIns.toString() || "0"
+                  }
+                  persent={
+                    loadingStats ? "..." : stats?.checkInsPercent || "0%"
+                  }
+                />
+              </View>
+              <AttendanceChart
+                data={[
+                  { value: 50, label: "MON" },
+                  { value: 80, label: "TUE" },
+                  { value: 40, label: "WED" },
+                  { value: 95, label: "THU" },
+                  { value: 85, label: "FRI" },
+                  { value: 35, label: "SAT" },
+                  { value: 75, label: "SUN" },
+                ]}
+              />
+              <PeakHoursChart
+                data={[
+                  { value: 60, label: "6AM" },
+                  { value: 70, label: "9AM" },
+                  { value: 80, label: "12PM" },
+                  { value: 90, label: "3PM" },
+                  { value: 100, label: "6PM" },
+                  { value: 70, label: "9PM" },
+                ]}
+              />
+            </>
+          )}
           <RecentCheckIns />
         </ScrollView>
-        <QuickActionsMenu
-          visible={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-          onActionPress={handleActionPress}
-        />
-        <FAB isOpen={isMenuOpen} onPress={() => setIsMenuOpen(!isMenuOpen)} />
+        <>
+          <QuickActionsMenu
+            visible={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            onActionPress={handleActionPress}
+          />
+        </>
       </View>
+      <FAB isOpen={isMenuOpen} onPress={() => setIsMenuOpen(!isMenuOpen)} />
     </SafeAreaView>
   );
 }

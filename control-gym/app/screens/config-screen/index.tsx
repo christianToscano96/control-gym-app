@@ -88,10 +88,12 @@ const SettingItem: React.FC<SettingItemProps> = ({
 
 export default function ConfigScreen() {
   const router = useRouter();
+  const user = useUserStore((s) => s.user);
   const logout = useUserStore((s) => s.logout);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { primaryColor, colors, isDark, toggleTheme } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
+  const isStaff = user?.role === "empleado";
 
   const handleLogout = () => {
     Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas cerrar sesión?", [
@@ -184,31 +186,33 @@ export default function ConfigScreen() {
           </View>
         </View>
 
-        {/* SECTION: GYM RULES */}
-        <View className="mt-6">
-          <Text
-            style={{ color: colors.textSecondary }}
-            className="text-xs font-bold px-6 pb-2 uppercase tracking-wider"
-          >
-            Reglas del Gimnasio
-          </Text>
-          <View
-            style={{ backgroundColor: colors.card }}
-            className="mx-4 rounded-xl overflow-hidden shadow-sm shadow-black/5"
-          >
-            <SettingItem
-              icon="schedule"
-              title="Horarios de Acceso"
-              onPress={() => console.log("Access schedules")}
-            />
-            <SettingItem
-              icon="qr-code"
-              title="Validez del QR"
-              rightText="30s"
-              onPress={() => console.log("QR validity")}
-            />
+        {/* SECTION: GYM RULES - Solo Admin/SuperAdmin */}
+        {!isStaff && (
+          <View className="mt-6">
+            <Text
+              style={{ color: colors.textSecondary }}
+              className="text-xs font-bold px-6 pb-2 uppercase tracking-wider"
+            >
+              Reglas del Gimnasio
+            </Text>
+            <View
+              style={{ backgroundColor: colors.card }}
+              className="mx-4 rounded-xl overflow-hidden shadow-sm shadow-black/5"
+            >
+              <SettingItem
+                icon="schedule"
+                title="Horarios de Acceso"
+                onPress={() => console.log("Access schedules")}
+              />
+              <SettingItem
+                icon="qr-code"
+                title="Validez del QR"
+                rightText="30s"
+                onPress={() => console.log("QR validity")}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         {/* SECTION: MEMBERSHIP 
         <View className="mt-6">

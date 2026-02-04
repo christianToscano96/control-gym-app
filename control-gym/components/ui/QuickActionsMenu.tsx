@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TouchableWithoutFeedback, Modal } from "react-native";
 import ActionItem from "./ActionItem";
-import { useThemeColor } from "@/hooks/use-theme-color";
+import { useUserStore } from "@/stores/store";
 
 export interface QuickActionsMenuProps {
   visible: boolean;
@@ -14,6 +14,10 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
   onClose,
   onActionPress,
 }) => {
+  const user = useUserStore((state) => state.user);
+
+  const isStaff = user?.role === "empleado";
+
   // const primary = useThemeColor({}, "tint");
   if (!visible) return null;
 
@@ -25,23 +29,25 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
             <ActionItem
               label="Nuevo Cliente"
               iconName="account-plus-outline"
-              onPress={() => onActionPress("Nuevo Cliente")}
+              onPress={() => onActionPress("new-client")}
             />
             <ActionItem
               label="Nuevo Pago"
               iconName="credit-card-plus-outline"
-              onPress={() => onActionPress("Nuevo Pago")}
+              onPress={() => onActionPress("new-payment")}
             />
             <ActionItem
               label="Check-in"
               iconName="qrcode-scan"
-              onPress={() => onActionPress("Check-in")}
+              onPress={() => onActionPress("check-in")}
             />
-            <ActionItem
-              label="Agregar Personal"
-              iconName="briefcase-plus-outline"
-              onPress={() => onActionPress("Agregar Personal")}
-            />
+            {!isStaff && (
+              <ActionItem
+                label="Agregar Personal"
+                iconName="briefcase-plus-outline"
+                onPress={() => onActionPress("staff")}
+              />
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>

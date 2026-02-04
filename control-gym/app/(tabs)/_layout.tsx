@@ -3,9 +3,12 @@ import React from "react";
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTheme } from "@/context/ThemeContext";
+import { useUserStore } from "@/stores/store";
 
 export default function TabLayout() {
   const { primaryColor, colors } = useTheme();
+  const user = useUserStore((s) => s.user);
+  const isStaff = user?.role === "empleado";
   return (
     <Tabs
       screenOptions={{
@@ -58,6 +61,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="chart.bar.fill" color={color} />
           ),
+          href: isStaff ? null : undefined,
         }}
       />
       <Tabs.Screen

@@ -6,7 +6,7 @@ interface UserState {
   user: null | {
     id: string;
     name: string;
-    role: "admin" | "superadmin";
+    role: "admin" | "superadmin" | "empleado"; // | "entrenador" para futura implementación
     avatar?: string;
     token?: string;
   };

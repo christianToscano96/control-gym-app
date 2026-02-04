@@ -1,4 +1,5 @@
 import { fetchClients } from "@/api/clients";
+import { fetchStaff } from "@/api/staff";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import SearchInput from "@/components/ui/SearchInput";
@@ -13,6 +14,7 @@ import { useTheme } from "@/context/ThemeContext";
 const TAB_ALL = "Todos";
 const TAB_ACTIVE = "Activos";
 const TAB_EXPIRED = "Inactivos";
+const TAB_STAFF = "Staff"; // Nueva pestaña para staff
 
 interface Client {
   _id: string;
@@ -28,10 +30,13 @@ export default function ClientsScreen() {
   const [tab, setTab] = useState(TAB_ALL);
   const { user } = useUserStore();
   const [clients, setClients] = useState<Client[]>([]);
+  const [staff, setStaff] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   const loadClients = useCallback(async () => {
     if (!user?.token) return;
@@ -40,13 +45,32 @@ export default function ClientsScreen() {
     try {
       const data = await fetchClients(user.token);
       setClients(data);
+
+      // Cargar staff solo si es admin
+      if (isAdmin) {
+        try {
+          const staffData = await fetchStaff(user.token);
+          // Mapear staff a formato de cliente para reutilizar componente
+          const mappedStaff = staffData.staff.map((s: any) => ({
+            _id: s._id,
+            firstName: s.name,
+            lastName: "",
+            avatarUri: s.avatar,
+            status: s.role === "empleado" ? "Staff" : "Trainer",
+            active: s.active,
+          }));
+          setStaff(mappedStaff);
+        } catch (staffErr) {
+          console.error("Error al cargar staff:", staffErr);
+        }
+      }
     } catch (err: any) {
       if (err instanceof Error) setError(err.message);
       else setError(String(err) || "Error al cargar clientes");
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     loadClients();
@@ -59,26 +83,44 @@ export default function ClientsScreen() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const tabOptions = useMemo(
-    () => [
+  const tabOptions = useMemo(() => {
+    const baseTabs = [
       { key: TAB_ALL, label: "Todos" },
       { key: TAB_ACTIVE, label: "Activos" },
       { key: TAB_EXPIRED, label: "Inactivos" },
-    ],
-    [],
-  );
+    ];
+
+    // Agregar tab de staff solo para admin/superadmin
+    if (isAdmin) {
+      baseTabs.push({ key: TAB_STAFF, label: "Staff" });
+    }
+
+    return baseTabs;
+  }, [isAdmin]);
 
   const filteredClients = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    return clients.filter((c) => {
+
+    // Si la pestaña es Staff, filtrar del array de staff
+    const sourceData = tab === TAB_STAFF ? staff : clients;
+
+    return sourceData.filter((c) => {
       const fullName = `${c.firstName || ""} ${c.lastName || ""}`.toLowerCase();
       const matchesSearch = q ? fullName.includes(q) : true;
       let matchesTab = true;
-      if (tab === TAB_ACTIVE) matchesTab = !!c.active;
-      else if (tab === TAB_EXPIRED) matchesTab = !c.active;
+
+      // No aplicar filtros de activo/inactivo si estamos en la pestaña Staff
+      if (tab === TAB_STAFF) {
+        matchesTab = true; // Mostrar todo el staff
+      } else if (tab === TAB_ACTIVE) {
+        matchesTab = !!c.active;
+      } else if (tab === TAB_EXPIRED) {
+        matchesTab = !c.active;
+      }
+
       return matchesSearch && matchesTab;
     });
-  }, [clients, debouncedSearch, tab]);
+  }, [clients, staff, debouncedSearch, tab]);
 
   return (
     <SafeAreaView

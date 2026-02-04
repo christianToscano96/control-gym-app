@@ -1,18 +1,27 @@
 import { Router } from "express";
 import { Client } from "../models/Client";
-import { authenticateJWT, requireAdmin, AuthRequest } from "../middleware/auth";
+import {
+  authenticateJWT,
+  requireAdmin,
+  requireRole,
+  AuthRequest,
+} from "../middleware/auth";
 
 const router = Router();
 
 // Todas las rutas usan autenticación JWT
 router.use(authenticateJWT);
 
-// Obtener todos los clientes del gimnasio del admin
-router.get("/", requireAdmin, async (req: AuthRequest, res) => {
-  const gymId = req.user.gym;
-  const clients = await Client.find({ gym: gymId });
-  res.json(clients);
-});
+// Obtener todos los clientes del gimnasio (admin, superadmin y empleado)
+router.get(
+  "/",
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    const gymId = req.user.gym;
+    const clients = await Client.find({ gym: gymId });
+    res.json(clients);
+  },
+);
 
 // Crear cliente en el gimnasio del admin
 import { Gym } from "../models/Gym";
@@ -50,20 +59,24 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
   res.status(201).json(client);
 });
 
-// Editar cliente (solo si pertenece al gimnasio del admin)
-router.put("/:id", requireAdmin, async (req: AuthRequest, res) => {
-  const gymId = req.user.gym;
-  const client = await Client.findOneAndUpdate(
-    { _id: req.params.id, gym: gymId },
-    req.body,
-    { new: true },
-  );
-  if (!client)
-    return res.status(404).json({ message: "Cliente no encontrado" });
-  res.json(client);
-});
+// Editar cliente (solo si pertenece al gimnasio - admin, superadmin y empleado)
+router.put(
+  "/:id",
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    const gymId = req.user.gym;
+    const client = await Client.findOneAndUpdate(
+      { _id: req.params.id, gym: gymId },
+      req.body,
+      { new: true },
+    );
+    if (!client)
+      return res.status(404).json({ message: "Cliente no encontrado" });
+    res.json(client);
+  },
+);
 
-// Eliminar cliente (solo si pertenece al gimnasio del admin)
+// Eliminar cliente (solo admin y superadmin)
 router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
   const gymId = req.user.gym;
   const client = await Client.findOneAndDelete({
@@ -75,13 +88,17 @@ router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
   res.json({ message: "Cliente eliminado" });
 });
 
-// Obtener un cliente por ID (solo si pertenece al gimnasio del admin)
-router.get("/:id", requireAdmin, async (req: AuthRequest, res) => {
-  const gymId = req.user.gym;
-  const client = await Client.findOne({ _id: req.params.id, gym: gymId });
-  if (!client)
-    return res.status(404).json({ message: "Cliente no encontrado" });
-  res.json(client);
-});
+// Obtener un cliente por ID (admin, superadmin y empleado)
+router.get(
+  "/:id",
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    const gymId = req.user.gym;
+    const client = await Client.findOne({ _id: req.params.id, gym: gymId });
+    if (!client)
+      return res.status(404).json({ message: "Cliente no encontrado" });
+    res.json(client);
+  },
+);
 
 export default router;

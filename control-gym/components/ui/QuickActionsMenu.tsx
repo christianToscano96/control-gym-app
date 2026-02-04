@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TouchableWithoutFeedback, Modal } from "react-native";
 import ActionItem from "./ActionItem";
+import { useUserStore } from "@/stores/store";
 
 export interface QuickActionsMenuProps {
   visible: boolean;
@@ -13,6 +14,10 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
   onClose,
   onActionPress,
 }) => {
+  const user = useUserStore((state) => state.user);
+
+  const isStaff = user?.role === "empleado";
+
   // const primary = useThemeColor({}, "tint");
   if (!visible) return null;
 
@@ -36,11 +41,13 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
               iconName="qrcode-scan"
               onPress={() => onActionPress("check-in")}
             />
-            <ActionItem
-              label="Agregar Personal"
-              iconName="briefcase-plus-outline"
-              onPress={() => onActionPress("staff")}
-            />
+            {!isStaff && (
+              <ActionItem
+                label="Agregar Personal"
+                iconName="briefcase-plus-outline"
+                onPress={() => onActionPress("staff")}
+              />
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>

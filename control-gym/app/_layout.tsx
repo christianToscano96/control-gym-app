@@ -65,6 +65,10 @@ export default function RootLayout() {
             name="screens/profile-screen/index"
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="screens/staff-screen/index"
+            options={{ headerShown: false }}
+          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

@@ -44,7 +44,15 @@ export default function LoginScreen() {
       if (!res.ok) throw new Error("Credenciales incorrectas");
       const data = await res.json();
       setUser(data.user, data.token);
-      // Consultar membresía activa
+
+      // Si es staff (empleado), ir directo al dashboard
+      if (data.user.role === "empleado") {
+        setHasActiveMembership(true); // Staff siempre tiene acceso
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // Para admin/superadmin, consultar membresía activa
       const membershipsRes = await fetch(`${API_BASE_URL}/api/membership`, {
         headers: { Authorization: `Bearer ${data.token}` },
       });

@@ -72,10 +72,10 @@ export default function DashboardScreen() {
 
   const handleActionPress = (action: string) => {
     if (action === "new-client") {
-      router.push("/screens/clients-screen/NewClientScreen");
+      router.push("/screens/clients/NewClientScreen");
     }
     if (action === "staff") {
-      router.push("/screens/staff-screen");
+      router.push("/screens/staff");
     }
     setIsMenuOpen(false);
   };

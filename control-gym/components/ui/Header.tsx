@@ -15,7 +15,7 @@ const Header = ({ avatarUrl, username }: HeaderProps) => {
     <View className="flex-row items-center justify-between">
       <View className="flex flex-row items-center gap-4">
         <TouchableOpacity
-          onPress={() => router.push("/screens/profile-screen")}
+          onPress={() => router.push("/screens/profile")}
           activeOpacity={0.7}
         >
           <Avatar uri={avatarUrl} name={username} size="md" />

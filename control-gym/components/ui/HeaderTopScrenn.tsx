@@ -54,9 +54,7 @@ const HeaderTopScrenn = ({
             name="add"
             size={24}
             color="white"
-            onPress={() =>
-              router.push("/screens/clients-screen/NewClientScreen")
-            }
+            onPress={() => router.push("/screens/clients/NewClientScreen")}
           />
         </View>
       )}

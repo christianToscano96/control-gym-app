@@ -168,7 +168,7 @@ export default function ConfigScreen() {
             <SettingItem
               icon="person"
               title="Editar Perfil"
-              onPress={() => router.push("/screens/profile-screen")}
+              onPress={() => router.push("/screens/profile")}
             />
             <SettingItem
               icon="lock"

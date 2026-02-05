@@ -1,6 +1,9 @@
 # Node modules
 backend/node_modules/
 control-gym/node_modules/
+STAFF_API_DOCUMENTATION.md
+STAFF_API_TESTING.md
+StructureProject.md
 
 # Logs
 *.log

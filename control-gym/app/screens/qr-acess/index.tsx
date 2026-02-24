@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
-import { Camera } from "expo-camera";
+import { useCameraPermissions } from "expo-camera";
 import { useTheme } from "@/context/ThemeContext";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import { CameraScanner } from "./CameraScanner";
@@ -13,7 +13,7 @@ import { useUserStore } from "@/stores/store";
 const QRAccessScreen = () => {
   const { colors, primaryColor } = useTheme();
   const user = useUserStore((state) => state.user);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
@@ -22,10 +22,6 @@ const QRAccessScreen = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    requestCameraPermission();
-  }, []);
 
   // Efecto para buscar automáticamente cuando el usuario escribe
   useEffect(() => {
@@ -44,11 +40,6 @@ const QRAccessScreen = () => {
       setSelectedClient(null);
     }
   }, [searchQuery, clients]);
-
-  const requestCameraPermission = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    setHasPermission(status === "granted");
-  };
 
   const handleBarCodeScanned = ({
     type,
@@ -153,7 +144,7 @@ const QRAccessScreen = () => {
     }
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <PermissionLoadingView
         backgroundColor={colors.background}
@@ -163,13 +154,13 @@ const QRAccessScreen = () => {
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <PermissionDeniedView
         backgroundColor={colors.background}
         textColor={colors.text}
         textSecondaryColor={colors.textSecondary}
-        onRetry={requestCameraPermission}
+        onRetry={requestPermission}
       />
     );
   }

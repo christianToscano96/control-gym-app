@@ -10,8 +10,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { API_BASE_URL } from "../../../constants/api";
-import { useUserStore } from "../../../stores/store";
+import { apiClient } from "../../../api/client";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function NewClientScreen() {
@@ -28,7 +27,6 @@ export default function NewClientScreen() {
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [period, setPeriod] = useState<string>("mensual");
   const [loading, setLoading] = useState(false);
-  const user = useUserStore((s) => s.user);
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
   const handleAddClient = async () => {
@@ -38,28 +36,22 @@ export default function NewClientScreen() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/clients`, {
+      await apiClient("/api/clients", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: user?.token ? `Bearer ${user.token}` : "",
-        },
-        body: JSON.stringify({
+        body: {
           firstName,
           lastName,
           email,
           phone: cell,
           instagramLink: instagram,
           paymentMethod,
-          membershipType: "basico", // O puedes permitir elegirlo
+          membershipType: "basico",
           active: true,
           startDate: startDate,
           selected_period: period,
           dni,
-        }),
+        },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "No se pudo agregar");
       showSuccess("Cliente agregado correctamente");
       setFirstName("");
       setLastName("");

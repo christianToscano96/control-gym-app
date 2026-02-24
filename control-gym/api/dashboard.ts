@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/constants/api";
+import { apiClient } from "./client";
 
 export interface DashboardStats {
   totalClients: number;
@@ -9,16 +9,6 @@ export interface DashboardStats {
   revenuePercent: string;
 }
 
-export async function getDashboardStats(token: string): Promise<DashboardStats> {
-  const res = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  
-  if (!res.ok) {
-    throw new Error("Error al obtener estadísticas");
-  }
-  
-  return res.json();
+export async function getDashboardStats(): Promise<DashboardStats> {
+  return apiClient<DashboardStats>("/api/dashboard/stats");
 }

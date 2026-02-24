@@ -34,7 +34,7 @@ export default function EditProfile() {
     }
 
     try {
-      const profile = await getProfile(user.token);
+      const profile = await getProfile();
       setFullName(profile.name || "");
       setPhone(profile.phone || "");
       setJobTitle(profile.role || "");
@@ -65,7 +65,7 @@ export default function EditProfile() {
 
     setLoading(true);
     try {
-      const updatedUser = await updateProfile(user.token, {
+      const updatedUser = await updateProfile({
         name: fullName,
         phone: phone || undefined,
       });
@@ -175,7 +175,7 @@ export default function EditProfile() {
 
     setLoading(true);
     try {
-      const result = await uploadAvatar(user.token, imageUri);
+      const result = await uploadAvatar(imageUri);
       const avatarUrl = `${API_BASE_URL}${result.avatar}`;
       setAvatarUri(avatarUrl);
 

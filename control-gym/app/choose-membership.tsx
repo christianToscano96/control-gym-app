@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Button, Alert, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserStore, useMembershipStore } from "../stores/store";
-import { API_BASE_URL } from "../constants/api";
+import { apiClient } from "../api/client";
 
 const plans = [
   { key: "basico", label: "Básico (100 clientes)" },
@@ -19,22 +19,13 @@ export default function ChooseMembershipScreen() {
   const router = useRouter();
 
   const handleChoose = async (plan: string) => {
-    if (!user || !(user as any).token) return;
+    if (!user) return;
     setLoading(true);
     try {
-      // Llamada a la API para cambiar/crear membresía
-      const res = await fetch(
-        `${API_BASE_URL}/api/membership/change-plan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${(user as any).token}`,
-          },
-          body: JSON.stringify({ newPlan: plan }),
-        },
-      );
-      if (!res.ok) throw new Error("No se pudo cambiar la membresía");
+      await apiClient("/api/membership/change-plan", {
+        method: "POST",
+        body: { newPlan: plan },
+      });
       setHasActiveMembership(true);
       router.replace({ pathname: "/(tabs)" });
     } catch (err) {

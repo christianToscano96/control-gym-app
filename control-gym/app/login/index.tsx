@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../../components/ui/ButtonCustom";
 import TextField from "../../components/ui/TextField";
-import { API_BASE_URL } from "../../constants/api";
+import { apiClient } from "../../api/client";
 import { useMembershipStore, useUserStore } from "../../stores/store";
 
 export const options = { headerShown: false };
@@ -35,30 +35,25 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      // Llamada real a la API de login
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const data = await apiClient("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
+        skipAuth: true,
       });
-      if (!res.ok) throw new Error("Credenciales incorrectas");
-      const data = await res.json();
       setUser(data.user, data.token);
 
       // Si es staff (empleado), ir directo al dashboard
       if (data.user.role === "empleado") {
-        setHasActiveMembership(true); // Staff siempre tiene acceso
+        setHasActiveMembership(true);
         router.replace("/(tabs)");
         return;
       }
 
       // Para admin/superadmin, consultar membresía activa
-      const membershipsRes = await fetch(`${API_BASE_URL}/api/membership`, {
-        headers: { Authorization: `Bearer ${data.token}` },
-      });
-      const memberships = await membershipsRes.json();
+      // setUser ya actualizó el store, apiClient usará el token automáticamente
+      const memberships = await apiClient("/api/membership");
       const hasMembership =
-        Array.isArray(memberships) && memberships.some((m) => m.active);
+        Array.isArray(memberships) && memberships.some((m: any) => m.active);
       setHasActiveMembership(hasMembership);
       if (!hasMembership) {
         router.replace("/choose-membership");

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, FlatList } from "react-native";
 import Avatar from "./Avatar";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -30,65 +30,73 @@ const CHECK_INS: CheckIn[] = [
 
 const RecentCheckIns: React.FC = () => {
   const { colors } = useTheme();
-  return (
-    <View className="my-5 px-1">
-      {/* Header de la sección */}
-      <View className="flex-row justify-between items-center mb-4">
+
+  const renderItem = ({ item }: { item: CheckIn }) => (
+    <View
+      style={{ backgroundColor: colors.card }}
+      className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
+    >
+      <Avatar size="md" uri={item.image} />
+
+      <View className="flex-1 ml-4">
         <Text
           style={{ color: colors.text }}
-          className="text-[20px] font-extrabold"
+          className="text-[16px] font-bold mb-0.5"
         >
-          Check-ins Recientes
+          {item.name}
         </Text>
-        <TouchableOpacity>
-          <Text className="text-[14px] font-bold text-[#66BB6A] tracking-wide">
-            VER TODOS
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-[13px]"
+        >
+          Membresía:{" "}
+          <Text
+            style={{ color: colors.textSecondary }}
+            className="font-medium"
+          >
+            {item.membership}
           </Text>
-        </TouchableOpacity>
+        </Text>
       </View>
 
-      {/* Lista de Check-ins */}
-      {CHECK_INS.map((item) => (
-        <View
-          key={item.id}
-          style={{ backgroundColor: colors.card }}
-          className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
+      <View className="items-end justify-between h-10">
+        <Text
+          style={{ color: colors.text }}
+          className="text-[12px] font-bold"
         >
-          <Avatar size="md" uri={item.image} />
+          {item.time}
+        </Text>
+        {/* Punto verde de estado activo */}
+        <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
+      </View>
+    </View>
+  );
 
-          <View className="flex-1 ml-4">
-            <Text
-              style={{ color: colors.text }}
-              className="text-[16px] font-bold mb-0.5"
-            >
-              {item.name}
-            </Text>
-            <Text
-              style={{ color: colors.textSecondary }}
-              className="text-[13px]"
-            >
-              Membresía:{" "}
-              <Text
-                style={{ color: colors.textSecondary }}
-                className="font-medium"
-              >
-                {item.membership}
-              </Text>
-            </Text>
-          </View>
+  const ListHeaderComponent = () => (
+    <View className="flex-row justify-between items-center mb-4">
+      <Text
+        style={{ color: colors.text }}
+        className="text-[20px] font-extrabold"
+      >
+        Check-ins Recientes
+      </Text>
+      <TouchableOpacity>
+        <Text className="text-[14px] font-bold text-[#66BB6A] tracking-wide">
+          VER TODOS
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 
-          <View className="items-end justify-between h-10">
-            <Text
-              style={{ color: colors.text }}
-              className="text-[12px] font-bold"
-            >
-              {item.time}
-            </Text>
-            {/* Punto verde de estado activo */}
-            <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
-          </View>
-        </View>
-      ))}
+  return (
+    <View className="my-5 px-1">
+      <FlatList
+        data={CHECK_INS}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={ListHeaderComponent}
+        scrollEnabled={false}
+      />
     </View>
   );
 };

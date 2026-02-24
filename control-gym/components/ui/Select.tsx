@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Modal, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, Modal, FlatList } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -104,10 +104,12 @@ const Select: React.FC<SelectProps> = ({
                 {label || "Selecciona una opción"}
               </Text>
             </View>
-            <ScrollView className="px-2 py-2">
-              {options.map((option) => (
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.value}
+              className="px-2 py-2"
+              renderItem={({ item: option }) => (
                 <TouchableOpacity
-                  key={option.value}
                   className="px-4 py-4 rounded-xl mb-1"
                   style={{
                     backgroundColor:
@@ -128,8 +130,8 @@ const Select: React.FC<SelectProps> = ({
                     {option.label}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              )}
+            />
           </View>
         </TouchableOpacity>
       </Modal>

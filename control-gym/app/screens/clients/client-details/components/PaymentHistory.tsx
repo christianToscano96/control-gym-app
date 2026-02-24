@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Text, View, FlatList } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -22,6 +22,67 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 }) => {
   const { colors } = useTheme();
 
+  const renderItem = ({ item: payment, index }: { item: Payment; index: number }) => (
+    <View
+      className="flex-row items-center justify-between p-4"
+      style={{
+        borderBottomWidth: index !== payments.length - 1 ? 1 : 0,
+        borderBottomColor: colors.border,
+      }}
+    >
+      <View className="flex-row items-center flex-1">
+        <View
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: `${primaryColor}20` }}
+        >
+          <MaterialIcons
+            name={
+              payment.method === "Efectivo"
+                ? "attach-money"
+                : "account-balance"
+            }
+            size={20}
+            color={primaryColor}
+          />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text
+            className="text-base font-semibold"
+            style={{ color: colors.text }}
+          >
+            ${payment.amount}
+          </Text>
+          <Text
+            className="text-xs"
+            style={{ color: colors.textSecondary }}
+          >
+            {new Date(payment.date).toLocaleDateString("es-ES", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </Text>
+        </View>
+        <View className="items-end">
+          <Text
+            className="text-sm mb-1"
+            style={{ color: colors.textSecondary }}
+          >
+            {payment.method}
+          </Text>
+          <View
+            className="px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: "#D1FAE5" }}
+          >
+            <Text className="text-xs font-semibold text-green-700">
+              {payment.status}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <View className="px-4 mb-4">
       <View className="flex-row items-center justify-between mb-3">
@@ -43,67 +104,12 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           className="rounded-2xl overflow-hidden shadow-sm shadow-black/5"
           style={{ backgroundColor: colors.card }}
         >
-          {payments.map((payment, index) => (
-            <View
-              key={payment._id}
-              className="flex-row items-center justify-between p-4"
-              style={{
-                borderBottomWidth: index !== payments.length - 1 ? 1 : 0,
-                borderBottomColor: colors.border,
-              }}
-            >
-              <View className="flex-row items-center flex-1">
-                <View
-                  className="w-10 h-10 rounded-full items-center justify-center"
-                  style={{ backgroundColor: `${primaryColor}20` }}
-                >
-                  <MaterialIcons
-                    name={
-                      payment.method === "Efectivo"
-                        ? "attach-money"
-                        : "account-balance"
-                    }
-                    size={20}
-                    color={primaryColor}
-                  />
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text
-                    className="text-base font-semibold"
-                    style={{ color: colors.text }}
-                  >
-                    ${payment.amount}
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {new Date(payment.date).toLocaleDateString("es-ES", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text
-                    className="text-sm mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {payment.method}
-                  </Text>
-                  <View
-                    className="px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: "#D1FAE5" }}
-                  >
-                    <Text className="text-xs font-semibold text-green-700">
-                      {payment.status}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          ))}
+          <FlatList
+            data={payments}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
+            scrollEnabled={false}
+          />
         </View>
       ) : (
         <View

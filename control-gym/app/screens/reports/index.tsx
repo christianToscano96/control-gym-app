@@ -5,6 +5,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
@@ -399,16 +400,19 @@ const ReportsScreen = () => {
               description="No se encontraron reportes con los filtros aplicados"
             />
           ) : (
-            <View className="pb-6">
-              {filteredReports.map((report) => (
+            <FlatList
+              data={filteredReports}
+              renderItem={({ item: report }: { item: ReportData }) => (
                 <ReportCard
-                  key={report.id}
                   report={report}
                   onPress={() => handleReportPress(report)}
                   onExport={() => handleExportReport(report)}
                 />
-              ))}
-            </View>
+              )}
+              keyExtractor={(item: ReportData) => item.id}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              scrollEnabled={false}
+            />
           )}
         </ScrollView>
       </View>

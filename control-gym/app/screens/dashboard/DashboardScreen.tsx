@@ -5,70 +5,39 @@ import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
-import { useRouter, useFocusEffect } from "expo-router";
-import { useState, useCallback } from "react";
+import { API_BASE_URL } from "@/constants/api";
+import { useTheme } from "@/context/ThemeContext";
+import { useDashboardStatsQuery } from "@/hooks/queries/useDashboard";
+import { useProfileQuery } from "@/hooks/queries/useProfile";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "../../../stores/store";
-import { getProfile } from "@/api/user";
-import { getDashboardStats, DashboardStats } from "@/api/dashboard";
-import { API_BASE_URL } from "@/constants/api";
-import { useTheme } from "@/context/ThemeContext";
 
 export default function DashboardScreen() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
   const { colors } = useTheme();
   const isStaff = user?.role === "empleado";
 
-  const loadUserProfile = useCallback(async () => {
-    if (!user?.token) return;
-
-    try {
-      const profile = await getProfile();
-      if (profile.avatar) {
-        setUser(
-          {
-            ...user,
-            avatar: `${API_BASE_URL}${profile.avatar}`,
-          },
-          user.token,
-        );
-      }
-    } catch (error) {
-      console.error("Error al cargar perfil:", error);
-    }
-  }, [user?.token, setUser]);
-
-  const loadStats = useCallback(async () => {
-    if (!user?.token) return;
-
-    // Solo cargar estadísticas si es admin o superadmin
-    if (isStaff) {
-      setLoadingStats(false);
-      return;
-    }
-
-    try {
-      const dashboardStats = await getDashboardStats();
-      setStats(dashboardStats);
-    } catch (error) {
-      console.error("Error al cargar estadísticas:", error);
-    } finally {
-      setLoadingStats(false);
-    }
-  }, [user?.token, isStaff]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadUserProfile();
-      loadStats();
-    }, [loadUserProfile, loadStats]),
+  // ─── TanStack Query ──────────────────────────────────────────
+  const { data: profile } = useProfileQuery();
+  const { data: stats, isLoading: loadingStats } = useDashboardStatsQuery(
+    !isStaff,
   );
+
+  // Sync profile avatar to Zustand store
+  useEffect(() => {
+    if (profile?.avatar && user?.token) {
+      const avatarUrl = `${API_BASE_URL}${profile.avatar}`;
+      if (user.avatar !== avatarUrl) {
+        setUser({ ...user, avatar: avatarUrl }, user.token);
+      }
+    }
+  }, [profile?.avatar]);
 
   const handleActionPress = (action: string) => {
     if (action === "new-client") {

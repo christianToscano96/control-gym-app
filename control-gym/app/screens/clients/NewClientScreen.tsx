@@ -5,13 +5,13 @@ import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import PaymentMethodSelector from "@/components/ui/PaymentMethodSelector";
 import TextField from "@/components/ui/TextField";
 import Toast from "@/components/ui/Toast";
+import { useTheme } from "@/context/ThemeContext";
+import { useCreateClient } from "@/hooks/queries/useClients";
 import { useToast } from "@/hooks/useToast";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiClient } from "../../../api/client";
-import { useTheme } from "@/context/ThemeContext";
 
 export default function NewClientScreen() {
   const { colors } = useTheme();
@@ -26,51 +26,48 @@ export default function NewClientScreen() {
   >("efectivo");
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [period, setPeriod] = useState<string>("mensual");
-  const [loading, setLoading] = useState(false);
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  const createClientMutation = useCreateClient();
+  const loading = createClientMutation.isPending;
 
-  const handleAddClient = async () => {
+  const handleAddClient = () => {
     if (!firstName || !lastName || !email || !paymentMethod) {
       showWarning("Completa todos los campos obligatorios");
       return;
     }
-    setLoading(true);
-    try {
-      await apiClient("/api/clients", {
-        method: "POST",
-        body: {
-          firstName,
-          lastName,
-          email,
-          phone: cell,
-          instagramLink: instagram,
-          paymentMethod,
-          membershipType: "basico",
-          active: true,
-          startDate: startDate,
-          selected_period: period,
-          dni,
+    createClientMutation.mutate(
+      {
+        firstName,
+        lastName,
+        email,
+        phone: cell,
+        instagramLink: instagram,
+        paymentMethod,
+        membershipType: "basico",
+        active: true,
+        startDate: startDate,
+        selected_period: period,
+        dni,
+      },
+      {
+        onSuccess: () => {
+          showSuccess("Cliente agregado correctamente");
+          setFirstName("");
+          setLastName("");
+          setDni("");
+          setEmail("");
+          setCell("");
+          setInstagram("");
+          setPaymentMethod("efectivo");
+          setPeriod("mensual");
+          setTimeout(() => router.back(), 1000);
         },
-      });
-      showSuccess("Cliente agregado correctamente");
-      setFirstName("");
-      setLastName("");
-      setDni("");
-      setEmail("");
-      setCell("");
-      setInstagram("");
-      setPaymentMethod("efectivo");
-      setPeriod("mensual");
-      setTimeout(() => {
-        router.back();
-      }, 1000);
-    } catch (err) {
-      let message = "No se pudo agregar";
-      if (err instanceof Error) message = err.message;
-      showError(message);
-    } finally {
-      setLoading(false);
-    }
+        onError: (err) => {
+          const message = err instanceof Error ? err.message : "No se pudo agregar";
+          showError(message);
+        },
+      },
+    );
   };
 
   return (

@@ -2,18 +2,22 @@ import Avatar from "@/components/ui/Avatar";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import TextField from "@/components/ui/TextField";
+import Toast from "@/components/ui/Toast";
+import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
+import {
+  useProfileQuery,
+  useUpdateProfile,
+  useUploadAvatar,
+} from "@/hooks/queries/useProfile";
+import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/store";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { updateProfile, getProfile, uploadAvatar } from "@/api/user";
-import { useToast } from "@/hooks/useToast";
-import Toast from "@/components/ui/Toast";
-import * as ImagePicker from "expo-image-picker";
-import { API_BASE_URL } from "@/constants/api";
 
 export default function EditProfile() {
   const { primaryColor, colors } = useTheme();
@@ -24,72 +28,57 @@ export default function EditProfile() {
   const [phone, setPhone] = useState("");
   const [jobTitle, setJobTitle] = useState(user?.role || "");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
 
-  const loadUserProfile = useCallback(async () => {
-    if (!user?.token) {
-      setLoadingProfile(false);
-      return;
-    }
+  // ─── TanStack Query ──────────────────────────────────────────
+  const { data: profile, isLoading: loadingProfile } = useProfileQuery();
+  const updateProfileMutation = useUpdateProfile();
+  const uploadAvatarMutation = useUploadAvatar();
 
-    try {
-      const profile = await getProfile();
+  const loading = updateProfileMutation.isPending || uploadAvatarMutation.isPending;
+
+  // Sync profile data to local state when query resolves
+  useEffect(() => {
+    if (profile) {
       setFullName(profile.name || "");
       setPhone(profile.phone || "");
       setJobTitle(profile.role || "");
       if (profile.avatar) {
         setAvatarUri(`${API_BASE_URL}${profile.avatar}`);
       }
-    } catch (error) {
-      console.error("Error al cargar perfil:", error);
-    } finally {
-      setLoadingProfile(false);
     }
-  }, [user?.token]);
+  }, [profile]);
 
-  useEffect(() => {
-    loadUserProfile();
-  }, [loadUserProfile]);
-
-  const handleSaveChanges = async () => {
+  const handleSaveChanges = () => {
     if (!fullName.trim()) {
       showError("El nombre completo es requerido");
       return;
     }
-
     if (!user?.token) {
       showError("No hay sesión activa");
       return;
     }
 
-    setLoading(true);
-    try {
-      const updatedUser = await updateProfile({
-        name: fullName,
-        phone: phone || undefined,
-      });
-
-      // Actualizar el estado global del usuario
-      setUser(
-        {
-          id: updatedUser._id,
-          name: updatedUser.name,
-          role: updatedUser.role,
-          token: user.token,
+    updateProfileMutation.mutate(
+      { name: fullName, phone: phone || undefined },
+      {
+        onSuccess: (updatedUser: any) => {
+          setUser(
+            {
+              id: updatedUser._id,
+              name: updatedUser.name,
+              role: updatedUser.role,
+              token: user.token,
+            },
+            user.token,
+          );
+          showSuccess("Perfil actualizado correctamente");
+          setTimeout(() => router.back(), 1500);
         },
-        user.token,
-      );
-
-      showSuccess("Perfil actualizado correctamente");
-      setTimeout(() => {
-        router.back();
-      }, 1500);
-    } catch (error: any) {
-      showError(error.message || "No se pudo actualizar el perfil");
-    } finally {
-      setLoading(false);
-    }
+        onError: (err: any) => {
+          showError(err.message || "No se pudo actualizar el perfil");
+        },
+      },
+    );
   };
 
   const handleDiscardChanges = () => {
@@ -134,7 +123,7 @@ export default function EditProfile() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        await handleUploadAvatar(result.assets[0].uri);
+        handleUploadAvatar(result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error al tomar foto:", error);
@@ -159,7 +148,7 @@ export default function EditProfile() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        await handleUploadAvatar(result.assets[0].uri);
+        handleUploadAvatar(result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error al seleccionar imagen:", error);
@@ -167,33 +156,23 @@ export default function EditProfile() {
     }
   };
 
-  const handleUploadAvatar = async (imageUri: string) => {
+  const handleUploadAvatar = (imageUri: string) => {
     if (!user?.token) {
       showError("No hay sesión activa");
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await uploadAvatar(imageUri);
-      const avatarUrl = `${API_BASE_URL}${result.avatar}`;
-      setAvatarUri(avatarUrl);
-
-      // Actualizar el store con el nuevo avatar
-      setUser(
-        {
-          ...user,
-          avatar: avatarUrl,
-        },
-        user.token,
-      );
-
-      showSuccess("Foto actualizada correctamente");
-    } catch (error: any) {
-      showError(error.message || "Error al subir foto");
-    } finally {
-      setLoading(false);
-    }
+    uploadAvatarMutation.mutate(imageUri, {
+      onSuccess: (result: any) => {
+        const avatarUrl = `${API_BASE_URL}${result.avatar}`;
+        setAvatarUri(avatarUrl);
+        setUser({ ...user, avatar: avatarUrl }, user.token);
+        showSuccess("Foto actualizada correctamente");
+      },
+      onError: (err: any) => {
+        showError(err.message || "Error al subir foto");
+      },
+    });
   };
 
   return (

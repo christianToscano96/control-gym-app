@@ -14,13 +14,12 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/context/ThemeContext";
-import { createStaff } from "@/api/staff";
-import { useUserStore } from "@/stores/store";
+import { useCreateStaff } from "@/hooks/queries/useStaff";
 
 export default function AddStaffScreen() {
   const router = useRouter();
   const { colors, isDark, primaryColor } = useTheme();
-  const user = useUserStore((s) => s.user);
+  const createStaffMutation = useCreateStaff();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -32,7 +31,7 @@ export default function AddStaffScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const loading = createStaffMutation.isPending;
 
   const roles = [
     // TODO: Implementar entrenador en el futuro
@@ -88,55 +87,51 @@ export default function AddStaffScreen() {
     return true;
   };
 
-  const handleCreateUser = async () => {
+  const handleCreateUser = () => {
     if (!validateForm()) {
       return;
     }
 
-    try {
-      setLoading(true);
+    // Crear FormData para enviar datos con imagen
+    const formDataToSend = new FormData();
+    formDataToSend.append("name", formData.fullName);
+    formDataToSend.append("email", formData.email.toLowerCase());
+    formDataToSend.append("password", formData.password);
+    formDataToSend.append("role", formData.role);
 
-      // Crear FormData para enviar datos con imagen
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.fullName);
-      formDataToSend.append("email", formData.email.toLowerCase());
-      formDataToSend.append("password", formData.password);
-      formDataToSend.append("role", formData.role);
-
-      if (formData.phone) {
-        formDataToSend.append("phone", formData.phone);
-      }
-
-      // Agregar imagen si existe
-      if (profileImage) {
-        const uriParts = profileImage.split(".");
-        const fileType = uriParts[uriParts.length - 1];
-
-        formDataToSend.append("avatar", {
-          uri: profileImage,
-          name: `avatar.${fileType}`,
-          type: `image/${fileType}`,
-        } as any);
-      }
-
-      // Enviar al backend
-      await createStaff(formDataToSend);
-
-      Alert.alert("Éxito", "Staff creado exitosamente", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
-    } catch (error: any) {
-      console.error("Error al crear staff:", error);
-      Alert.alert(
-        "Error",
-        error.message || "Hubo un error al crear el staff. Inténtalo de nuevo.",
-      );
-    } finally {
-      setLoading(false);
+    if (formData.phone) {
+      formDataToSend.append("phone", formData.phone);
     }
+
+    // Agregar imagen si existe
+    if (profileImage) {
+      const uriParts = profileImage.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+
+      formDataToSend.append("avatar", {
+        uri: profileImage,
+        name: `avatar.${fileType}`,
+        type: `image/${fileType}`,
+      } as any);
+    }
+
+    createStaffMutation.mutate(formDataToSend, {
+      onSuccess: () => {
+        Alert.alert("Éxito", "Staff creado exitosamente", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]);
+      },
+      onError: (error: any) => {
+        console.error("Error al crear staff:", error);
+        Alert.alert(
+          "Error",
+          error.message || "Hubo un error al crear el staff. Inténtalo de nuevo.",
+        );
+      },
+    });
   };
 
   return (

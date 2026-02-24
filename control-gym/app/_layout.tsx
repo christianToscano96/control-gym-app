@@ -4,12 +4,14 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import "react-native-reanimated";
 import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
 import "../global.css";
+import { queryClient } from "../lib/queryClient";
 import { useUserStore } from "../stores/store";
 
 export const unstable_settings = {
@@ -36,42 +38,44 @@ export default function RootLayout() {
   }, [user, pathname]);
 
   return (
-    <CustomThemeProvider primaryColor="#78e08f">
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="login/index" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="login/register"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="profile"
-            options={{ title: "Perfil", headerBackTitle: "Volver" }}
-          />
-          <Stack.Screen
-            name="membership"
-            options={{ title: "Membresía", headerBackTitle: "Volver" }}
-          />
-          <Stack.Screen
-            name="screens/clients/NewClientScreen"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="screens/clients/client-details/index"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="screens/profile/index"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="screens/staff/index"
-            options={{ headerShown: false }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </CustomThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <CustomThemeProvider primaryColor="#78e08f">
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="login/index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="login/register"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="profile"
+              options={{ title: "Perfil", headerBackTitle: "Volver" }}
+            />
+            <Stack.Screen
+              name="membership"
+              options={{ title: "Membresía", headerBackTitle: "Volver" }}
+            />
+            <Stack.Screen
+              name="screens/clients/NewClientScreen"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/clients/client-details/index"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/profile/index"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/staff/index"
+              options={{ headerShown: false }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </CustomThemeProvider>
+    </QueryClientProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useTheme } from "@/context/ThemeContext";
@@ -7,12 +7,10 @@ import { CameraScanner } from "./CameraScanner";
 import { InfoCard } from "./InfoCard";
 import { ManualEntryModal } from "./ManualEntryModal";
 import { PermissionLoadingView, PermissionDeniedView } from "./PermissionViews";
-import { fetchClients } from "@/api/clients";
-import { useUserStore } from "@/stores/store";
+import { useClientsQuery } from "@/hooks/queries/useClients";
 
 const QRAccessScreen = () => {
   const { colors, primaryColor } = useTheme();
-  const user = useUserStore((state) => state.user);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
@@ -20,8 +18,9 @@ const QRAccessScreen = () => {
   const [manualEntryVisible, setManualEntryVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [clients, setClients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+
+  // ─── TanStack Query ──────────────────────────────────────────
+  const { data: clients = [], isLoading: loading } = useClientsQuery();
 
   // Efecto para buscar automáticamente cuando el usuario escribe
   useEffect(() => {
@@ -80,33 +79,16 @@ const QRAccessScreen = () => {
     setFlashEnabled(!flashEnabled);
   };
 
-  const loadClients = useCallback(async () => {
-    if (!user?.token) return;
-
-    setLoading(true);
-    try {
-      const data = await fetchClients();
-      setClients(data);
-    } catch (error) {
-      console.error("Error al cargar clientes:", error);
-      Alert.alert("Error", "No se pudieron cargar los clientes");
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.token]);
-
-  const openManualEntry = async () => {
+  const openManualEntry = () => {
     setManualEntryVisible(true);
     setSearchQuery("");
     setSelectedClient(null);
-    await loadClients();
   };
 
   const closeManualEntry = () => {
     setManualEntryVisible(false);
     setSearchQuery("");
     setSelectedClient(null);
-    setClients([]);
   };
 
   const handleManualAccess = () => {

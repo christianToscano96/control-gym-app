@@ -2,35 +2,65 @@ import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast from "@/components/ui/Toast";
 import { useTheme } from "@/context/ThemeContext";
+import { useClientDetailQuery, useDeleteClient } from "@/hooks/queries/useClients";
 import { useToast } from "@/hooks/useToast";
-import { useUserStore } from "@/stores/store";
-import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
-import React from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useClientDetails } from "@/hooks/useClientDetails";
-import { useClientActions } from "@/hooks/useClientActions";
 import {
   calculateExpirationDate,
   formatDate,
   hasExpired,
   isExpiringSoon,
 } from "@/utils/membershipUtils";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useLocalSearchParams, router } from "expo-router";
+import React from "react";
+import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ClientHeader } from "./components/ClientHeader";
-import { StatsCards } from "./components/StatsCards";
 import { ClientInfoCard } from "./components/ClientInfoCard";
 import { PaymentHistory } from "./components/PaymentHistory";
+import { StatsCards } from "./components/StatsCards";
+
+// Mock payment data - replace with actual API call when backend supports it
+const MOCK_PAYMENTS = [
+  {
+    _id: "1",
+    amount: 50,
+    date: "2026-01-15",
+    method: "Efectivo",
+    status: "Completado",
+  },
+  {
+    _id: "2",
+    amount: 50,
+    date: "2025-12-15",
+    method: "Transferencia",
+    status: "Completado",
+  },
+  {
+    _id: "3",
+    amount: 50,
+    date: "2025-11-15",
+    method: "Efectivo",
+    status: "Completado",
+  },
+];
 
 const UserDetailsScreen = () => {
   const { clientId } = useLocalSearchParams();
-  const { user } = useUserStore();
   const { primaryColor, colors } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
 
-  // Custom hooks
-  const { clientData, payments, loading, error } = useClientDetails(clientId);
-  const { deleting, handleDeleteClient } = useClientActions();
+  // ─── TanStack Query ──────────────────────────────────────────
+  const {
+    data: clientData,
+    isLoading: loading,
+    error: queryError,
+  } = useClientDetailQuery(clientId as string);
+
+  const deleteClientMutation = useDeleteClient();
+  const deleting = deleteClientMutation.isPending;
+
+  const error = queryError?.message || "";
 
   // Derived state
   const fullName =
@@ -49,11 +79,27 @@ const UserDetailsScreen = () => {
   const expirationLabel = expired ? "Expiró" : "Válido hasta";
 
   const onDeleteClient = () => {
-    handleDeleteClient(
-      clientData?.firstName,
-      clientId,
-      () => showSuccess("Cliente eliminado correctamente"),
-      (message) => showError(message),
+    Alert.alert(
+      "Eliminar Cliente",
+      `¿Estás seguro de que deseas eliminar a ${clientData?.firstName || "este cliente"}? Esta acción no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            deleteClientMutation.mutate(String(clientId), {
+              onSuccess: () => {
+                showSuccess("Cliente eliminado correctamente");
+                setTimeout(() => router.back(), 1000);
+              },
+              onError: (err) => {
+                showError(err.message || "No se pudo eliminar el cliente");
+              },
+            });
+          },
+        },
+      ],
     );
   };
 
@@ -116,6 +162,7 @@ const UserDetailsScreen = () => {
       </SafeAreaView>
     );
   }
+
   return (
     <SafeAreaView
       className="flex-1"
@@ -146,7 +193,7 @@ const UserDetailsScreen = () => {
           selectedPeriod={clientData.selected_period}
         />
 
-        <PaymentHistory payments={payments} primaryColor={primaryColor} />
+        <PaymentHistory payments={MOCK_PAYMENTS} primaryColor={primaryColor} />
       </ScrollView>
 
       {/* Action Buttons */}

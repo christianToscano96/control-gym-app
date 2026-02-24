@@ -29,7 +29,7 @@ export default function DashboardScreen() {
     if (!user?.token) return;
 
     try {
-      const profile = await getProfile(user.token);
+      const profile = await getProfile();
       if (profile.avatar) {
         setUser(
           {
@@ -54,7 +54,7 @@ export default function DashboardScreen() {
     }
 
     try {
-      const dashboardStats = await getDashboardStats(user.token);
+      const dashboardStats = await getDashboardStats();
       setStats(dashboardStats);
     } catch (error) {
       console.error("Error al cargar estadísticas:", error);

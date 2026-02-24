@@ -85,8 +85,7 @@ const QRAccessScreen = () => {
 
     setLoading(true);
     try {
-      const data = await fetchClients(user.token);
-      console.log("Clientes de la API:", data[0]); // Ver estructura real
+      const data = await fetchClients();
       setClients(data);
     } catch (error) {
       console.error("Error al cargar clientes:", error);

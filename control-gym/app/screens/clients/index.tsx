@@ -43,13 +43,13 @@ export default function ClientsScreen() {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchClients(user.token);
+      const data = await fetchClients();
       setClients(data);
 
       // Cargar staff solo si es admin
       if (isAdmin) {
         try {
-          const staffData = await fetchStaff(user.token);
+          const staffData = await fetchStaff();
           // Mapear staff a formato de cliente para reutilizar componente
           const mappedStaff = staffData.staff.map((s: any) => ({
             _id: s._id,

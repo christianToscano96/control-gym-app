@@ -29,10 +29,7 @@ const UserDetailsScreen = () => {
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   // Custom hooks
-  const { clientData, payments, loading, error } = useClientDetails(
-    user?.token,
-    clientId,
-  );
+  const { clientData, payments, loading, error } = useClientDetails(clientId);
   const { deleting, handleDeleteClient } = useClientActions();
 
   // Derived state
@@ -55,7 +52,6 @@ const UserDetailsScreen = () => {
     handleDeleteClient(
       clientData?.firstName,
       clientId,
-      user?.token,
       () => showSuccess("Cliente eliminado correctamente"),
       (message) => showError(message),
     );

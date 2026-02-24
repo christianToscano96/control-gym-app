@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
-import { API_BASE_URL } from "@/constants/api";
+import { apiClient } from "@/api/client";
 
 interface UseClientActionsReturn {
   deleting: boolean;
   handleDeleteClient: (
     clientName: string,
     clientId: string | string[],
-    token: string | undefined,
     onSuccess: () => void,
     onError: (message: string) => void
   ) => void;
@@ -20,7 +19,6 @@ export const useClientActions = (): UseClientActionsReturn => {
   const handleDeleteClient = (
     clientName: string,
     clientId: string | string[],
-    token: string | undefined,
     onSuccess: () => void,
     onError: (message: string) => void
   ) => {
@@ -36,19 +34,12 @@ export const useClientActions = (): UseClientActionsReturn => {
           text: "Eliminar",
           style: "destructive",
           onPress: async () => {
-            if (!token || !clientId) return;
+            if (!clientId) return;
             setDeleting(true);
             try {
-              const res = await fetch(
-                `${API_BASE_URL}/api/clients/${clientId}`,
-                {
-                  method: "DELETE",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-              if (!res.ok) throw new Error("No se pudo eliminar el cliente");
+              await apiClient(`/api/clients/${clientId}`, {
+                method: "DELETE",
+              });
               onSuccess();
               setTimeout(() => {
                 router.back();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchClientById } from "@/api/clients";
+import { useUserStore } from "@/stores/store";
 
 interface Payment {
   _id: string;
@@ -17,9 +18,9 @@ interface UseClientDetailsReturn {
 }
 
 export const useClientDetails = (
-  token: string | undefined,
   clientId: string | string[]
 ): UseClientDetailsReturn => {
+  const user = useUserStore((s) => s.user);
   const [clientData, setClientData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,11 +28,11 @@ export const useClientDetails = (
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!token || !clientId) return;
+      if (!user?.token || !clientId) return;
       setLoading(true);
       setError("");
       try {
-        const data = await fetchClientById(token, String(clientId));
+        const data = await fetchClientById(String(clientId));
         setClientData(data);
 
         // Mock payment data - replace with actual API call
@@ -65,7 +66,7 @@ export const useClientDetails = (
       }
     };
     fetchData();
-  }, [clientId, token]);
+  }, [clientId, user?.token]);
 
   return { clientData, payments, loading, error };
 };

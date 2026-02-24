@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
-import { API_BASE_URL } from "@/constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiClient } from "@/api/client";
 import { ReportData } from "@/components/ui/ReportCard";
 
 export interface ReportFilters {
@@ -21,19 +20,7 @@ export const useReports = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/reports`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al cargar reportes");
-      }
-
-      const data = await response.json();
+      const data = await apiClient<ReportData[]>("/reports");
       setReports(data);
       return data;
     } catch (err) {
@@ -95,7 +82,6 @@ export const useReports = () => {
   const exportReport = useCallback(
     async (reportId: string, reportType: string) => {
       try {
-        const token = await AsyncStorage.getItem("token");
         const exportEndpoints: { [key: string]: string } = {
           clients: "/export/clients/csv",
           payments: "/export/payments/csv",
@@ -106,19 +92,8 @@ export const useReports = () => {
         };
 
         const endpoint = exportEndpoints[reportType] || "/export/report/pdf";
-        const url = `${API_BASE_URL}${endpoint}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Error al exportar el reporte");
-        }
-
-        return response.blob();
+        const response = await apiClient<Response>(endpoint);
+        return (response as unknown as Response).blob();
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Error al exportar";
@@ -133,21 +108,10 @@ export const useReports = () => {
     async (type: string, params?: Record<string, any>) => {
       setLoading(true);
       try {
-        const token = await AsyncStorage.getItem("token");
-        const response = await fetch(`${API_BASE_URL}/reports/generate`, {
+        const newReport = await apiClient<ReportData>("/reports/generate", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ type, ...params }),
+          body: { type, ...params },
         });
-
-        if (!response.ok) {
-          throw new Error("Error al generar el reporte");
-        }
-
-        const newReport = await response.json();
         setReports((prev) => [newReport, ...prev]);
         return newReport;
       } catch (err) {

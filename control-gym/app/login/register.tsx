@@ -8,7 +8,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ModalCustom from "../../components/ui/ModalCustom";
 import TextField from "../../components/ui/TextField";
-import { API_BASE_URL } from "../../constants/api";
+import { apiClient } from "../../api/client";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function RegisterScreen() {
@@ -24,20 +24,18 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/register`, {
+      await apiClient("/api/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           adminName,
           adminEmail,
           adminPassword,
           gymName,
           gymAddress,
           plan,
-        }),
+        },
+        skipAuth: true,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Error en el registro");
       Alert.alert("Éxito", "Cuenta y gimnasio creados correctamente");
       router.push("/login");
     } catch (err) {

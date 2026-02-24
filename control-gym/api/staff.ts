@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/constants/api";
+import { apiClient } from "./client";
 
 export interface StaffData {
   name: string;
@@ -26,154 +26,54 @@ export interface StaffResponse {
 }
 
 // Crear nuevo staff
-export async function createStaff(token: string, formData: FormData) {
-  const res = await fetch(`${API_BASE_URL}/api/staff`, {
+export async function createStaff(formData: FormData) {
+  return apiClient("/api/staff", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: formData,
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Error al crear staff");
-  }
-
-  return data;
 }
 
 // Obtener todos los staff
-export async function fetchStaff(token: string) {
-  const res = await fetch(`${API_BASE_URL}/api/staff`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Error al obtener staff");
-  }
-
-  return res.json();
+export async function fetchStaff() {
+  return apiClient("/api/staff");
 }
 
 // Obtener un staff por ID
-export async function fetchStaffById(token: string, staffId: string) {
-  const res = await fetch(`${API_BASE_URL}/api/staff/${staffId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Error al obtener staff");
-  }
-
-  return res.json();
+export async function fetchStaffById(staffId: string) {
+  return apiClient(`/api/staff/${staffId}`);
 }
 
 // Actualizar staff
-export async function updateStaff(
-  token: string,
-  staffId: string,
-  formData: FormData,
-) {
-  const res = await fetch(`${API_BASE_URL}/api/staff/${staffId}`, {
+export async function updateStaff(staffId: string, formData: FormData) {
+  return apiClient(`/api/staff/${staffId}`, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: formData,
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Error al actualizar staff");
-  }
-
-  return data;
 }
 
 // Cambiar contraseña del staff
-export async function updateStaffPassword(
-  token: string,
-  staffId: string,
-  password: string,
-) {
-  const res = await fetch(`${API_BASE_URL}/api/staff/${staffId}/password`, {
+export async function updateStaffPassword(staffId: string, password: string) {
+  return apiClient(`/api/staff/${staffId}/password`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ password }),
+    body: { password },
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Error al cambiar contraseña");
-  }
-
-  return data;
 }
 
 // Activar/desactivar staff
-export async function toggleStaffStatus(token: string, staffId: string) {
-  const res = await fetch(
-    `${API_BASE_URL}/api/staff/${staffId}/toggle-status`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Error al cambiar estado");
-  }
-
-  return data;
+export async function toggleStaffStatus(staffId: string) {
+  return apiClient(`/api/staff/${staffId}/toggle-status`, {
+    method: "PATCH",
+  });
 }
 
 // Eliminar staff
-export async function deleteStaff(token: string, staffId: string) {
-  const res = await fetch(`${API_BASE_URL}/api/staff/${staffId}`, {
+export async function deleteStaff(staffId: string) {
+  return apiClient(`/api/staff/${staffId}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Error al eliminar staff");
-  }
-
-  return data;
 }
 
 // Buscar staff
-export async function searchStaff(token: string, query: string) {
-  const res = await fetch(
-    `${API_BASE_URL}/api/staff/search/${encodeURIComponent(query)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  if (!res.ok) {
-    throw new Error("Error al buscar staff");
-  }
-
-  return res.json();
+export async function searchStaff(query: string) {
+  return apiClient(`/api/staff/search/${encodeURIComponent(query)}`);
 }

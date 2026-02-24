@@ -96,17 +96,6 @@ export default function AddStaffScreen() {
     try {
       setLoading(true);
 
-      // Obtener token del usuario
-      const token = user?.token;
-      if (!token) {
-        Alert.alert(
-          "Error",
-          "No se encontró el token de autenticación. Por favor, inicia sesión nuevamente.",
-        );
-        router.replace("/login");
-        return;
-      }
-
       // Crear FormData para enviar datos con imagen
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.fullName);
@@ -131,7 +120,7 @@ export default function AddStaffScreen() {
       }
 
       // Enviar al backend
-      await createStaff(token, formDataToSend);
+      await createStaff(formDataToSend);
 
       Alert.alert("Éxito", "Staff creado exitosamente", [
         {

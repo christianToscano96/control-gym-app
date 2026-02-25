@@ -4,7 +4,6 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
-  ActivityIndicator,
   FlatList,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
@@ -15,6 +14,7 @@ import DateSelect from "@/components/ui/DateSelect";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import ReportCard, { ReportData } from "@/components/ui/ReportCard";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonReportsList } from "@/components/ui/skeletons";
 import { API_BASE_URL } from "@/constants/api";
 import { SafeAreaView } from "react-native-safe-area-context";
 // TODO: Descomentar cuando se habilite la exportación con las dependencias
@@ -390,9 +390,7 @@ const ReportsScreen = () => {
 
           {/* Lista de reportes */}
           {loading ? (
-            <View className="py-12">
-              <ActivityIndicator size="large" color={primaryColor} />
-            </View>
+            <SkeletonReportsList count={6} />
           ) : filteredReports.length === 0 ? (
             <EmptyState
               icon="assessment"

@@ -1,8 +1,12 @@
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast from "@/components/ui/Toast";
+import { SkeletonClientDetail } from "@/components/ui/skeletons";
 import { useTheme } from "@/context/ThemeContext";
-import { useClientDetailQuery, useDeleteClient } from "@/hooks/queries/useClients";
+import {
+  useClientDetailQuery,
+  useDeleteClient,
+} from "@/hooks/queries/useClients";
 import { useToast } from "@/hooks/useToast";
 import {
   calculateExpirationDate,
@@ -13,7 +17,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import React from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ClientHeader } from "./components/ClientHeader";
 import { ClientInfoCard } from "./components/ClientInfoCard";
@@ -109,12 +113,10 @@ const UserDetailsScreen = () => {
         className="flex-1"
         style={{ backgroundColor: colors.background }}
       >
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color={primaryColor} />
-          <Text className="mt-4" style={{ color: colors.textSecondary }}>
-            Cargando información...
-          </Text>
-        </View>
+        <HeaderTopScrenn title="Detalles del Cliente" />
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <SkeletonClientDetail />
+        </ScrollView>
       </SafeAreaView>
     );
   }

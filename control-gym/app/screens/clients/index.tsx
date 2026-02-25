@@ -1,6 +1,7 @@
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import SearchInput from "@/components/ui/SearchInput";
+import { SkeletonClientsList } from "@/components/ui/skeletons";
 import { useTheme } from "@/context/ThemeContext";
 import { useClientsQuery } from "@/hooks/queries/useClients";
 import { useStaffQuery } from "@/hooks/queries/useStaff";
@@ -127,9 +128,7 @@ export default function ClientsScreen() {
         </View>
 
         {loading ? (
-          <Text style={{ color: colors.text }} className="text-center mt-10">
-            Cargando clientes...
-          </Text>
+          <SkeletonClientsList count={8} />
         ) : error ? (
           <Text style={{ color: colors.error }} className="text-center mt-10">
             {error}

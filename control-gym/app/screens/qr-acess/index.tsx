@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
 import { useCameraPermissions } from "expo-camera";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/context/ThemeContext";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import { CameraScanner } from "./CameraScanner";
@@ -10,6 +11,7 @@ import { PermissionLoadingView, PermissionDeniedView } from "./PermissionViews";
 import { useClientsQuery } from "@/hooks/queries/useClients";
 import { apiClient } from "@/api/client";
 import { AccessResultCard, AccessResult } from "./AccessResultCard";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 
 const QRAccessScreen = () => {
   const { colors, primaryColor } = useTheme();
@@ -24,6 +26,7 @@ const QRAccessScreen = () => {
   const isProcessingRef = useRef(false);
 
   // ─── TanStack Query ──────────────────────────────────────────
+  const queryClient = useQueryClient();
   const { data: clients = [], isLoading: loading } = useClientsQuery();
 
   // Efecto para buscar automáticamente cuando el usuario escribe
@@ -63,11 +66,20 @@ const QRAccessScreen = () => {
     setCameraActive(false);
 
     try {
-      const response = await apiClient<AccessResult>("/api/access/validate-qr", {
-        method: "POST",
-        body: { clientId: data },
-      });
+      const response = await apiClient<AccessResult>(
+        "/api/access/validate-qr",
+        {
+          method: "POST",
+          body: { clientId: data },
+        },
+      );
       setAccessResult(response);
+
+      // Invalidar queries del dashboard si el acceso fue exitoso
+      if (response.allowed) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+        queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+      }
     } catch (error: any) {
       setAccessResult({
         allowed: false,
@@ -105,16 +117,29 @@ const QRAccessScreen = () => {
   const handleManualAccess = async () => {
     if (selectedClient) {
       try {
-        const response = await apiClient<AccessResult>("/api/access/validate-qr", {
-          method: "POST",
-          body: { clientId: selectedClient._id },
-        });
+        const response = await apiClient<AccessResult>(
+          "/api/access/validate-qr",
+          {
+            method: "POST",
+            body: { clientId: selectedClient._id },
+          },
+        );
         closeManualEntry();
         setAccessResult(response);
+
+        // Invalidar queries del dashboard si el acceso fue exitoso
+        if (response.allowed) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.dashboard.stats,
+          });
+          queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+        }
       } catch (error: any) {
-        Alert.alert("Error", error?.message || "No se pudo registrar el acceso", [
-          { text: "OK" },
-        ]);
+        Alert.alert(
+          "Error",
+          error?.message || "No se pudo registrar el acceso",
+          [{ text: "OK" }],
+        );
       }
     }
   };
@@ -122,16 +147,12 @@ const QRAccessScreen = () => {
   const handleDenyAccess = () => {
     if (selectedClient) {
       const fullName = `${selectedClient.firstName} ${selectedClient.lastName}`;
-      Alert.alert(
-        "Acceso Denegado",
-        `Acceso denegado para ${fullName}`,
-        [
-          {
-            text: "OK",
-            onPress: () => closeManualEntry(),
-          },
-        ],
-      );
+      Alert.alert("Acceso Denegado", `Acceso denegado para ${fullName}`, [
+        {
+          text: "OK",
+          onPress: () => closeManualEntry(),
+        },
+      ]);
     }
   };
 

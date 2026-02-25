@@ -13,6 +13,7 @@ export interface IClient extends Document {
   startDate: Date;
   endDate?: Date;
   selected_period?: string;
+  qrCode?: string;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -37,6 +38,7 @@ const ClientSchema = new Schema<IClient>(
     startDate: { type: Date, required: true },
     endDate: { type: Date },
     selected_period: { type: String },
+    qrCode: { type: String },
   },
   { timestamps: true },
 );

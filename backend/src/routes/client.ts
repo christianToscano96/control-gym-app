@@ -7,6 +7,7 @@ import {
   AuthRequest,
 } from "../middleware/auth";
 import { sendWelcomeEmail } from "../services/emailService";
+import QRCode from "qrcode";
 
 const router = Router();
 
@@ -54,6 +55,20 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
 
   const client = new Client({ ...req.body, gym: gymId });
   await client.save();
+
+  // Generar QR Code con el ID del cliente
+  try {
+    const qrDataUrl = await QRCode.toDataURL(String(client._id), {
+      width: 300,
+      margin: 2,
+      color: { dark: "#111827", light: "#ffffff" },
+    });
+    client.qrCode = qrDataUrl;
+    await client.save();
+  } catch (qrErr) {
+    console.error("Error generando QR code:", qrErr);
+  }
+
   // Actualizar contador de clientes
   gym.clientsCount = currentClients + 1;
   await gym.save();
@@ -69,6 +84,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
       endDate: client.endDate,
       gmailUser: gym.emailConfig.gmailUser,
       gmailAppPassword: gym.emailConfig.gmailAppPassword,
+      qrCodeDataUrl: client.qrCode,
     }).catch((err) =>
       console.error("Error enviando email de bienvenida:", err),
     );

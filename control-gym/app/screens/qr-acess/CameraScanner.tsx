@@ -36,92 +36,92 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   return (
     <View style={styles.cameraContainer}>
       <CameraView
-        style={styles.camera}
+        style={StyleSheet.absoluteFill}
         facing="back"
         onBarcodeScanned={scanned ? undefined : onBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
-      >
-        {/* Overlay with scan area */}
-        <View style={styles.overlay}>
-          <View style={styles.overlayTop} />
+      />
 
-          <View style={styles.overlayMiddle}>
-            <View style={styles.overlaySide} />
+      {/* Overlay with scan area (absolute, on top of camera) */}
+      <View style={[styles.overlay, StyleSheet.absoluteFill]}>
+        <View style={styles.overlayTop} />
 
+        <View style={styles.overlayMiddle}>
+          <View style={styles.overlaySide} />
+
+          <View
+            style={[
+              styles.scanArea,
+              {
+                width: SCAN_AREA_SIZE,
+                height: SCAN_AREA_SIZE,
+                borderColor: primaryColor,
+              },
+            ]}
+          >
+            {/* Corner decorations */}
             <View
               style={[
-                styles.scanArea,
-                {
-                  width: SCAN_AREA_SIZE,
-                  height: SCAN_AREA_SIZE,
-                  borderColor: primaryColor,
-                },
+                styles.corner,
+                styles.cornerTopLeft,
+                { borderColor: primaryColor },
               ]}
-            >
-              {/* Corner decorations */}
-              <View
-                style={[
-                  styles.corner,
-                  styles.cornerTopLeft,
-                  { borderColor: primaryColor },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  styles.cornerTopRight,
-                  { borderColor: primaryColor },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  styles.cornerBottomLeft,
-                  { borderColor: primaryColor },
-                ]}
-              />
-              <View
-                style={[
-                  styles.corner,
-                  styles.cornerBottomRight,
-                  { borderColor: primaryColor },
-                ]}
-              />
-            </View>
-
-            <View style={styles.overlaySide} />
-          </View>
-
-          <View style={styles.overlayBottom}>
-            <Text className="text-white text-center text-lg font-semibold mb-4">
-              Alinea el código QR dentro del marco
-            </Text>
-          </View>
-        </View>
-
-        {/* Controls */}
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: cardColor }]}
-            onPress={onToggleFlash}
-          >
-            <MaterialIcons
-              name={flashEnabled ? "flash-on" : "flash-off"}
-              size={28}
-              color={textColor}
             />
-          </TouchableOpacity>
+            <View
+              style={[
+                styles.corner,
+                styles.cornerTopRight,
+                { borderColor: primaryColor },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                styles.cornerBottomLeft,
+                { borderColor: primaryColor },
+              ]}
+            />
+            <View
+              style={[
+                styles.corner,
+                styles.cornerBottomRight,
+                { borderColor: primaryColor },
+              ]}
+            />
+          </View>
 
-          <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: cardColor }]}
-            onPress={onClose}
-          >
-            <MaterialIcons name="close" size={28} color={textColor} />
-          </TouchableOpacity>
+          <View style={styles.overlaySide} />
         </View>
-      </CameraView>
+
+        <View style={styles.overlayBottom}>
+          <Text className="text-white text-center text-lg font-semibold mb-4">
+            Alinea el código QR dentro del marco
+          </Text>
+        </View>
+      </View>
+
+      {/* Controls (absolute, on top of everything) */}
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={[styles.controlButton, { backgroundColor: cardColor }]}
+          onPress={onToggleFlash}
+        >
+          <MaterialIcons
+            name={flashEnabled ? "flash-on" : "flash-off"}
+            size={28}
+            color={textColor}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.controlButton, { backgroundColor: cardColor }]}
+          onPress={onClose}
+        >
+          <MaterialIcons name="close" size={28} color={textColor} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };

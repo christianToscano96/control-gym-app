@@ -40,7 +40,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <CustomThemeProvider primaryColor="#78e08f">
-        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
           <Stack>
             <Stack.Screen name="login/index" options={{ headerShown: false }} />
             <Stack.Screen
@@ -70,6 +72,10 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="screens/staff/index"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/config/EmailConfigScreen"
               options={{ headerShown: false }}
             />
           </Stack>

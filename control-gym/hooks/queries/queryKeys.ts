@@ -20,4 +20,7 @@ export const queryKeys = {
   reports: {
     all: ["reports"] as const,
   },
+  emailConfig: {
+    current: ["emailConfig"] as const,
+  },
 };

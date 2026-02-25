@@ -1,5 +1,10 @@
 import { Schema, model, Document } from "mongoose";
 
+export interface IEmailConfig {
+  gmailUser: string;
+  gmailAppPassword: string;
+}
+
 export interface IGym extends Document {
   name: string;
   address: string;
@@ -7,6 +12,7 @@ export interface IGym extends Document {
   plan: "basico" | "pro" | "proplus";
   active: boolean;
   clientsCount: number;
+  emailConfig?: IEmailConfig;
 }
 
 const GymSchema = new Schema<IGym>(
@@ -17,6 +23,10 @@ const GymSchema = new Schema<IGym>(
     plan: { type: String, enum: ["basico", "pro", "proplus"], required: true },
     active: { type: Boolean, default: true },
     clientsCount: { type: Number, default: 0 },
+    emailConfig: {
+      gmailUser: { type: String },
+      gmailAppPassword: { type: String },
+    },
   },
   { timestamps: true },
 );

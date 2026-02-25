@@ -23,11 +23,36 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({
   maxValue = 100,
 }) => {
   const { primaryColor, colors } = useTheme();
-  const chartData = data.map((item) =>
-    item.label === "6PM"
-      ? { ...item, frontColor: primaryColor }
-      : { ...item, frontColor: "#E2E8F0" },
-  );
+
+  // Encontrar el valor máximo para resaltar la barra pico
+  const peakValue = data.length > 0 ? Math.max(...data.map((d) => d.value)) : 0;
+  const dynamicMax = peakValue > 0 ? Math.ceil(peakValue * 1.2) : maxValue;
+
+  const chartData = data.map((item) => ({
+    ...item,
+    frontColor: item.value === peakValue && peakValue > 0 ? primaryColor : "#E2E8F0",
+  }));
+
+  if (data.length === 0) {
+    return (
+      <View
+        style={{ backgroundColor: colors.card }}
+        className="rounded-2xl p-5 my-2 shadow-sm shadow-black/5"
+      >
+        <Text style={{ color: colors.text }} className="text-xl font-extrabold">
+          {title}
+        </Text>
+        <Text style={{ color: colors.textSecondary }} className="text-sm mb-4">
+          {subtitle}
+        </Text>
+        <View className="items-center py-8">
+          <Text style={{ color: colors.textSecondary }} className="text-sm">
+            Sin ingresos registrados hoy
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -46,28 +71,28 @@ const PeakHoursChart: React.FC<PeakHoursChartProps> = ({
       >
         <BarChart
           data={chartData}
-          barWidth={22}
-          spacing={25}
+          barWidth={16}
+          spacing={12}
           roundedTop
           hideRules
           hideYAxisText
           yAxisThickness={0}
           xAxisThickness={0}
           noOfSections={3}
-          maxValue={maxValue}
+          maxValue={dynamicMax}
           renderTooltip={(item: { value: number }) => (
             <View className="mb-1">
               <Text
                 className="text-[10px] font-bold"
                 style={{ color: primaryColor }}
               >
-                {item.value}%
+                {item.value}
               </Text>
             </View>
           )}
           xAxisLabelTextStyle={{
             color: primaryColor,
-            fontSize: 10,
+            fontSize: 8,
             fontWeight: "600",
             marginTop: 10,
           }}

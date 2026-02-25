@@ -47,7 +47,7 @@ router.get(
       // Contar check-ins del día (ingresos del día)
       const todayCheckIns = await AccessLog.countDocuments({
         gym: gymId,
-        timestamp: { $gte: today },
+        date: { $gte: today },
       });
 
       // Contar check-ins de ayer para comparar
@@ -55,7 +55,7 @@ router.get(
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayCheckIns = await AccessLog.countDocuments({
         gym: gymId,
-        timestamp: { $gte: yesterday, $lt: today },
+        date: { $gte: yesterday, $lt: today },
       });
 
       // Calcular porcentaje de cambio de ingresos
@@ -127,6 +127,38 @@ router.get(
             )
           : 0;
 
+      // Horas pico del día (accesos agrupados por hora)
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const peakHoursRaw = await AccessLog.aggregate([
+        {
+          $match: {
+            gym: gymId,
+            date: { $gte: today, $lt: tomorrow },
+          },
+        },
+        {
+          $group: {
+            _id: { $hour: "$date" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      // Mapear a franjas horarias legibles
+      const hourLabels: Record<number, string> = {
+        6: "6AM", 7: "7AM", 8: "8AM", 9: "9AM", 10: "10AM", 11: "11AM",
+        12: "12PM", 13: "1PM", 14: "2PM", 15: "3PM", 16: "4PM", 17: "5PM",
+        18: "6PM", 19: "7PM", 20: "8PM", 21: "9PM", 22: "10PM",
+      };
+
+      // Crear array con todas las horas del gym (6AM-10PM)
+      const peakHours = Object.entries(hourLabels).map(([hour, label]) => {
+        const found = peakHoursRaw.find((h: any) => h._id === Number(hour));
+        return { label, value: found ? found.count : 0 };
+      });
+
       res.json({
         totalClients,
         clientsPercent: `${clientsPercent > 0 ? "+" : ""}${clientsPercent}%`,
@@ -134,6 +166,7 @@ router.get(
         checkInsPercent: `${checkInsPercent > 0 ? "+" : ""}${checkInsPercent}%`,
         monthlyRevenue,
         revenuePercent: `${revenuePercent > 0 ? "+" : ""}${revenuePercent}%`,
+        peakHours,
       });
     } catch (err) {
       res

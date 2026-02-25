@@ -42,6 +42,36 @@ router.get(
   },
 );
 
+// Obtener accesos recientes del gimnasio (para dashboard)
+router.get(
+  "/recent",
+  authenticateJWT,
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = req.user.gym;
+      const logs = await AccessLog.find({ gym: gymId })
+        .sort({ date: -1 })
+        .limit(10)
+        .populate("client", "firstName lastName membershipType");
+
+      const recentCheckIns = logs
+        .filter((log: any) => log.client)
+        .map((log: any) => ({
+          _id: log._id,
+          clientName: `${log.client.firstName} ${log.client.lastName}`,
+          membershipType: log.client.membershipType,
+          method: log.method,
+          date: log.date,
+        }));
+
+      res.json(recentCheckIns);
+    } catch (err) {
+      res.status(500).json({ message: "Error al obtener accesos recientes" });
+    }
+  },
+);
+
 // Validar acceso por QR
 router.post(
   "/validate-qr",

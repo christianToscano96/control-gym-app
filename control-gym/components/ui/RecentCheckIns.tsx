@@ -1,50 +1,49 @@
 import React, { useCallback, useMemo } from "react";
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, FlatList, ActivityIndicator } from "react-native";
 import Avatar from "./Avatar";
 import { useTheme } from "@/context/ThemeContext";
+import { useRecentCheckInsQuery } from "@/hooks/queries/useDashboard";
+import { RecentCheckIn } from "@/api/dashboard";
 
-type CheckIn = {
-  id: string;
-  name: string;
-  membership: string;
-  time: string;
-  image: string;
+const membershipLabels: Record<string, string> = {
+  basico: "Básico",
+  pro: "Pro",
+  proplus: "Pro+",
 };
 
-const CHECK_INS: CheckIn[] = [
-  {
-    id: "1",
-    name: "Jordan Smith",
-    membership: "Elite",
-    time: "Just now",
-    image: "https://i.pravatar.cc/150?u=jordan",
-  },
-  {
-    id: "2",
-    name: "Sarah Connor",
-    membership: "Basic",
-    time: "12 mins ago",
-    image: "https://i.pravatar.cc/150?u=sarah",
-  },
-];
+function formatTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return "Justo ahora";
+  if (diffMin < 60) return `Hace ${diffMin} min`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `Hace ${diffHours}h`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `Hace ${diffDays}d`;
+}
 
 const RecentCheckIns: React.FC = () => {
   const { colors } = useTheme();
+  const { data: checkIns = [], isLoading } = useRecentCheckInsQuery();
 
   const renderItem = useCallback(
-    ({ item }: { item: CheckIn }) => (
+    ({ item }: { item: RecentCheckIn }) => (
       <View
         style={{ backgroundColor: colors.card }}
         className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
       >
-        <Avatar size="md" uri={item.image} />
+        <Avatar size="md" name={item.clientName} />
 
         <View className="flex-1 ml-4">
           <Text
             style={{ color: colors.text }}
             className="text-[16px] font-bold mb-0.5"
+            numberOfLines={1}
           >
-            {item.name}
+            {item.clientName}
           </Text>
           <Text style={{ color: colors.textSecondary }} className="text-[13px]">
             Membresía:{" "}
@@ -52,7 +51,7 @@ const RecentCheckIns: React.FC = () => {
               style={{ color: colors.textSecondary }}
               className="font-medium"
             >
-              {item.membership}
+              {membershipLabels[item.membershipType] || item.membershipType}
             </Text>
           </Text>
         </View>
@@ -62,9 +61,8 @@ const RecentCheckIns: React.FC = () => {
             style={{ color: colors.text }}
             className="text-[12px] font-bold"
           >
-            {item.time}
+            {formatTimeAgo(item.date)}
           </Text>
-          {/* Punto verde de estado activo */}
           <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
         </View>
       </View>
@@ -72,7 +70,7 @@ const RecentCheckIns: React.FC = () => {
     [colors.card, colors.text, colors.textSecondary],
   );
 
-  const keyExtractor = useCallback((item: CheckIn) => item.id, []);
+  const keyExtractor = useCallback((item: RecentCheckIn) => item._id, []);
 
   const listHeader = useMemo(
     () => (
@@ -83,23 +81,33 @@ const RecentCheckIns: React.FC = () => {
         >
           Check-ins Recientes
         </Text>
-        <TouchableOpacity>
-          <Text className="text-[14px] font-bold text-[#66BB6A] tracking-wide">
-            VER TODOS
-          </Text>
-        </TouchableOpacity>
       </View>
     ),
     [colors.text],
   );
 
+  const listEmpty = useMemo(
+    () =>
+      isLoading ? (
+        <ActivityIndicator color={colors.textSecondary} className="py-8" />
+      ) : (
+        <View className="items-center py-8">
+          <Text style={{ color: colors.textSecondary }} className="text-sm">
+            Sin check-ins recientes
+          </Text>
+        </View>
+      ),
+    [isLoading, colors.textSecondary],
+  );
+
   return (
     <View className="my-5 px-1">
       <FlatList
-        data={CHECK_INS}
+        data={checkIns}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
         scrollEnabled={false}
       />
     </View>

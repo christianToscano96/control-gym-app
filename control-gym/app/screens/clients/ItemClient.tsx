@@ -13,41 +13,43 @@ interface ItemClientProps {
   status: string;
 }
 
-const ItemClient = React.memo(({ clientId, avatarUri, name, status }: ItemClientProps) => {
-  const { colors } = useTheme();
-  
-  const handlePress = useCallback(() => {
-    router.push({
-      pathname: "/screens/clients/client-details",
-      params: { clientId },
-    });
-  }, [clientId]);
+const ItemClient = React.memo(
+  ({ clientId, avatarUri, name, status }: ItemClientProps) => {
+    const { colors } = useTheme();
 
-  return (
-    <View
-      style={{ backgroundColor: colors.card, borderColor: colors.border }}
-      className="w-full h-20 rounded-2xl mb-3 border flex-row items-center p-3 relative"
-    >
-      <Avatar size="sm" uri={avatarUri} />
-      <Text
-        style={{ color: colors.text }}
-        className="flex-1 text-lg font-semibold ml-4"
+    const handlePress = useCallback(() => {
+      router.push({
+        pathname: "/screens/clients/client-details",
+        params: { clientId },
+      });
+    }, [clientId]);
+
+    return (
+      <View
+        style={{ backgroundColor: colors.card, borderColor: colors.border }}
+        className="w-full h-20 rounded-2xl mb-3 border flex-row items-center p-3 relative"
       >
-        {name || "John Doe"}
-      </Text>
-      <View className="mr-1">
-        <Badge label={status || "None"} />
+        <Avatar size="sm" uri={avatarUri} />
+        <Text
+          style={{ color: colors.text }}
+          className="flex-1 text-lg font-semibold ml-4"
+        >
+          {name || "John Doe"}
+        </Text>
+        <View className="mr-1">
+          <Badge label={status || "None"} />
+        </View>
+        <View>
+          <MaterialIcons
+            name="chevron-right"
+            size={28}
+            color={colors.textSecondary}
+            onPress={handlePress}
+          />
+        </View>
       </View>
-      <View>
-        <MaterialIcons
-          name="chevron-right"
-          size={28}
-          color={colors.textSecondary}
-          onPress={handlePress}
-        />
-      </View>
-    </View>
-  );
-});
+    );
+  },
+);
 
 export default ItemClient;

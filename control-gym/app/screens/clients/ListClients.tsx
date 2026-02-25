@@ -9,36 +9,42 @@ interface ListClientsProps {
 const ListClients = ({ clients }: ListClientsProps) => {
   const { colors } = useTheme();
 
-  const renderItem = useCallback(({ item }: { item: any }) => (
-    <ItemClient
-      name={item.firstName + " " + item.lastName}
-      status={item.active ? "Activo" : "Inactivo"}
-      avatarUri={
-        item.avatarUri ||
-        "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
-      }
-      clientId={item._id}
-    />
-  ), []);
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <ItemClient
+        name={item.firstName + " " + item.lastName}
+        status={item.active ? "Activo" : "Inactivo"}
+        avatarUri={
+          item.avatarUri ||
+          "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
+        }
+        clientId={item._id}
+      />
+    ),
+    [],
+  );
 
   const keyExtractor = useCallback((item: any) => item._id, []);
 
-  const ListHeaderComponent = useMemo(() => () => (
-    <View className="flex flex-row justify-between mb-4">
-      <Text
-        style={{ color: colors.textSecondary }}
-        className="text-lg font-bold"
-      >
-        TOTAL: {clients?.length || 0}
-      </Text>
-      <Text
-        style={{ color: colors.textSecondary }}
-        className="text-lg font-bold"
-      >
-        ULTIMOS 30 DIAS
-      </Text>
-    </View>
-  ), [colors.textSecondary, clients?.length]);
+  const ListHeaderComponent = useMemo(
+    () => () => (
+      <View className="flex flex-row justify-between mb-4">
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
+          TOTAL: {clients?.length || 0}
+        </Text>
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
+          ULTIMOS 30 DIAS
+        </Text>
+      </View>
+    ),
+    [colors.textSecondary, clients?.length],
+  );
 
   return (
     <View className=" p-5 mt-5  flex-1">

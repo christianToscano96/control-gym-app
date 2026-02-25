@@ -31,64 +31,67 @@ const CHECK_INS: CheckIn[] = [
 const RecentCheckIns: React.FC = () => {
   const { colors } = useTheme();
 
-  const renderItem = useCallback(({ item }: { item: CheckIn }) => (
-    <View
-      style={{ backgroundColor: colors.card }}
-      className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
-    >
-      <Avatar size="md" uri={item.image} />
+  const renderItem = useCallback(
+    ({ item }: { item: CheckIn }) => (
+      <View
+        style={{ backgroundColor: colors.card }}
+        className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
+      >
+        <Avatar size="md" uri={item.image} />
 
-      <View className="flex-1 ml-4">
-        <Text
-          style={{ color: colors.text }}
-          className="text-[16px] font-bold mb-0.5"
-        >
-          {item.name}
-        </Text>
-        <Text
-          style={{ color: colors.textSecondary }}
-          className="text-[13px]"
-        >
-          Membresía:{" "}
+        <View className="flex-1 ml-4">
           <Text
-            style={{ color: colors.textSecondary }}
-            className="font-medium"
+            style={{ color: colors.text }}
+            className="text-[16px] font-bold mb-0.5"
           >
-            {item.membership}
+            {item.name}
           </Text>
-        </Text>
-      </View>
+          <Text style={{ color: colors.textSecondary }} className="text-[13px]">
+            Membresía:{" "}
+            <Text
+              style={{ color: colors.textSecondary }}
+              className="font-medium"
+            >
+              {item.membership}
+            </Text>
+          </Text>
+        </View>
 
-      <View className="items-end justify-between h-10">
-        <Text
-          style={{ color: colors.text }}
-          className="text-[12px] font-bold"
-        >
-          {item.time}
-        </Text>
-        {/* Punto verde de estado activo */}
-        <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
+        <View className="items-end justify-between h-10">
+          <Text
+            style={{ color: colors.text }}
+            className="text-[12px] font-bold"
+          >
+            {item.time}
+          </Text>
+          {/* Punto verde de estado activo */}
+          <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
+        </View>
       </View>
-    </View>
-  ), [colors.card, colors.text, colors.textSecondary]);
+    ),
+    [colors.card, colors.text, colors.textSecondary],
+  );
 
   const keyExtractor = useCallback((item: CheckIn) => item.id, []);
 
-  const ListHeaderComponent = useMemo(() => () => (
-    <View className="flex-row justify-between items-center mb-4">
-      <Text
-        style={{ color: colors.text }}
-        className="text-[20px] font-extrabold"
-      >
-        Check-ins Recientes
-      </Text>
-      <TouchableOpacity>
-        <Text className="text-[14px] font-bold text-[#66BB6A] tracking-wide">
-          VER TODOS
+  const ListHeaderComponent = useMemo(
+    () => () => (
+      <View className="flex-row justify-between items-center mb-4">
+        <Text
+          style={{ color: colors.text }}
+          className="text-[20px] font-extrabold"
+        >
+          Check-ins Recientes
         </Text>
-      </TouchableOpacity>
-    </View>
-  ), [colors.text]);
+        <TouchableOpacity>
+          <Text className="text-[14px] font-bold text-[#66BB6A] tracking-wide">
+            VER TODOS
+          </Text>
+        </TouchableOpacity>
+      </View>
+    ),
+    [colors.text],
+  );
 
   return (
     <View className="my-5 px-1">

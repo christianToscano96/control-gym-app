@@ -18,10 +18,22 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
 
   const isStaff = user?.role === "empleado";
 
-  const handleNewClient = useCallback(() => onActionPress("new-client"), [onActionPress]);
-  const handleNewPayment = useCallback(() => onActionPress("new-payment"), [onActionPress]);
-  const handleCheckIn = useCallback(() => onActionPress("check-in"), [onActionPress]);
-  const handleStaff = useCallback(() => onActionPress("staff"), [onActionPress]);
+  const handleNewClient = useCallback(
+    () => onActionPress("new-client"),
+    [onActionPress],
+  );
+  const handleNewPayment = useCallback(
+    () => onActionPress("new-payment"),
+    [onActionPress],
+  );
+  const handleCheckIn = useCallback(
+    () => onActionPress("check-in"),
+    [onActionPress],
+  );
+  const handleStaff = useCallback(
+    () => onActionPress("staff"),
+    [onActionPress],
+  );
 
   // const primary = useThemeColor({}, "tint");
   if (!visible) return null;

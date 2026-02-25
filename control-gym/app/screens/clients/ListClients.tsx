@@ -1,4 +1,5 @@
 import { FlatList, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
 import ItemClient from "./ItemClient";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -7,35 +8,42 @@ interface ListClientsProps {
 }
 const ListClients = ({ clients }: ListClientsProps) => {
   const { colors } = useTheme();
-  console.log(clients);
 
-  const renderItem = ({ item }: { item: any }) => (
-    <ItemClient
-      name={item.firstName + " " + item.lastName}
-      status={item.active ? "Activo" : "Inactivo"}
-      avatarUri={
-        item.avatarUri ||
-        "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
-      }
-      clientId={item._id}
-    />
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <ItemClient
+        name={item.firstName + " " + item.lastName}
+        status={item.active ? "Activo" : "Inactivo"}
+        avatarUri={
+          item.avatarUri ||
+          "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
+        }
+        clientId={item._id}
+      />
+    ),
+    [],
   );
 
-  const ListHeaderComponent = () => (
-    <View className="flex flex-row justify-between mb-4">
-      <Text
-        style={{ color: colors.textSecondary }}
-        className="text-lg font-bold"
-      >
-        TOTAL: {clients?.length || 0}
-      </Text>
-      <Text
-        style={{ color: colors.textSecondary }}
-        className="text-lg font-bold"
-      >
-        ULTIMOS 30 DIAS
-      </Text>
-    </View>
+  const keyExtractor = useCallback((item: any) => item._id, []);
+
+  const ListHeaderComponent = useMemo(
+    () => () => (
+      <View className="flex flex-row justify-between mb-4">
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
+          TOTAL: {clients?.length || 0}
+        </Text>
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-lg font-bold"
+        >
+          ULTIMOS 30 DIAS
+        </Text>
+      </View>
+    ),
+    [colors.textSecondary, clients?.length],
   );
 
   return (
@@ -43,7 +51,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
       <FlatList
         data={clients || []}
         renderItem={renderItem}
-        keyExtractor={(item) => item._id}
+        keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ListHeaderComponent}
       />

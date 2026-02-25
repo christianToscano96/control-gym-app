@@ -210,6 +210,11 @@ export default function ConfigScreen() {
                 rightText="30s"
                 onPress={() => console.log("QR validity")}
               />
+              <SettingItem
+                icon="email"
+                title="Configuración de Email"
+                onPress={() => router.push("/screens/config/EmailConfigScreen")}
+              />
             </View>
           </View>
         )}

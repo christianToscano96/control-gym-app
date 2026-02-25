@@ -59,14 +59,22 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
   await gym.save();
 
   // Enviar email de bienvenida (fire-and-forget)
-  sendWelcomeEmail({
-    clientEmail: client.email,
-    clientName: `${client.firstName} ${client.lastName}`,
-    gymName: gym.name,
-    membershipType: client.membershipType || "basico",
-    startDate: client.startDate,
-    endDate: client.endDate,
-  }).catch((err) => console.error("Error enviando email de bienvenida:", err));
+  if (gym.emailConfig?.gmailUser && gym.emailConfig?.gmailAppPassword) {
+    sendWelcomeEmail({
+      clientEmail: client.email,
+      clientName: `${client.firstName} ${client.lastName}`,
+      gymName: gym.name,
+      membershipType: client.membershipType || "basico",
+      startDate: client.startDate,
+      endDate: client.endDate,
+      gmailUser: gym.emailConfig.gmailUser,
+      gmailAppPassword: gym.emailConfig.gmailAppPassword,
+    }).catch((err) =>
+      console.error("Error enviando email de bienvenida:", err),
+    );
+  } else {
+    console.warn("Email no enviado: el gimnasio no tiene email configurado");
+  }
 
   res.status(201).json(client);
 });

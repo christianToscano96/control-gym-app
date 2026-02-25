@@ -1,14 +1,4 @@
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-dotenv.config();
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
 
 interface WelcomeEmailParams {
   clientEmail: string;
@@ -17,6 +7,18 @@ interface WelcomeEmailParams {
   membershipType: string;
   startDate: Date;
   endDate?: Date;
+  gmailUser: string;
+  gmailAppPassword: string;
+}
+
+function createTransporter(gmailUser: string, gmailAppPassword: string) {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
+    },
+  });
 }
 
 function formatDate(date: Date): string {
@@ -117,8 +119,13 @@ export async function sendWelcomeEmail(
   params: WelcomeEmailParams,
 ): Promise<void> {
   try {
+    const transporter = createTransporter(
+      params.gmailUser,
+      params.gmailAppPassword,
+    );
+
     const info = await transporter.sendMail({
-      from: `${params.gymName} <${process.env.GMAIL_USER}>`,
+      from: `${params.gymName} <${params.gmailUser}>`,
       to: params.clientEmail,
       subject: `¡Bienvenido/a a ${params.gymName}!`,
       html: buildWelcomeHtml(params),

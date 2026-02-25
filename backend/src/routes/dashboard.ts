@@ -25,16 +25,14 @@ router.get(
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Contar total de clientes activos
+      // Contar total de clientes
       const totalClients = await Client.countDocuments({
         gym: gymId,
-        active: true,
       });
 
       // Contar clientes del mes anterior para calcular porcentaje
       const clientsLastMonth = await Client.countDocuments({
         gym: gymId,
-        active: true,
         createdAt: { $lt: thirtyDaysAgo },
       });
 

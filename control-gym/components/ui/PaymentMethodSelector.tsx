@@ -23,7 +23,7 @@ const PaymentOption: FC<PaymentOptionProps> = ({
     <TouchableOpacity
       onPress={() => onSelect(id)}
       activeOpacity={0.7}
-      className={`flex-1 aspect-square max-w-[140px] m-2 rounded-[32px] border-2 items-center justify-center relative ${
+      className={`flex-1 aspect-square max-w-[120px] m-2 rounded-[32px] border-2 items-center justify-center relative ${
         selected ? "bg-green-50 border-green-500" : "bg-white border-gray-100"
       }`}
     >
@@ -35,7 +35,7 @@ const PaymentOption: FC<PaymentOptionProps> = ({
         }`}
       />
 
-      <View className="bg-white p-4 rounded-2xl shadow-sm mb-3">
+      <View className="mb-2">
         <MaterialIcons name={iconName} size={28} color="#111827" />
       </View>
 

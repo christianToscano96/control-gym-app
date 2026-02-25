@@ -25,9 +25,8 @@ export default function DashboardScreen() {
 
   // ─── TanStack Query ──────────────────────────────────────────
   const { data: profile } = useProfileQuery();
-  const { data: stats, isLoading: loadingStats } = useDashboardStatsQuery(
-    !isStaff,
-  );
+  const { data: stats, isLoading: loadingStats } =
+    useDashboardStatsQuery(!isStaff);
 
   // Sync profile avatar to Zustand store
   useEffect(() => {
@@ -70,7 +69,7 @@ export default function DashboardScreen() {
                 />
                 <SummaryCard
                   icon="fitness-center"
-                  title="INGRESARON HOY"
+                  title="INGRESOS HOY"
                   value={
                     loadingStats
                       ? "..."

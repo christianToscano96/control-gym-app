@@ -14,6 +14,9 @@ export const queryKeys = {
   dashboard: {
     stats: ["dashboard", "stats"] as const,
   },
+  access: {
+    recent: ["access", "recent"] as const,
+  },
   profile: {
     current: ["profile"] as const,
   },

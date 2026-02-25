@@ -91,16 +91,7 @@ export default function DashboardScreen() {
                   { value: 75, label: "SUN" },
                 ]}
               />
-              <PeakHoursChart
-                data={[
-                  { value: 60, label: "6AM" },
-                  { value: 70, label: "9AM" },
-                  { value: 80, label: "12PM" },
-                  { value: 90, label: "3PM" },
-                  { value: 100, label: "6PM" },
-                  { value: 70, label: "9PM" },
-                ]}
-              />
+              <PeakHoursChart data={stats?.peakHours || []} />
             </>
           )}
           <RecentCheckIns />

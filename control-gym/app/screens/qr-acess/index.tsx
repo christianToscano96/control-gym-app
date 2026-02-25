@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
 import { useCameraPermissions } from "expo-camera";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/context/ThemeContext";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import { CameraScanner } from "./CameraScanner";
@@ -8,6 +9,9 @@ import { InfoCard } from "./InfoCard";
 import { ManualEntryModal } from "./ManualEntryModal";
 import { PermissionLoadingView, PermissionDeniedView } from "./PermissionViews";
 import { useClientsQuery } from "@/hooks/queries/useClients";
+import { apiClient } from "@/api/client";
+import { AccessResultCard, AccessResult } from "./AccessResultCard";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 
 const QRAccessScreen = () => {
   const { colors, primaryColor } = useTheme();
@@ -18,8 +22,11 @@ const QRAccessScreen = () => {
   const [manualEntryVisible, setManualEntryVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [accessResult, setAccessResult] = useState<AccessResult | null>(null);
+  const isProcessingRef = useRef(false);
 
   // ─── TanStack Query ──────────────────────────────────────────
+  const queryClient = useQueryClient();
   const { data: clients = [], isLoading: loading } = useClientsQuery();
 
   // Efecto para buscar automáticamente cuando el usuario escribe
@@ -30,7 +37,6 @@ const QRAccessScreen = () => {
         return fullName.includes(searchQuery.toLowerCase());
       });
       if (found) {
-        console.log("Cliente encontrado:", found);
         setSelectedClient(found);
       } else {
         setSelectedClient(null);
@@ -40,30 +46,47 @@ const QRAccessScreen = () => {
     }
   }, [searchQuery, clients]);
 
-  const handleBarCodeScanned = ({
+  const resetScanState = () => {
+    isProcessingRef.current = false;
+    setScanned(false);
+    setAccessResult(null);
+  };
+
+  const handleBarCodeScanned = async ({
     type,
     data,
   }: {
     type: string;
     data: string;
   }) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
     setScanned(true);
     setCameraActive(false);
 
-    // Aquí puedes procesar el código QR escaneado
-    Alert.alert("¡Código QR Escaneado!", `Tipo: ${type}\nDatos: ${data}`, [
-      {
-        text: "Escanear Otro",
-        onPress: () => {
-          setScanned(false);
-          setCameraActive(true);
+    try {
+      const response = await apiClient<AccessResult>(
+        "/api/access/validate-qr",
+        {
+          method: "POST",
+          body: { clientId: data },
         },
-      },
-      {
-        text: "OK",
-        onPress: () => setScanned(false),
-      },
-    ]);
+      );
+      setAccessResult(response);
+
+      // Invalidar queries del dashboard si el acceso fue exitoso
+      if (response.allowed) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+        queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+      }
+    } catch (error: any) {
+      setAccessResult({
+        allowed: false,
+        clientName: "Error",
+        message: error?.message || "No se pudo validar el código QR",
+      });
+    }
   };
 
   const startScanning = () => {
@@ -91,37 +114,45 @@ const QRAccessScreen = () => {
     setSelectedClient(null);
   };
 
-  const handleManualAccess = () => {
+  const handleManualAccess = async () => {
     if (selectedClient) {
-      const fullName = `${selectedClient.firstName} ${selectedClient.lastName}`;
-      Alert.alert(
-        "Acceso Registrado",
-        `Acceso registrado para ${fullName}`,
-        [
+      try {
+        const response = await apiClient<AccessResult>(
+          "/api/access/validate-qr",
           {
-            text: "OK",
-            onPress: () => closeManualEntry(),
+            method: "POST",
+            body: { clientId: selectedClient._id },
           },
-        ],
-      );
-      // Aquí puedes llamar a tu API para registrar el acceso
+        );
+        closeManualEntry();
+        setAccessResult(response);
+
+        // Invalidar queries del dashboard si el acceso fue exitoso
+        if (response.allowed) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.dashboard.stats,
+          });
+          queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+        }
+      } catch (error: any) {
+        Alert.alert(
+          "Error",
+          error?.message || "No se pudo registrar el acceso",
+          [{ text: "OK" }],
+        );
+      }
     }
   };
 
   const handleDenyAccess = () => {
     if (selectedClient) {
       const fullName = `${selectedClient.firstName} ${selectedClient.lastName}`;
-      Alert.alert(
-        "Acceso Denegado",
-        `Acceso denegado para ${fullName}`,
-        [
-          {
-            text: "OK",
-            onPress: () => closeManualEntry(),
-          },
-        ],
-      );
-      // Aquí puedes llamar a tu API para registrar el acceso denegado
+      Alert.alert("Acceso Denegado", `Acceso denegado para ${fullName}`, [
+        {
+          text: "OK",
+          onPress: () => closeManualEntry(),
+        },
+      ]);
     }
   };
 
@@ -172,6 +203,19 @@ const QRAccessScreen = () => {
           onBarCodeScanned={handleBarCodeScanned}
           onToggleFlash={toggleFlash}
           onClose={stopScanning}
+        />
+      ) : accessResult ? (
+        <AccessResultCard
+          result={accessResult}
+          cardColor={colors.card}
+          textColor={colors.text}
+          textSecondaryColor={colors.textSecondary}
+          borderColor={colors.border}
+          onScanAnother={() => {
+            resetScanState();
+            setCameraActive(true);
+          }}
+          onClose={resetScanState}
         />
       ) : (
         <View style={styles.infoContainer} className="px-6 flex-1">

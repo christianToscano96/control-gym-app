@@ -9,6 +9,7 @@ interface WelcomeEmailParams {
   endDate?: Date;
   gmailUser: string;
   gmailAppPassword: string;
+  qrCodeDataUrl?: string;
 }
 
 function createTransporter(gmailUser: string, gmailAppPassword: string) {
@@ -39,7 +40,7 @@ function getMembershipLabel(type: string): string {
 }
 
 function buildWelcomeHtml(params: WelcomeEmailParams): string {
-  const { clientName, gymName, membershipType, startDate, endDate } = params;
+  const { clientName, gymName, membershipType, startDate, endDate, qrCodeDataUrl } = params;
 
   return `
 <!DOCTYPE html>
@@ -94,6 +95,19 @@ function buildWelcomeHtml(params: WelcomeEmailParams): string {
                   </td>
                 </tr>
               </table>
+              ${qrCodeDataUrl ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px; text-align:center;">
+                <tr>
+                  <td align="center" style="padding:20px;">
+                    <h3 style="color:#111827; margin:0 0 12px 0; font-size:16px;">Tu código QR de acceso</h3>
+                    <img src="cid:qrcode" alt="Código QR" width="200" height="200" style="border:1px solid #e5e7eb; border-radius:8px;" />
+                    <p style="color:#6b7280; font-size:12px; margin:8px 0 0 0;">
+                      Presentá este código en la entrada del gimnasio para ingresar.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
               <p style="color:#4b5563; font-size:14px; line-height:1.6; margin:24px 0 0 0;">
                 Si tenés alguna consulta, no dudes en comunicarte con nosotros directamente en el gimnasio.
               </p>
@@ -124,11 +138,22 @@ export async function sendWelcomeEmail(
       params.gmailAppPassword,
     );
 
+    const attachments: nodemailer.SendMailOptions["attachments"] = [];
+    if (params.qrCodeDataUrl) {
+      const base64Data = params.qrCodeDataUrl.replace(/^data:image\/png;base64,/, "");
+      attachments.push({
+        filename: "qrcode.png",
+        content: Buffer.from(base64Data, "base64"),
+        cid: "qrcode",
+      });
+    }
+
     const info = await transporter.sendMail({
       from: `${params.gymName} <${params.gmailUser}>`,
       to: params.clientEmail,
       subject: `¡Bienvenido/a a ${params.gymName}!`,
       html: buildWelcomeHtml(params),
+      attachments,
     });
 
     console.log("Email de bienvenida enviado:", info.messageId);

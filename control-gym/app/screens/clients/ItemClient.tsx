@@ -28,7 +28,7 @@ const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
       style={{ backgroundColor: colors.card, borderColor: colors.border }}
       className="w-full h-20 rounded-2xl mb-3 border flex-row items-center p-3 relative"
     >
-      <Avatar size="sm" uri={avatarUri} />
+      <Avatar size="sm" name={name} />
       <Text
         style={{ color: colors.text }}
         className="flex-1 text-lg font-semibold ml-4"

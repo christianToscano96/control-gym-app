@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { Client } from "../models/Client";
 import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
@@ -15,7 +16,7 @@ router.get(
   requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const gymId = req.user.gym;
+      const gymId = new mongoose.Types.ObjectId(req.user.gym);
 
       // Obtener fecha de hoy (inicio del día)
       const today = new Date();
@@ -172,6 +173,99 @@ router.get(
       res
         .status(500)
         .json({ message: "Error al obtener estadísticas", error: err });
+    }
+  },
+);
+
+// Obtener asistencia semanal para el chart
+router.get(
+  "/weekly-attendance",
+  requireRole(["admin", "superadmin"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = new mongoose.Types.ObjectId(req.user.gym);
+
+      // Calcular inicio de la semana actual (lunes)
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+      const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+      // Inicio de la semana anterior
+      const startOfLastWeek = new Date(startOfWeek);
+      startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+
+      // Asistencia de la semana actual agrupada por día
+      const currentWeekRaw = await AccessLog.aggregate([
+        {
+          $match: {
+            gym: gymId,
+            date: { $gte: startOfWeek, $lt: endOfWeek },
+          },
+        },
+        {
+          $group: {
+            _id: { $dayOfWeek: "$date" }, // 1=Dom, 2=Lun, ..., 7=Sáb
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Total de la semana anterior
+      const lastWeekTotal = await AccessLog.countDocuments({
+        gym: gymId,
+        date: { $gte: startOfLastWeek, $lt: startOfWeek },
+      });
+
+      // Mapear días: MongoDB $dayOfWeek => 1=Dom, 2=Lun, 3=Mar, 4=Mié, 5=Jue, 6=Vie, 7=Sáb
+      const dayLabels: { mongo: number; label: string }[] = [
+        { mongo: 2, label: "LUN" },
+        { mongo: 3, label: "MAR" },
+        { mongo: 4, label: "MIÉ" },
+        { mongo: 5, label: "JUE" },
+        { mongo: 6, label: "VIE" },
+        { mongo: 7, label: "SÁB" },
+        { mongo: 1, label: "DOM" },
+      ];
+
+      let totalWeekly = 0;
+      let maxValue = 0;
+      let highlightDay = "LUN";
+
+      const weeklyAttendance = dayLabels.map(({ mongo, label }) => {
+        const found = currentWeekRaw.find((d: any) => d._id === mongo);
+        const value = found ? found.count : 0;
+        totalWeekly += value;
+        if (value > maxValue) {
+          maxValue = value;
+          highlightDay = label;
+        }
+        return { value, label };
+      });
+
+      // Calcular porcentaje de cambio vs semana anterior
+      const trendValue =
+        lastWeekTotal > 0
+          ? ((totalWeekly - lastWeekTotal) / lastWeekTotal) * 100
+          : 0;
+      const trendPercent = `${trendValue > 0 ? "+" : ""}${trendValue.toFixed(1)}% VS LA SEMANA PASADA`;
+
+      res.json({
+        weeklyAttendance,
+        totalWeekly,
+        trendPercent,
+        highlightDay,
+      });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error al obtener asistencia semanal", error: err });
     }
   },
 );

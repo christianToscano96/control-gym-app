@@ -30,3 +30,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getRecentCheckIns(): Promise<RecentCheckIn[]> {
   return apiClient<RecentCheckIn[]>("/api/access/recent");
 }
+
+export interface WeeklyAttendance {
+  weeklyAttendance: { value: number; label: string }[];
+  totalWeekly: number;
+  trendPercent: string;
+  highlightDay: string;
+}
+
+export async function getWeeklyAttendance(): Promise<WeeklyAttendance> {
+  return apiClient<WeeklyAttendance>("/api/dashboard/weekly-attendance");
+}

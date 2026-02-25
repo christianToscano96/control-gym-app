@@ -7,7 +7,7 @@ import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
-import { useDashboardStatsQuery } from "@/hooks/queries/useDashboard";
+import { useDashboardStatsQuery, useWeeklyAttendanceQuery } from "@/hooks/queries/useDashboard";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -27,6 +27,7 @@ export default function DashboardScreen() {
   const { data: profile } = useProfileQuery();
   const { data: stats, isLoading: loadingStats } =
     useDashboardStatsQuery(!isStaff);
+  const { data: weeklyData } = useWeeklyAttendanceQuery(!isStaff);
 
   // Sync profile avatar to Zustand store
   useEffect(() => {
@@ -81,15 +82,10 @@ export default function DashboardScreen() {
                 />
               </View>
               <AttendanceChart
-                data={[
-                  { value: 50, label: "MON" },
-                  { value: 80, label: "TUE" },
-                  { value: 40, label: "WED" },
-                  { value: 95, label: "THU" },
-                  { value: 85, label: "FRI" },
-                  { value: 35, label: "SAT" },
-                  { value: 75, label: "SUN" },
-                ]}
+                data={weeklyData?.weeklyAttendance || []}
+                totalValue={weeklyData?.totalWeekly ?? 0}
+                trendText={weeklyData?.trendPercent || "0% VS LA SEMANA PASADA"}
+                highlightLabel={weeklyData?.highlightDay}
               />
               <PeakHoursChart data={stats?.peakHours || []} />
             </>

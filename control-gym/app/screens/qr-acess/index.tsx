@@ -79,6 +79,7 @@ const QRAccessScreen = () => {
       if (response.allowed) {
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
         queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.weeklyAttendance });
       }
     } catch (error: any) {
       setAccessResult({
@@ -133,6 +134,7 @@ const QRAccessScreen = () => {
             queryKey: queryKeys.dashboard.stats,
           });
           queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
+          queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.weeklyAttendance });
         }
       } catch (error: any) {
         Alert.alert(

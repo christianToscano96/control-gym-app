@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { View, TouchableWithoutFeedback, Modal } from "react-native";
 import ActionItem from "./ActionItem";
 import { useUserStore } from "@/stores/store";
@@ -18,6 +18,11 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
 
   const isStaff = user?.role === "empleado";
 
+  const handleNewClient = useCallback(() => onActionPress("new-client"), [onActionPress]);
+  const handleNewPayment = useCallback(() => onActionPress("new-payment"), [onActionPress]);
+  const handleCheckIn = useCallback(() => onActionPress("check-in"), [onActionPress]);
+  const handleStaff = useCallback(() => onActionPress("staff"), [onActionPress]);
+
   // const primary = useThemeColor({}, "tint");
   if (!visible) return null;
 
@@ -29,23 +34,23 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
             <ActionItem
               label="Nuevo Cliente"
               iconName="account-plus-outline"
-              onPress={() => onActionPress("new-client")}
+              onPress={handleNewClient}
             />
             <ActionItem
               label="Nuevo Pago"
               iconName="credit-card-plus-outline"
-              onPress={() => onActionPress("new-payment")}
+              onPress={handleNewPayment}
             />
             <ActionItem
               label="Check-in"
               iconName="qrcode-scan"
-              onPress={() => onActionPress("check-in")}
+              onPress={handleCheckIn}
             />
             {!isStaff && (
               <ActionItem
                 label="Agregar Personal"
                 iconName="briefcase-plus-outline"
-                onPress={() => onActionPress("staff")}
+                onPress={handleStaff}
               />
             )}
           </View>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -23,15 +23,15 @@ interface ReportCardProps {
   onExport?: () => void;
 }
 
-const ReportCard: React.FC<ReportCardProps> = ({
+const ReportCard: React.FC<ReportCardProps> = React.memo(({
   report,
   onPress,
   onExport,
 }) => {
   const { colors, primaryColor } = useTheme();
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
+  const statusColor = useMemo(() => {
+    switch (report.status) {
       case "completed":
         return "#10b981";
       case "pending":
@@ -41,10 +41,10 @@ const ReportCard: React.FC<ReportCardProps> = ({
       default:
         return colors.textSecondary;
     }
-  };
+  }, [report.status, colors.textSecondary]);
 
-  const getStatusText = (status?: string) => {
-    switch (status) {
+  const statusText = useMemo(() => {
+    switch (report.status) {
       case "completed":
         return "Completado";
       case "pending":
@@ -54,10 +54,10 @@ const ReportCard: React.FC<ReportCardProps> = ({
       default:
         return "N/A";
     }
-  };
+  }, [report.status]);
 
-  const getReportIcon = (type: string) => {
-    switch (type) {
+  const reportIcon = useMemo(() => {
+    switch (report.type) {
       case "clients":
         return "people";
       case "payments":
@@ -73,7 +73,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
       default:
         return "description";
     }
-  };
+  }, [report.type]);
 
   return (
     <TouchableOpacity
@@ -89,7 +89,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
             style={{ backgroundColor: primaryColor + "20" }}
           >
             <MaterialIcons
-              name={getReportIcon(report.type) as any}
+              name={reportIcon as any}
               size={20}
               color={primaryColor}
             />
@@ -137,13 +137,13 @@ const ReportCard: React.FC<ReportCardProps> = ({
             <View className="flex-row items-center">
               <View
                 className="w-2 h-2 rounded-full mr-2"
-                style={{ backgroundColor: getStatusColor(report.status) }}
+                style={{ backgroundColor: statusColor }}
               />
               <Text
                 className="text-xs font-semibold"
-                style={{ color: getStatusColor(report.status) }}
+                style={{ color: statusColor }}
               >
-                {getStatusText(report.status)}
+                {statusText}
               </Text>
             </View>
           )}
@@ -161,6 +161,6 @@ const ReportCard: React.FC<ReportCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default ReportCard;

@@ -2,7 +2,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useCallback } from "react";
 import { Text, View } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -13,9 +13,16 @@ interface ItemClientProps {
   status: string;
 }
 
-const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
+const ItemClient = React.memo(({ clientId, avatarUri, name, status }: ItemClientProps) => {
   const { colors } = useTheme();
-  console.log(clientId);
+  
+  const handlePress = useCallback(() => {
+    router.push({
+      pathname: "/screens/clients/client-details",
+      params: { clientId },
+    });
+  }, [clientId]);
+
   return (
     <View
       style={{ backgroundColor: colors.card, borderColor: colors.border }}
@@ -36,16 +43,11 @@ const ItemClient = ({ clientId, avatarUri, name, status }: ItemClientProps) => {
           name="chevron-right"
           size={28}
           color={colors.textSecondary}
-          onPress={() =>
-            router.push({
-              pathname: "/screens/clients/client-details",
-              params: { clientId },
-            })
-          }
+          onPress={handlePress}
         />
       </View>
     </View>
   );
-};
+});
 
 export default ItemClient;

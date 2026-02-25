@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, Text, Image, TouchableOpacity, FlatList } from "react-native";
 import Avatar from "./Avatar";
 import { useTheme } from "@/context/ThemeContext";
@@ -31,7 +31,7 @@ const CHECK_INS: CheckIn[] = [
 const RecentCheckIns: React.FC = () => {
   const { colors } = useTheme();
 
-  const renderItem = ({ item }: { item: CheckIn }) => (
+  const renderItem = useCallback(({ item }: { item: CheckIn }) => (
     <View
       style={{ backgroundColor: colors.card }}
       className="rounded-2xl p-4 flex-row items-center mb-3 shadow-sm shadow-black/5"
@@ -70,9 +70,11 @@ const RecentCheckIns: React.FC = () => {
         <View className="w-2 h-2 rounded-full bg-[#66BB6A] mt-1.5" />
       </View>
     </View>
-  );
+  ), [colors.card, colors.text, colors.textSecondary]);
 
-  const ListHeaderComponent = () => (
+  const keyExtractor = useCallback((item: CheckIn) => item.id, []);
+
+  const ListHeaderComponent = useMemo(() => () => (
     <View className="flex-row justify-between items-center mb-4">
       <Text
         style={{ color: colors.text }}
@@ -86,14 +88,14 @@ const RecentCheckIns: React.FC = () => {
         </Text>
       </TouchableOpacity>
     </View>
-  );
+  ), [colors.text]);
 
   return (
     <View className="my-5 px-1">
       <FlatList
         data={CHECK_INS}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         ListHeaderComponent={ListHeaderComponent}
         scrollEnabled={false}
       />

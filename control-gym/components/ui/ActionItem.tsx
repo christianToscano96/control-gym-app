@@ -9,7 +9,7 @@ export interface ActionItemProps {
   onPress?: () => void;
 }
 
-const ActionItem: React.FC<ActionItemProps> = ({
+const ActionItem: React.FC<ActionItemProps> = React.memo(({
   label,
   iconName,
   onPress,
@@ -29,6 +29,6 @@ const ActionItem: React.FC<ActionItemProps> = ({
       </TouchableOpacity>
     </View>
   );
-};
+});
 
 export default ActionItem;

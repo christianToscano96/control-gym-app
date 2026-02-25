@@ -1,4 +1,5 @@
 import { FlatList, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
 import ItemClient from "./ItemClient";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -7,9 +8,8 @@ interface ListClientsProps {
 }
 const ListClients = ({ clients }: ListClientsProps) => {
   const { colors } = useTheme();
-  console.log(clients);
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = useCallback(({ item }: { item: any }) => (
     <ItemClient
       name={item.firstName + " " + item.lastName}
       status={item.active ? "Activo" : "Inactivo"}
@@ -19,9 +19,11 @@ const ListClients = ({ clients }: ListClientsProps) => {
       }
       clientId={item._id}
     />
-  );
+  ), []);
 
-  const ListHeaderComponent = () => (
+  const keyExtractor = useCallback((item: any) => item._id, []);
+
+  const ListHeaderComponent = useMemo(() => () => (
     <View className="flex flex-row justify-between mb-4">
       <Text
         style={{ color: colors.textSecondary }}
@@ -36,14 +38,14 @@ const ListClients = ({ clients }: ListClientsProps) => {
         ULTIMOS 30 DIAS
       </Text>
     </View>
-  );
+  ), [colors.textSecondary, clients?.length]);
 
   return (
     <View className=" p-5 mt-5  flex-1">
       <FlatList
         data={clients || []}
         renderItem={renderItem}
-        keyExtractor={(item) => item._id}
+        keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ListHeaderComponent}
       />

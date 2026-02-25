@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 
 interface BadgeProps {
@@ -7,11 +7,17 @@ interface BadgeProps {
   backgroundColor?: string;
 }
 
-const Badge: React.FC<BadgeProps> = ({ label, color, backgroundColor }) => {
+const Badge: React.FC<BadgeProps> = React.memo(({ label, color, backgroundColor }) => {
   // Si el label es 'Expirado', usa rojo, si no, verde
   const isExpired = label?.toLowerCase() === "inactivo";
-  const badgeColor = color || (isExpired ? "#DC2626" : "#059669");
-  const badgeBg = backgroundColor || (isExpired ? "#FECACA" : "#D1FAE5");
+  const badgeColor = useMemo(
+    () => color || (isExpired ? "#DC2626" : "#059669"),
+    [color, isExpired]
+  );
+  const badgeBg = useMemo(
+    () => backgroundColor || (isExpired ? "#FECACA" : "#D1FAE5"),
+    [backgroundColor, isExpired]
+  );
   return (
     <View
       style={{
@@ -27,6 +33,6 @@ const Badge: React.FC<BadgeProps> = ({ label, color, backgroundColor }) => {
       </Text>
     </View>
   );
-};
+});
 
 export default Badge;

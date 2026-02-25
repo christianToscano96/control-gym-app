@@ -7,7 +7,7 @@ interface BadgeProps {
   isSelected?: boolean;
 }
 
-export const BadgeButton = ({
+export const BadgeButton = React.memo(({
   label,
   onPress,
   isSelected = true,
@@ -22,4 +22,4 @@ export const BadgeButton = ({
       </Text>
     </Pressable>
   );
-};
+});

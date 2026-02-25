@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -37,7 +37,6 @@ const ReportsScreen = () => {
 
   // Datos
   const [reports, setReports] = useState<ReportData[]>([]);
-  const [filteredReports, setFilteredReports] = useState<ReportData[]>([]);
 
   // Opciones de filtros
   const reportTypeOptions: SelectOption[] = [
@@ -62,8 +61,8 @@ const ReportsScreen = () => {
     loadReports();
   }, []);
 
-  // Aplicar filtros
-  const applyFilters = useCallback(() => {
+  // Aplicar filtros usando useMemo para cálculos derivados
+  const filteredReports = useMemo(() => {
     let filtered = [...reports];
 
     // Filtro de búsqueda
@@ -95,12 +94,8 @@ const ReportsScreen = () => {
       filtered = filtered.filter((report) => new Date(report.date) <= endDate);
     }
 
-    setFilteredReports(filtered);
+    return filtered;
   }, [reports, searchQuery, reportType, startDate, endDate, statusFilter]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
 
   const loadReports = async () => {
     setLoading(true);

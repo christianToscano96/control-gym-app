@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import Avatar from "./Avatar";
 import { useTheme } from "@/context/ThemeContext";
+import { SkeletonCheckInsList } from "./skeletons";
 
 type CheckIn = {
   id: string;
@@ -28,8 +29,18 @@ const CHECK_INS: CheckIn[] = [
   },
 ];
 
-const RecentCheckIns: React.FC = () => {
+interface RecentCheckInsProps {
+  isLoading?: boolean;
+}
+
+const RecentCheckIns: React.FC<RecentCheckInsProps> = ({
+  isLoading = false,
+}) => {
   const { colors } = useTheme();
+
+  if (isLoading) {
+    return <SkeletonCheckInsList count={2} />;
+  }
 
   const renderItem = ({ item }: { item: CheckIn }) => (
     <View
@@ -45,25 +56,16 @@ const RecentCheckIns: React.FC = () => {
         >
           {item.name}
         </Text>
-        <Text
-          style={{ color: colors.textSecondary }}
-          className="text-[13px]"
-        >
+        <Text style={{ color: colors.textSecondary }} className="text-[13px]">
           Membresía:{" "}
-          <Text
-            style={{ color: colors.textSecondary }}
-            className="font-medium"
-          >
+          <Text style={{ color: colors.textSecondary }} className="font-medium">
             {item.membership}
           </Text>
         </Text>
       </View>
 
       <View className="items-end justify-between h-10">
-        <Text
-          style={{ color: colors.text }}
-          className="text-[12px] font-bold"
-        >
+        <Text style={{ color: colors.text }} className="text-[12px] font-bold">
           {item.time}
         </Text>
         {/* Punto verde de estado activo */}

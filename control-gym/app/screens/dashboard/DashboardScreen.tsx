@@ -5,6 +5,7 @@ import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
+import { SkeletonCard } from "@/components/ui/skeletons";
 import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useDashboardStatsQuery } from "@/hooks/queries/useDashboard";
@@ -25,9 +26,8 @@ export default function DashboardScreen() {
 
   // ─── TanStack Query ──────────────────────────────────────────
   const { data: profile } = useProfileQuery();
-  const { data: stats, isLoading: loadingStats } = useDashboardStatsQuery(
-    !isStaff,
-  );
+  const { data: stats, isLoading: loadingStats } =
+    useDashboardStatsQuery(!isStaff);
 
   // Sync profile avatar to Zustand store
   useEffect(() => {
@@ -60,26 +60,27 @@ export default function DashboardScreen() {
           {!isStaff && (
             <>
               <View className="flex flex-row justify-between gap-4 p-2">
-                <SummaryCard
-                  icon="people"
-                  title="CLIENTES"
-                  value={
-                    loadingStats ? "..." : stats?.totalClients.toString() || "0"
-                  }
-                  persent={loadingStats ? "..." : stats?.clientsPercent || "0%"}
-                />
-                <SummaryCard
-                  icon="fitness-center"
-                  title="INGRESARON HOY"
-                  value={
-                    loadingStats
-                      ? "..."
-                      : stats?.todayCheckIns.toString() || "0"
-                  }
-                  persent={
-                    loadingStats ? "..." : stats?.checkInsPercent || "0%"
-                  }
-                />
+                {loadingStats ? (
+                  <>
+                    <SkeletonCard />
+                    <SkeletonCard />
+                  </>
+                ) : (
+                  <>
+                    <SummaryCard
+                      icon="people"
+                      title="CLIENTES"
+                      value={stats?.totalClients.toString() || "0"}
+                      persent={stats?.clientsPercent || "0%"}
+                    />
+                    <SummaryCard
+                      icon="fitness-center"
+                      title="INGRESARON HOY"
+                      value={stats?.todayCheckIns.toString() || "0"}
+                      persent={stats?.checkInsPercent || "0%"}
+                    />
+                  </>
+                )}
               </View>
               <AttendanceChart
                 data={[

@@ -26,8 +26,8 @@ const ListClients = ({ clients }: ListClientsProps) => {
 
   const keyExtractor = useCallback((item: any) => item._id, []);
 
-  const ListHeaderComponent = useMemo(
-    () => () => (
+  const listHeader = useMemo(
+    () => (
       <View className="flex flex-row justify-between mb-4">
         <Text
           style={{ color: colors.textSecondary }}
@@ -53,7 +53,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponent={listHeader}
       />
     </View>
   );

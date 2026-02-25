@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import Avatar from "./Avatar";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -74,8 +74,8 @@ const RecentCheckIns: React.FC = () => {
 
   const keyExtractor = useCallback((item: CheckIn) => item.id, []);
 
-  const ListHeaderComponent = useMemo(
-    () => () => (
+  const listHeader = useMemo(
+    () => (
       <View className="flex-row justify-between items-center mb-4">
         <Text
           style={{ color: colors.text }}
@@ -99,7 +99,7 @@ const RecentCheckIns: React.FC = () => {
         data={CHECK_INS}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponent={listHeader}
         scrollEnabled={false}
       />
     </View>

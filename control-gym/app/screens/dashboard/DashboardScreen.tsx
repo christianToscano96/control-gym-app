@@ -91,9 +91,7 @@ export default function DashboardScreen() {
                   { value: 75, label: "SUN" },
                 ]}
               />
-              <PeakHoursChart
-                data={stats?.peakHours || []}
-              />
+              <PeakHoursChart data={stats?.peakHours || []} />
             </>
           )}
           <RecentCheckIns />

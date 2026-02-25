@@ -63,7 +63,10 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
     {
       icon: "card-membership" as const,
       label: "Membresía",
-      value: membershipLabels[result.membershipType || ""] || result.membershipType || "—",
+      value:
+        membershipLabels[result.membershipType || ""] ||
+        result.membershipType ||
+        "—",
     },
     {
       icon: "email" as const,
@@ -104,7 +107,11 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
       >
         {/* Status Header */}
         <View
-          style={{ backgroundColor: statusBg, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}
+          style={{
+            backgroundColor: statusBg,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+          }}
           className="items-center py-6"
         >
           <View
@@ -123,14 +130,14 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
           <Text style={{ color: statusColor }} className="text-xl font-bold">
             {statusTitle}
           </Text>
-          <Text style={{ color: statusColor + "CC" }} className="text-sm mt-1">
-            {result.message}
-          </Text>
         </View>
 
         {/* Client Name */}
         <View className="items-center pt-5 pb-3 px-6">
-          <Text style={{ color: textColor }} className="text-2xl font-bold text-center">
+          <Text
+            style={{ color: textColor }}
+            className="text-2xl font-bold text-center"
+          >
             {result.clientName}
           </Text>
         </View>
@@ -157,13 +164,24 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
                     alignItems: "center",
                   }}
                 >
-                  <MaterialIcons name={item.icon} size={18} color={textSecondaryColor} />
+                  <MaterialIcons
+                    name={item.icon}
+                    size={18}
+                    color={textSecondaryColor}
+                  />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text style={{ color: textSecondaryColor }} className="text-xs">
+                  <Text
+                    style={{ color: textSecondaryColor }}
+                    className="text-xs"
+                  >
                     {item.label}
                   </Text>
-                  <Text style={{ color: textColor }} className="text-sm font-semibold" numberOfLines={1}>
+                  <Text
+                    style={{ color: textColor }}
+                    className="text-sm font-semibold"
+                    numberOfLines={1}
+                  >
                     {item.value}
                   </Text>
                 </View>

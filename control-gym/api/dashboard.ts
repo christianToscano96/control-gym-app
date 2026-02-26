@@ -41,3 +41,13 @@ export interface WeeklyAttendance {
 export async function getWeeklyAttendance(): Promise<WeeklyAttendance> {
   return apiClient<WeeklyAttendance>("/api/dashboard/weekly-attendance");
 }
+
+export interface ActivityRateData {
+  activeCount: number;
+  inactiveCount: number;
+  activityRate: number;
+}
+
+export async function getActivityRate(): Promise<ActivityRateData> {
+  return apiClient<ActivityRateData>("/api/dashboard/activity-rate");
+}

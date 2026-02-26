@@ -1,3 +1,4 @@
+import ActivityRateChart from "@/components/ui/ActivityRateChart";
 import AttendanceChart from "@/components/ui/AttendanceChart";
 import FAB from "@/components/ui/FAB";
 import Header from "@/components/ui/Header";
@@ -7,7 +8,7 @@ import RecentCheckIns from "@/components/ui/RecentCheckIns";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
-import { useDashboardStatsQuery, useWeeklyAttendanceQuery } from "@/hooks/queries/useDashboard";
+import { useActivityRateQuery, useDashboardStatsQuery, useWeeklyAttendanceQuery } from "@/hooks/queries/useDashboard";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -28,6 +29,7 @@ export default function DashboardScreen() {
   const { data: stats, isLoading: loadingStats } =
     useDashboardStatsQuery(!isStaff);
   const { data: weeklyData } = useWeeklyAttendanceQuery(!isStaff);
+  const { data: activityData } = useActivityRateQuery(!isStaff);
 
   // Sync profile avatar to Zustand store
   useEffect(() => {
@@ -88,6 +90,11 @@ export default function DashboardScreen() {
                 highlightLabel={weeklyData?.highlightDay}
               />
               <PeakHoursChart data={stats?.peakHours || []} />
+              <ActivityRateChart
+                activeCount={activityData?.activeCount ?? 0}
+                inactiveCount={activityData?.inactiveCount ?? 0}
+                activityRate={activityData?.activityRate ?? 0}
+              />
             </>
           )}
           <RecentCheckIns />

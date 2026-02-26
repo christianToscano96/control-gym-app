@@ -150,7 +150,11 @@ export default function LoginScreen() {
                   style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5" }}
                   className="flex-row items-center rounded-2xl px-4 py-3 mb-6 border"
                 >
-                  <MaterialIcons name="error-outline" size={20} color="#dc2626" />
+                  <MaterialIcons
+                    name="error-outline"
+                    size={20}
+                    color="#dc2626"
+                  />
                   <Text className="text-red-600 text-sm font-medium ml-2 flex-1">
                     {generalError}
                   </Text>
@@ -174,8 +178,9 @@ export default function LoginScreen() {
                     <View className="absolute left-4 top-8 -translate-y-1/2 z-10">
                       <MaterialIcons
                         name="alternate-email"
-                        size={20}
+                        size={22}
                         color={errors.email ? "#ef4444" : colors.textSecondary}
+                        accessibilityLabel="Icono de email"
                       />
                     </View>
                     <TextField
@@ -188,15 +193,28 @@ export default function LoginScreen() {
                           setErrors((e) => ({ ...e, email: undefined }));
                         if (generalError) setGeneralError("");
                       }}
-                      className={`w-full rounded-2xl h-14 pl-12 pr-4 text-base font-normal border-0 ${errors.email ? "border-2 border-red-500" : ""}`}
-                      style={{ backgroundColor: colors.card, color: colors.text }}
+                      className={`w-full rounded-2xl h-14 pl-12 pr-4 text-base font-normal border-0 focus:border-2 focus:border-blue-500 ${errors.email ? "border-2 border-red-500" : ""}`}
+                      style={{
+                        backgroundColor: colors.card,
+                        color: colors.text,
+                      }}
                       autoCapitalize="none"
                       keyboardType="email-address"
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                       blurOnSubmit={false}
                       error={errors.email}
+                      // autoComplete eliminado, no soportado en React Native
+                      // textContentType eliminado, no soportado en TextField
+                      // accessibilityLabel eliminado, no soportado en TextField
+                      // importantForAccessibility eliminado, no soportado en TextField
                     />
+                    {/* Feedback visual adicional */}
+                    {email && !errors.email && (
+                      <Text className="absolute right-4 top-8 -translate-y-1/2 text-green-600 font-semibold text-xs">
+                        ✓
+                      </Text>
+                    )}
                   </View>
                 </View>
 
@@ -213,7 +231,9 @@ export default function LoginScreen() {
                       <MaterialIcons
                         name="lock"
                         size={20}
-                        color={errors.password ? "#ef4444" : colors.textSecondary}
+                        color={
+                          errors.password ? "#ef4444" : colors.textSecondary
+                        }
                       />
                     </View>
                     <TextField
@@ -231,12 +251,17 @@ export default function LoginScreen() {
                         <MaterialIcons
                           name={showPassword ? "visibility-off" : "visibility"}
                           size={20}
-                          color={errors.password ? "#ef4444" : colors.textSecondary}
+                          color={
+                            errors.password ? "#ef4444" : colors.textSecondary
+                          }
                         />
                       }
                       onRightIconPress={() => setShowPassword(!showPassword)}
                       className={`w-full rounded-2xl h-14 pl-12 pr-12 text-base font-normal border-0 ${errors.password ? "border-2 border-red-500" : ""}`}
-                      style={{ backgroundColor: colors.card, color: colors.text }}
+                      style={{
+                        backgroundColor: colors.card,
+                        color: colors.text,
+                      }}
                       autoCapitalize="none"
                       returnKeyType="done"
                       onSubmitEditing={handleLogin}

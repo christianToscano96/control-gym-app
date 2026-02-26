@@ -270,4 +270,39 @@ router.get(
   },
 );
 
+// Obtener tasa de actividad de clientes (activos vs inactivos)
+router.get(
+  "/activity-rate",
+  requireRole(["admin", "superadmin"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = new mongoose.Types.ObjectId(req.user.gym);
+
+      const activeCount = await Client.countDocuments({
+        gym: gymId,
+        active: true,
+      });
+
+      const inactiveCount = await Client.countDocuments({
+        gym: gymId,
+        active: false,
+      });
+
+      const total = activeCount + inactiveCount;
+      const activityRate =
+        total > 0 ? Math.round((activeCount / total) * 100) : 0;
+
+      res.json({
+        activeCount,
+        inactiveCount,
+        activityRate,
+      });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error al obtener tasa de actividad", error: err });
+    }
+  },
+);
+
 export default router;

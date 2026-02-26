@@ -27,7 +27,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Evitar navegación prematura: usar setTimeout para esperar montaje
     const timeout = setTimeout(() => {
-      if (!user && pathname !== "/login" && pathname !== "/login/register") {
+      if (!user && pathname !== "/login" && pathname !== "/login/register" && pathname !== "/login/forgot-password") {
         router.replace("/login");
       }
       if (user && pathname === "/login") {
@@ -47,6 +47,10 @@ export default function RootLayout() {
             <Stack.Screen name="login/index" options={{ headerShown: false }} />
             <Stack.Screen
               name="login/register"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="login/forgot-password"
               options={{ headerShown: false }}
             />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   View,
   TextInput as RNTextInput,
+  type StyleProp,
+  type TextStyle,
 } from "react-native";
 
 interface Props {
   label?: string;
   error?: string;
   className?: string;
+  style?: StyleProp<TextStyle>;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   containerClassName?: string;
@@ -33,6 +36,7 @@ function TextFieldBase(
     label,
     error,
     className,
+    style,
     leftIcon,
     rightIcon,
     containerClassName,
@@ -44,7 +48,7 @@ function TextFieldBase(
     width = "full",
     autoCapitalize = "none",
     ...props
-  },
+  }: Props,
   ref: ForwardedRef<RNTextInput>,
 ) {
   let widthClass = "";
@@ -87,6 +91,7 @@ function TextFieldBase(
             className ||
             `w-full rounded-2xl text-dark-blue bg-slate-50 h-14 ${leftIcon ? "pl-12" : "pl-4"} pr-4 text-base font-normal border-0`
           }
+          style={style}
           placeholderTextColor="#94a3b8"
           autoCapitalize={autoCapitalize}
           value={value}

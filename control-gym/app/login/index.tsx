@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -22,7 +23,7 @@ import { useMembershipStore, useUserStore } from "../../stores/store";
 export const options = { headerShown: false };
 
 export default function LoginScreen() {
-  const { primaryColor, colors } = useTheme();
+  const { primaryColor, colors, isDark } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
+  const [generalError, setGeneralError] = useState("");
   const emailInputRef = useRef<RNTextInput>(null);
   const passwordInputRef = useRef<RNTextInput>(null);
   const setUser = useUserStore((s) => s.setUser);
@@ -61,6 +63,7 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    setGeneralError("");
     if (!validate()) return;
     setLoading(true);
     try {
@@ -87,7 +90,7 @@ export default function LoginScreen() {
     } catch (err) {
       let message = "No se pudo iniciar sesión";
       if (err instanceof Error) message = err.message;
-      setErrors((prev) => ({ ...prev, password: message }));
+      setGeneralError(message);
     } finally {
       setLoading(false);
     }
@@ -98,7 +101,7 @@ export default function LoginScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       className="flex-1"
     >
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -115,7 +118,7 @@ export default function LoginScreen() {
             <View className="flex-1 px-8 pt-20 pb-10">
               {/* Logo y Título */}
               <View className="items-center mb-12">
-                <View className="w-100 h-240 rounded-3xl items-center justify-center mb-6  rotate-3">
+                <View className="w-100 h-240 rounded-3xl items-center justify-center mb-6 rotate-3">
                   <Image
                     source={require("../../assets/images/gymm-logo.png")}
                     style={{
@@ -141,6 +144,22 @@ export default function LoginScreen() {
                 </Text>
               </View>
 
+              {/* Error general */}
+              {generalError ? (
+                <View
+                  style={{ backgroundColor: "#fef2f2", borderColor: "#fca5a5" }}
+                  className="flex-row items-center rounded-2xl px-4 py-3 mb-6 border"
+                >
+                  <MaterialIcons name="error-outline" size={20} color="#dc2626" />
+                  <Text className="text-red-600 text-sm font-medium ml-2 flex-1">
+                    {generalError}
+                  </Text>
+                  <TouchableOpacity onPress={() => setGeneralError("")}>
+                    <MaterialIcons name="close" size={18} color="#dc2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
               {/* Formulario */}
               <View className="space-y-5 flex-1">
                 {/* Email Input */}
@@ -156,7 +175,7 @@ export default function LoginScreen() {
                       <MaterialIcons
                         name="alternate-email"
                         size={20}
-                        color={errors.email ? "#ef4444" : "#94a3b8"}
+                        color={errors.email ? "#ef4444" : colors.textSecondary}
                       />
                     </View>
                     <TextField
@@ -167,8 +186,10 @@ export default function LoginScreen() {
                         setEmail(text);
                         if (errors.email)
                           setErrors((e) => ({ ...e, email: undefined }));
+                        if (generalError) setGeneralError("");
                       }}
-                      className={`w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-4 text-base font-normal border-0 ${errors.email ? "border-2 border-red-500" : ""}`}
+                      className={`w-full rounded-2xl h-14 pl-12 pr-4 text-base font-normal border-0 ${errors.email ? "border-2 border-red-500" : ""}`}
+                      style={{ backgroundColor: colors.card, color: colors.text }}
                       autoCapitalize="none"
                       keyboardType="email-address"
                       returnKeyType="next"
@@ -177,7 +198,6 @@ export default function LoginScreen() {
                       error={errors.email}
                     />
                   </View>
-                  {/* El mensaje de error ya lo muestra el TextField, no es necesario repetirlo aquí */}
                 </View>
 
                 {/* Password Input */}
@@ -186,14 +206,14 @@ export default function LoginScreen() {
                     style={{ color: colors.text }}
                     className="text-sm font-semibold pb-2 px-1"
                   >
-                    Password
+                    Contraseña
                   </Text>
                   <View className="relative">
-                    <View className="absolute left-4 top-8 -translate-y-1/2 z-10 ">
+                    <View className="absolute left-4 top-8 -translate-y-1/2 z-10">
                       <MaterialIcons
                         name="lock"
                         size={20}
-                        color={errors.password ? "#ef4444" : "#94a3b8"}
+                        color={errors.password ? "#ef4444" : colors.textSecondary}
                       />
                     </View>
                     <TextField
@@ -204,34 +224,37 @@ export default function LoginScreen() {
                         setPassword(text);
                         if (errors.password)
                           setErrors((e) => ({ ...e, password: undefined }));
+                        if (generalError) setGeneralError("");
                       }}
                       secureTextEntry={!showPassword}
                       rightIcon={
                         <MaterialIcons
                           name={showPassword ? "visibility-off" : "visibility"}
                           size={20}
-                          color={errors.password ? "#ef4444" : "#94a3b8"}
+                          color={errors.password ? "#ef4444" : colors.textSecondary}
                         />
                       }
                       onRightIconPress={() => setShowPassword(!showPassword)}
-                      className={`w-full rounded-2xl text-dark-blue bg-slate-50 h-14 pl-12 pr-12 text-base font-normal border-0 ${errors.password ? "border-2 border-red-500" : ""}`}
+                      className={`w-full rounded-2xl h-14 pl-12 pr-12 text-base font-normal border-0 ${errors.password ? "border-2 border-red-500" : ""}`}
+                      style={{ backgroundColor: colors.card, color: colors.text }}
                       autoCapitalize="none"
                       returnKeyType="done"
                       onSubmitEditing={handleLogin}
                       error={errors.password}
                     />
                   </View>
-                  {/* El mensaje de error ya lo muestra el TextField, no es necesario repetirlo aquí */}
                 </View>
 
                 {/* Forgot Password */}
                 <View className="items-end">
-                  <TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push("/login/forgot-password" as any)}
+                  >
                     <Text
-                      style={{ color: colors.textSecondary }}
+                      style={{ color: primaryColor }}
                       className="text-sm font-medium"
                     >
-                      Olvidó su contraseña?
+                      ¿Olvidó su contraseña?
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -239,11 +262,14 @@ export default function LoginScreen() {
                 {/* Login Button */}
                 <View className="pt-4 mt-4">
                   <PrimaryButton
-                    title={loading ? "Ingresando..." : "Ingresar"}
+                    title={loading ? "" : "Ingresar"}
                     onPress={handleLogin}
                     disabled={loading}
-                    className={loading ? "opacity-60" : ""}
-                  />
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#1F2937" />
+                    ) : null}
+                  </PrimaryButton>
                 </View>
 
                 {/* Sign Up Link */}

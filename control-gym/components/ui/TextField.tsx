@@ -1,5 +1,12 @@
-import type { ReactNode } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import type { ReactNode, ForwardedRef } from "react";
+import React from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  TextInput as RNTextInput,
+} from "react-native";
 
 interface Props {
   label?: string;
@@ -16,25 +23,30 @@ interface Props {
   width?: "full" | "auto" | "sm" | "md" | "lg" | string;
   keyboardType?: string;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  returnKeyType?: "done" | "go" | "next" | "search" | "send" | undefined;
+  onSubmitEditing?: () => void;
+  blurOnSubmit?: boolean;
 }
 
-const TextField: React.FC<Props> = ({
-  label,
-  error,
-  className,
-  leftIcon,
-  rightIcon,
-  containerClassName,
-  onRightIconPress,
-  value,
-  placeholder,
-  onChangeText,
-  secureTextEntry,
-  width = "full",
-  autoCapitalize = "none",
-  ...props
-}) => {
-  // Definir clases de ancho según la prop width
+function TextFieldBase(
+  {
+    label,
+    error,
+    className,
+    leftIcon,
+    rightIcon,
+    containerClassName,
+    onRightIconPress,
+    value,
+    placeholder,
+    onChangeText,
+    secureTextEntry,
+    width = "full",
+    autoCapitalize = "none",
+    ...props
+  },
+  ref: ForwardedRef<RNTextInput>,
+) {
   let widthClass = "";
   switch (width) {
     case "sm":
@@ -70,6 +82,7 @@ const TextField: React.FC<Props> = ({
           </View>
         )}
         <TextInput
+          ref={ref}
           className={
             className ||
             `w-full rounded-2xl text-dark-blue bg-slate-50 h-14 ${leftIcon ? "pl-12" : "pl-4"} pr-4 text-base font-normal border-0`
@@ -100,6 +113,7 @@ const TextField: React.FC<Props> = ({
       {error && <Text className="text-red-600 mt-1 text-sm">{error}</Text>}
     </View>
   );
-};
+}
 
+const TextField = React.forwardRef<RNTextInput, Props>(TextFieldBase);
 export default TextField;

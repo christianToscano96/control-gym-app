@@ -21,11 +21,17 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
   data,
   title = "Asistencia diaria",
   subtitle = "Tendencias de esta semana",
-  totalValue = 582,
-  trendText = "+8.2% VS LA SEMANA PASADA",
-  highlightLabel = "VIERNES",
+  totalValue = 0,
+  trendText = "0% VS LA SEMANA PASADA",
+  highlightLabel,
 }) => {
   const { colors } = useTheme();
+
+  const isNegativeTrend = trendText.startsWith("-");
+  const trendColor = isNegativeTrend ? "#ef4444" : "#22c55e";
+
+  const hasData = data.length > 0 && data.some((d) => d.value > 0);
+
   const chartData = data.map((item) =>
     item.label === highlightLabel
       ? {
@@ -49,6 +55,33 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
           },
         },
   );
+
+  if (!hasData) {
+    return (
+      <View
+        style={{ backgroundColor: colors.card }}
+        className="rounded-2xl p-5 mx-1 my-2 shadow-sm shadow-black/5"
+      >
+        <Text
+          style={{ color: colors.text }}
+          className="text-lg font-extrabold"
+        >
+          {title}
+        </Text>
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-xs mt-0.5"
+        >
+          {subtitle}
+        </Text>
+        <View className="items-center py-8">
+          <Text style={{ color: colors.textSecondary }} className="text-sm">
+            Sin asistencias registradas esta semana
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -74,7 +107,10 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({
           <Text style={{ color: colors.text }} className="text-2xl font-black">
             {totalValue}
           </Text>
-          <Text className="text-[10px] font-bold text-green-500 mt-0.5">
+          <Text
+            style={{ color: trendColor }}
+            className="text-[10px] font-bold mt-0.5"
+          >
             {trendText}
           </Text>
         </View>

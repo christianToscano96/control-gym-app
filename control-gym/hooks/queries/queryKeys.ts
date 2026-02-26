@@ -13,6 +13,7 @@ export const queryKeys = {
   },
   dashboard: {
     stats: ["dashboard", "stats"] as const,
+    weeklyAttendance: ["dashboard", "weeklyAttendance"] as const,
   },
   access: {
     recent: ["access", "recent"] as const,

@@ -51,3 +51,30 @@ export interface ActivityRateData {
 export async function getActivityRate(): Promise<ActivityRateData> {
   return apiClient<ActivityRateData>("/api/dashboard/activity-rate");
 }
+
+export interface MembershipDistribution {
+  basico: number;
+  pro: number;
+  proplus: number;
+  total: number;
+}
+
+export async function getMembershipDistribution(): Promise<MembershipDistribution> {
+  return apiClient<MembershipDistribution>("/api/dashboard/membership-distribution");
+}
+
+export interface ExpiringMembership {
+  _id: string;
+  name: string;
+  expiresAt: string;
+  membershipType: string;
+}
+
+export interface ExpiringMemberships {
+  count: number;
+  clients: ExpiringMembership[];
+}
+
+export async function getExpiringMemberships(): Promise<ExpiringMemberships> {
+  return apiClient<ExpiringMemberships>("/api/dashboard/expiring-memberships");
+}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -8,6 +8,14 @@ import {
 } from "react-native";
 import { CameraView } from "expo-camera";
 import { MaterialIcons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+} from "react-native-reanimated";
 
 const { width } = Dimensions.get("window");
 const SCAN_AREA_SIZE = width * 0.7;
@@ -33,6 +41,34 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   onToggleFlash,
   onClose,
 }) => {
+  // Animated scan line
+  const scanLineY = useSharedValue(0);
+  const scanLinePulse = useSharedValue(0.6);
+
+  useEffect(() => {
+    scanLineY.value = withRepeat(
+      withTiming(SCAN_AREA_SIZE - 4, {
+        duration: 2200,
+        easing: Easing.inOut(Easing.ease),
+      }),
+      -1,
+      true,
+    );
+    scanLinePulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1100 }),
+        withTiming(0.6, { duration: 1100 }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLineY.value }],
+    opacity: scanLinePulse.value,
+  }));
+
   return (
     <View style={styles.cameraContainer}>
       <CameraView
@@ -44,7 +80,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         }}
       />
 
-      {/* Overlay with scan area (absolute, on top of camera) */}
+      {/* Overlay with scan area */}
       <View style={[styles.overlay, StyleSheet.absoluteFill]}>
         <View style={styles.overlayTop} />
 
@@ -61,6 +97,17 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
               },
             ]}
           >
+            {/* Animated scan line */}
+            {!scanned && (
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  { backgroundColor: primaryColor },
+                  scanLineStyle,
+                ]}
+              />
+            )}
+
             {/* Corner decorations */}
             <View
               style={[
@@ -96,28 +143,38 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         </View>
 
         <View style={styles.overlayBottom}>
-          <Text className="text-white text-center text-lg font-semibold mb-4">
-            Alinea el código QR dentro del marco
-          </Text>
+          <View style={styles.instructionContainer}>
+            <MaterialIcons
+              name="qr-code-scanner"
+              size={20}
+              color="rgba(255,255,255,0.9)"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.instructionText}>
+              Alinea el código QR dentro del marco
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Controls (absolute, on top of everything) */}
+      {/* Controls */}
       <View style={styles.controls}>
         <TouchableOpacity
           style={[styles.controlButton, { backgroundColor: cardColor }]}
           onPress={onToggleFlash}
+          activeOpacity={0.8}
         >
           <MaterialIcons
             name={flashEnabled ? "flash-on" : "flash-off"}
             size={28}
-            color={textColor}
+            color={flashEnabled ? "#F59E0B" : textColor}
           />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.controlButton, { backgroundColor: cardColor }]}
           onPress={onClose}
+          activeOpacity={0.8}
         >
           <MaterialIcons name="close" size={28} color={textColor} />
         </TouchableOpacity>
@@ -128,9 +185,6 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
 
 const styles = StyleSheet.create({
   cameraContainer: {
-    flex: 1,
-  },
-  camera: {
     flex: 1,
   },
   overlay: {
@@ -152,12 +206,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   scanArea: {
     borderWidth: 2,
     borderRadius: 20,
     position: "relative",
+    overflow: "hidden",
+  },
+  scanLine: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    height: 3,
+    borderRadius: 2,
   },
   corner: {
     position: "absolute",
@@ -213,5 +276,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  instructionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  instructionText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

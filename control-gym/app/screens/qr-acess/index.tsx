@@ -1,7 +1,16 @@
-import React, { useState, useMemo, useRef } from "react";
-import { Text, View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { Text, View, StyleSheet, Alert } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import Animated, {
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import { CameraScanner } from "./CameraScanner";
@@ -25,6 +34,25 @@ const QRAccessScreen = () => {
   const [accessResult, setAccessResult] = useState<AccessResult | null>(null);
   const [validating, setValidating] = useState(false);
   const isProcessingRef = useRef(false);
+
+  // Pulse animation for validating state
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (validating) {
+      pulseScale.value = withRepeat(
+        withTiming(1.05, { duration: 800 }),
+        -1,
+        true,
+      );
+    } else {
+      pulseScale.value = 1;
+    }
+  }, [validating]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
 
   // ─── TanStack Query ──────────────────────────────────────────
   const queryClient = useQueryClient();
@@ -60,6 +88,9 @@ const QRAccessScreen = () => {
     setCameraActive(false);
     setValidating(true);
 
+    // Haptic feedback al escanear
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     try {
       const response = await apiClient<AccessResult>(
         "/api/access/validate-qr",
@@ -70,13 +101,23 @@ const QRAccessScreen = () => {
       );
       setAccessResult(response);
 
+      // Haptic feedback según resultado
+      if (response.allowed) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+
       // Invalidar queries del dashboard si el acceso fue exitoso
       if (response.allowed) {
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
         queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.weeklyAttendance });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.weeklyAttendance,
+        });
       }
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setAccessResult({
         allowed: false,
         clientName: "Error",
@@ -88,6 +129,7 @@ const QRAccessScreen = () => {
   };
 
   const startScanning = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setScanned(false);
     setCameraActive(true);
   };
@@ -101,6 +143,7 @@ const QRAccessScreen = () => {
   };
 
   const openManualEntry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setManualEntryVisible(true);
     setSearchQuery("");
     setSelectedClient(null);
@@ -125,15 +168,20 @@ const QRAccessScreen = () => {
         closeManualEntry();
         setAccessResult(response);
 
-        // Invalidar queries del dashboard si el acceso fue exitoso
         if (response.allowed) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           queryClient.invalidateQueries({
             queryKey: queryKeys.dashboard.stats,
           });
           queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
-          queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.weeklyAttendance });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.dashboard.weeklyAttendance,
+          });
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
       } catch (error: any) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert(
           "Error",
           error?.message || "No se pudo registrar el acceso",
@@ -145,6 +193,7 @@ const QRAccessScreen = () => {
 
   const handleDenyAccess = () => {
     if (selectedClient) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       const fullName = `${selectedClient.firstName} ${selectedClient.lastName}`;
       Alert.alert("Acceso Denegado", `Acceso denegado para ${fullName}`, [
         {
@@ -171,7 +220,9 @@ const QRAccessScreen = () => {
         backgroundColor={colors.background}
         textColor={colors.text}
         textSecondaryColor={colors.textSecondary}
+        primaryColor={primaryColor}
         onRetry={requestPermission}
+        onManualEntry={openManualEntry}
       />
     );
   }
@@ -204,41 +255,98 @@ const QRAccessScreen = () => {
           onClose={stopScanning}
         />
       ) : validating ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <View
-            style={{ backgroundColor: colors.card, borderColor: colors.border }}
-            className="w-full rounded-3xl border p-8 items-center"
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          className="flex-1 items-center justify-center px-6"
+        >
+          <Animated.View
+            style={[
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 24,
+                padding: 32,
+                width: "100%",
+                alignItems: "center",
+              },
+              pulseStyle,
+            ]}
           >
-            <ActivityIndicator size="large" color={primaryColor} />
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: `${primaryColor}20`,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <MaterialIcons
+                name="qr-code-scanner"
+                size={36}
+                color={primaryColor}
+              />
+            </View>
             <Text
               style={{ color: colors.text }}
-              className="text-lg font-bold mt-4"
+              className="text-lg font-bold mt-2"
             >
               Validando acceso...
             </Text>
             <Text
               style={{ color: colors.textSecondary }}
-              className="text-sm mt-1 text-center"
+              className="text-sm mt-2 text-center"
             >
               Verificando membresía del cliente
             </Text>
-          </View>
-        </View>
+            <View
+              style={{
+                marginTop: 20,
+                width: 120,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: `${primaryColor}30`,
+                overflow: "hidden",
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: primaryColor,
+                  borderRadius: 2,
+                }}
+              />
+            </View>
+          </Animated.View>
+        </Animated.View>
       ) : accessResult ? (
-        <AccessResultCard
-          result={accessResult}
-          cardColor={colors.card}
-          textColor={colors.text}
-          textSecondaryColor={colors.textSecondary}
-          borderColor={colors.border}
-          onScanAnother={() => {
-            resetScanState();
-            setCameraActive(true);
-          }}
-          onClose={resetScanState}
-        />
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          style={{ flex: 1 }}
+        >
+          <AccessResultCard
+            result={accessResult}
+            cardColor={colors.card}
+            textColor={colors.text}
+            textSecondaryColor={colors.textSecondary}
+            borderColor={colors.border}
+            onScanAnother={() => {
+              resetScanState();
+              setCameraActive(true);
+            }}
+            onClose={resetScanState}
+          />
+        </Animated.View>
       ) : (
-        <View style={styles.infoContainer} className="px-6 flex-1">
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={styles.infoContainer}
+          className="px-6 flex-1"
+        >
           <InfoCard
             cardColor={colors.card}
             primaryColor={primaryColor}
@@ -256,7 +364,7 @@ const QRAccessScreen = () => {
               secondary
             />
           </View>
-        </View>
+        </Animated.View>
       )}
 
       <ManualEntryModal

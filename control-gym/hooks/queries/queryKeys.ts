@@ -15,6 +15,8 @@ export const queryKeys = {
     stats: ["dashboard", "stats"] as const,
     weeklyAttendance: ["dashboard", "weeklyAttendance"] as const,
     activityRate: ["dashboard", "activityRate"] as const,
+    membershipDistribution: ["dashboard", "membershipDistribution"] as const,
+    expiringMemberships: ["dashboard", "expiringMemberships"] as const,
   },
   access: {
     recent: ["access", "recent"] as const,

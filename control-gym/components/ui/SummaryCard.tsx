@@ -18,6 +18,11 @@ export const SummaryCard = ({
 }: SummaryCardProps) => {
   const { primaryColor, colors } = useTheme();
 
+  const isNegative = persent?.startsWith("-");
+  const badgeBgColor = isNegative ? "#FEE2E2" : "#DCFCE7";
+  const badgeTextColor = isNegative ? "#DC2626" : primaryColor;
+  const prefix = isNegative ? "" : "+";
+
   return (
     <View
       style={{ backgroundColor: colors.card }}
@@ -26,9 +31,12 @@ export const SummaryCard = ({
       <View className="flex flex-row items-center justify-between mb-2">
         <MaterialIcons name={icon as any} size={24} color={primaryColor} />
 
-        <View className="bg-green-50 px-2 py-1 rounded">
-          <Text style={{ color: primaryColor, fontWeight: "bold" }}>
-            +{persent || "12%"}
+        <View
+          style={{ backgroundColor: badgeBgColor }}
+          className="px-2 py-1 rounded"
+        >
+          <Text style={{ color: badgeTextColor, fontWeight: "bold" }}>
+            {prefix}{persent || "0%"}
           </Text>
         </View>
       </View>

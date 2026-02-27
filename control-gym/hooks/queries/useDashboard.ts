@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData } from "@/api/dashboard";
+import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData, getMembershipDistribution, MembershipDistribution, getExpiringMemberships, ExpiringMemberships } from "@/api/dashboard";
 import { queryKeys } from "./queryKeys";
 
 export function useDashboardStatsQuery(enabled: boolean = true) {
@@ -40,6 +40,28 @@ export function useActivityRateQuery(enabled: boolean = true) {
     queryFn: getActivityRate,
     enabled,
     staleTime: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+}
+
+export function useMembershipDistributionQuery(enabled: boolean = true) {
+  return useQuery<MembershipDistribution>({
+    queryKey: queryKeys.dashboard.membershipDistribution,
+    queryFn: getMembershipDistribution,
+    enabled,
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+}
+
+export function useExpiringMembershipsQuery(enabled: boolean = true) {
+  return useQuery<ExpiringMemberships>({
+    queryKey: queryKeys.dashboard.expiringMemberships,
+    queryFn: getExpiringMemberships,
+    enabled,
+    staleTime: 60000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });

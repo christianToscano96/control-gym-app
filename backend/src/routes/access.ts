@@ -13,7 +13,18 @@ router.post(
   async (req: AuthRequest, res) => {
     const { clientId, method } = req.body;
     const client = await Client.findById(clientId);
-    if (!client || !client.active)
+    if (!client)
+      return res
+        .status(404)
+        .json({ message: "Cliente no encontrado" });
+
+    // Verificar y persistir expiración si el endDate ya pasó
+    if (client.isActive && client.endDate && new Date(client.endDate) < new Date()) {
+      client.isActive = false;
+      await client.save();
+    }
+
+    if (!client.isActive)
       return res
         .status(404)
         .json({ message: "Cliente no encontrado o inactivo" });
@@ -107,7 +118,7 @@ router.post(
         endDate: client.endDate,
       };
 
-      if (!client.active) {
+      if (!client.isActive) {
         return res.status(200).json({
           allowed: false,
           ...clientInfo,
@@ -116,6 +127,11 @@ router.post(
       }
 
       if (client.endDate && new Date(client.endDate) < new Date()) {
+        // Persistir el cambio de estado
+        if (client.isActive) {
+          client.isActive = false;
+          await client.save();
+        }
         return res.status(200).json({
           allowed: false,
           ...clientInfo,

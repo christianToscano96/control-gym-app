@@ -157,7 +157,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                           style={[
                             styles.statusBadge,
                             {
-                              backgroundColor: selectedClient.active
+                              backgroundColor: selectedClient.isActive
                                 ? "#10b98120"
                                 : "#ef444420",
                             },
@@ -165,19 +165,19 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                         >
                           <Text
                             style={{
-                              color: selectedClient.active
+                              color: selectedClient.isActive
                                 ? "#10b981"
                                 : "#ef4444",
                             }}
                             className="text-sm font-semibold"
                           >
-                            {selectedClient.active ? "Activo" : "Inactivo"}
+                            {selectedClient.isActive ? "Activo" : "Inactivo"}
                           </Text>
                         </View>
                       </View>
                     </View>
 
-                    {!selectedClient.active && (
+                    {!selectedClient.isActive && (
                       <View
                         style={{ backgroundColor: "#fef2f2" }}
                         className="mt-4 p-3 rounded-xl flex-row items-start"
@@ -222,8 +222,8 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               <ButtonCustom
                 title="Registrar Acceso"
                 onPress={onConfirm}
-                disabled={!selectedClient || !selectedClient.active}
-                tertiary={!selectedClient || !selectedClient.active}
+                disabled={!selectedClient || !selectedClient.isActive}
+                tertiary={!selectedClient || !selectedClient.isActive}
               />
               <ButtonCustom
                 title="Denegar Acceso"

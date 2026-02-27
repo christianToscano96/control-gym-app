@@ -21,7 +21,7 @@ interface Client {
   lastName?: string;
   avatarUri?: string;
   status?: string;
-  active?: boolean;
+  isActive?: boolean;
 }
 
 export default function ClientsScreen() {
@@ -50,7 +50,7 @@ export default function ClientsScreen() {
       lastName: "",
       avatarUri: s.avatar,
       status: s.role === "empleado" ? "Staff" : "Trainer",
-      active: s.active,
+      isActive: s.active,
     }));
   }, [staffData]);
 
@@ -86,9 +86,9 @@ export default function ClientsScreen() {
       if (tab === TAB_STAFF) {
         matchesTab = true;
       } else if (tab === TAB_ACTIVE) {
-        matchesTab = !!c.active;
+        matchesTab = !!c.isActive;
       } else if (tab === TAB_EXPIRED) {
-        matchesTab = !c.active;
+        matchesTab = !c.isActive;
       }
 
       return matchesSearch && matchesTab;

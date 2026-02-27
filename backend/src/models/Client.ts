@@ -9,7 +9,7 @@ export interface IClient extends Document {
   instagramLink?: string;
   paymentMethod: "transferencia" | "efectivo";
   membershipType?: "basico" | "pro" | "proplus";
-  active: boolean;
+  isActive: boolean;
   startDate: Date;
   endDate?: Date;
   selected_period?: string;
@@ -34,7 +34,7 @@ const ClientSchema = new Schema<IClient>(
       enum: ["basico", "pro", "proplus"],
       required: true,
     },
-    active: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
     selected_period: { type: String },

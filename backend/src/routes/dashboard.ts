@@ -4,6 +4,7 @@ import { Client } from "../models/Client";
 import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
 import { authenticateJWT, requireRole, AuthRequest } from "../middleware/auth";
+import { expireClientsForGym } from "../utils/expireClients";
 
 const router = Router();
 
@@ -278,14 +279,17 @@ router.get(
     try {
       const gymId = new mongoose.Types.ObjectId(req.user.gym);
 
+      // Expirar clientes antes de calcular la tasa de actividad
+      await expireClientsForGym(gymId);
+
       const activeCount = await Client.countDocuments({
         gym: gymId,
-        active: true,
+        isActive: true,
       });
 
       const inactiveCount = await Client.countDocuments({
         gym: gymId,
-        active: false,
+        isActive: false,
       });
 
       const total = activeCount + inactiveCount;

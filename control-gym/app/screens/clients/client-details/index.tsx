@@ -65,7 +65,7 @@ const UserDetailsScreen = () => {
   // Derived state
   const fullName =
     `${clientData?.firstName || ""} ${clientData?.lastName || ""}`.trim();
-  const statusLabel = clientData?.active ? "Activo" : "Inactivo";
+  const statusLabel = clientData?.isActive ? "Activo" : "Inactivo";
 
   // Membership expiration calculations
   const expirationDate = calculateExpirationDate(
@@ -77,6 +77,11 @@ const UserDetailsScreen = () => {
   const expiringSoon = isExpiringSoon(expirationDate);
   const expirationDateText = formatDate(expirationDate);
   const expirationLabel = expired ? "Expiró" : "Válido hasta";
+  const daysLeft = expirationDate
+    ? Math.ceil(
+        (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      )
+    : undefined;
 
   const onDeleteClient = () => {
     Alert.alert(
@@ -183,7 +188,8 @@ const UserDetailsScreen = () => {
           hasExpired={expired}
           isExpiringSoon={expiringSoon}
           statusLabel={statusLabel}
-          isActive={clientData.active}
+          isActive={clientData.isActive}
+          daysLeft={daysLeft}
         />
 
         <ClientInfoCard

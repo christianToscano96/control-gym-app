@@ -44,7 +44,7 @@ export default function NewClientScreen() {
         instagramLink: instagram,
         paymentMethod,
         membershipType: "basico",
-        active: true,
+        isActive: true,
         startDate: startDate,
         selected_period: period,
         dni,

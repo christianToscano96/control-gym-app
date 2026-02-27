@@ -38,10 +38,10 @@ router.get("/report/memberships-by-plan", async (req, res) => {
 
 // Reporte: clientes totales y por gimnasio
 router.get("/report/clients", async (req, res) => {
-  const total = await Client.countDocuments({ active: true });
+  const total = await Client.countDocuments({ isActive: true });
   // Clientes por gimnasio
   const porGimnasio = await Client.aggregate([
-    { $match: { active: true } },
+    { $match: { isActive: true } },
     { $group: { _id: "$gym", count: { $sum: 1 } } },
   ]);
   res.json({ total, porGimnasio });

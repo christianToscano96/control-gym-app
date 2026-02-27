@@ -12,6 +12,7 @@ interface StatsCardsProps {
   isExpiringSoon: boolean;
   statusLabel: string;
   isActive: boolean;
+  daysLeft?: number;
 }
 
 export const StatsCards: React.FC<StatsCardsProps> = ({
@@ -23,6 +24,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   isExpiringSoon,
   statusLabel,
   isActive,
+  daysLeft,
 }) => {
   const { colors } = useTheme();
 
@@ -110,10 +112,25 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
           >
             {expirationDateText}
           </Text>
-          {isExpiringSoon && !hasExpired && (
+          {!hasExpired && daysLeft != null && daysLeft >= 0 && (
             <View className="mt-1 flex-row items-center">
-              <MaterialIcons name="warning" size={12} color="#D97706" />
-              <Text className="text-xs text-amber-600 ml-1">Por vencer</Text>
+              <MaterialIcons
+                name={daysLeft <= 1 ? "error" : isExpiringSoon ? "warning" : "schedule"}
+                size={12}
+                color={daysLeft <= 1 ? "#DC2626" : isExpiringSoon ? "#D97706" : colors.textSecondary}
+              />
+              <Text
+                className="text-xs ml-1"
+                style={{
+                  color: daysLeft <= 1 ? "#DC2626" : isExpiringSoon ? "#D97706" : colors.textSecondary,
+                }}
+              >
+                {daysLeft === 0
+                  ? "Vence hoy"
+                  : daysLeft === 1
+                    ? "Vence mañana"
+                    : `${daysLeft} días restantes`}
+              </Text>
             </View>
           )}
         </View>
@@ -127,13 +144,29 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             <View
               className="w-10 h-10 rounded-full items-center justify-center"
               style={{
-                backgroundColor: isActive ? "#D1FAE5" : "#FEE2E2",
+                backgroundColor: isActive
+                  ? isExpiringSoon
+                    ? "#FEF3C7"
+                    : "#D1FAE5"
+                  : "#FEE2E2",
               }}
             >
               <MaterialIcons
-                name={isActive ? "check-circle" : "cancel"}
+                name={
+                  isActive
+                    ? isExpiringSoon
+                      ? "warning"
+                      : "check-circle"
+                    : "cancel"
+                }
                 size={20}
-                color={isActive ? "#10B981" : "#DC2626"}
+                color={
+                  isActive
+                    ? isExpiringSoon
+                      ? "#D97706"
+                      : "#10B981"
+                    : "#DC2626"
+                }
               />
             </View>
             <View className="mt-3 flex-1">
@@ -146,10 +179,14 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               <Text
                 className="text-base font-bold"
                 style={{
-                  color: isActive ? "#10B981" : "#DC2626",
+                  color: isActive
+                    ? isExpiringSoon
+                      ? "#D97706"
+                      : "#10B981"
+                    : "#DC2626",
                 }}
               >
-                {statusLabel}
+                {isActive && isExpiringSoon ? "Por vencer" : statusLabel}
               </Text>
             </View>
           </View>

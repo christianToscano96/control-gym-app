@@ -19,7 +19,7 @@ router.get(
       "email",
       "phone",
       "membershipType",
-      "active",
+      "isActive",
       "startDate",
       "endDate",
     ];

@@ -1,6 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from "react-native-reanimated";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 
 export interface AccessResult {
@@ -55,9 +61,20 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
   const allowed = result.allowed;
 
   const statusColor = allowed ? "#10B981" : "#DC2626";
-  const statusBg = allowed ? "#D1FAE5" : "#FEE2E2";
+  const statusBg = allowed ? `${statusColor}15` : `${statusColor}15`;
   const statusIcon = allowed ? "check-circle" : "cancel";
   const statusTitle = allowed ? "Acceso Permitido" : "Acceso Denegado";
+
+  // Entrance animation for the icon
+  const iconScale = useSharedValue(0);
+
+  useEffect(() => {
+    iconScale.value = withDelay(200, withSpring(1, { damping: 12, stiffness: 150 }));
+  }, []);
+
+  const iconAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
 
   const infoItems = [
     {
@@ -99,10 +116,10 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
           borderWidth: 1,
           borderColor,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          elevation: 3,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 4,
         }}
       >
         {/* Status Header */}
@@ -112,28 +129,34 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
           }}
-          className="items-center py-6"
+          className="items-center py-8"
         >
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: statusColor + "20",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: 12,
-            }}
+          <Animated.View
+            style={[
+              {
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: `${statusColor}20`,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 14,
+              },
+              iconAnimStyle,
+            ]}
           >
-            <MaterialIcons name={statusIcon} size={44} color={statusColor} />
-          </View>
-          <Text style={{ color: statusColor }} className="text-xl font-bold">
+            <MaterialIcons name={statusIcon} size={48} color={statusColor} />
+          </Animated.View>
+          <Text
+            style={{ color: statusColor }}
+            className="text-2xl font-bold"
+          >
             {statusTitle}
           </Text>
           {result.message && (
             <Text
-              style={{ color: statusColor }}
-              className="text-sm mt-1 text-center opacity-80"
+              style={{ color: statusColor, opacity: 0.8 }}
+              className="text-sm mt-2 text-center px-6"
             >
               {result.message}
             </Text>
@@ -151,7 +174,7 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
         </View>
 
         {/* Info Items */}
-        {result.clientName && (
+        {result.clientName && result.clientName !== "Error" && (
           <View className="px-6 pb-4">
             {infoItems.map((item, index) => (
               <View
@@ -167,7 +190,7 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
                     width: 36,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor: textSecondaryColor + "15",
+                    backgroundColor: `${textSecondaryColor}15`,
                     justifyContent: "center",
                     alignItems: "center",
                   }}

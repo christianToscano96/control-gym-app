@@ -57,7 +57,6 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
     ({ item }: { item: any }) => {
       const isActive = !!item.isActive;
       const statusColor = isActive ? "#10b981" : "#ef4444";
-      const statusBg = isActive ? "#10b98120" : "#ef444420";
       const isSelected = selectedClient?._id === item._id;
 
       return (
@@ -202,7 +201,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
 
             {!selectedClient.isActive && (
               <View
-                style={{ backgroundColor: "#fef2f2" }}
+                style={{ backgroundColor: "#ef444415" }}
                 className="mt-4 p-3 rounded-xl flex-row items-start"
               >
                 <MaterialIcons
@@ -290,13 +289,36 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
           <View
             style={[styles.modalContent, { backgroundColor }]}
           >
+            {/* Drag Handle */}
+            <View className="items-center pt-2 pb-4">
+              <View
+                style={{
+                  width: 40,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: `${textSecondaryColor}40`,
+                }}
+              />
+            </View>
+
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <Text style={{ color: textColor }} className="text-2xl font-bold">
                 Ingreso Manual
               </Text>
-              <TouchableOpacity onPress={onClose}>
-                <MaterialIcons name="close" size={28} color={textColor} />
+              <TouchableOpacity
+                onPress={onClose}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: `${textSecondaryColor}15`,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={22} color={textColor} />
               </TouchableOpacity>
             </View>
 
@@ -378,7 +400,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: "95%",
     minHeight: "90%",
-    paddingTop: 20,
+    paddingTop: 8,
   },
   modalHeader: {
     flexDirection: "row",

@@ -35,6 +35,7 @@ interface CreateClientData {
   startDate: Date | null;
   selected_period: string;
   dni?: string;
+  paymentAmount?: number;
 }
 
 export function useCreateClient() {

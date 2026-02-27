@@ -30,4 +30,7 @@ export const queryKeys = {
   emailConfig: {
     current: ["emailConfig"] as const,
   },
+  periodPricing: {
+    current: ["periodPricing"] as const,
+  },
 };

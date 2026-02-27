@@ -22,6 +22,12 @@ export const calculateExpirationDate = (
   if (period.includes("1 día") || period.includes("diario") || period.includes("1 dia")) {
     expirationDate.setDate(expirationDate.getDate() + 1);
   } else if (
+    period.includes("7 días") ||
+    period.includes("semanal") ||
+    period.includes("7 dias")
+  ) {
+    expirationDate.setDate(expirationDate.getDate() + 7);
+  } else if (
     period.includes("15 días") ||
     period.includes("quincenal") ||
     period.includes("15 dias")

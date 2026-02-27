@@ -82,6 +82,10 @@ export default function RootLayout() {
               name="screens/config/EmailConfigScreen"
               options={{ headerShown: false }}
             />
+            <Stack.Screen
+              name="screens/config/PeriodPricingScreen"
+              options={{ headerShown: false }}
+            />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

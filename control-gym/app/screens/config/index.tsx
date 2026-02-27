@@ -215,6 +215,11 @@ export default function ConfigScreen() {
                 title="Configuración de Email"
                 onPress={() => router.push("/screens/config/EmailConfigScreen")}
               />
+              <SettingItem
+                icon="attach-money"
+                title="Precios por Periodo"
+                onPress={() => router.push("/screens/config/PeriodPricingScreen")}
+              />
             </View>
           </View>
         )}

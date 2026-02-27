@@ -12,6 +12,7 @@ export interface IClient extends Document {
   isActive: boolean;
   startDate: Date;
   endDate?: Date;
+  dni?: string;
   selected_period?: string;
   qrCode?: string;
 }
@@ -37,6 +38,7 @@ const ClientSchema = new Schema<IClient>(
     isActive: { type: Boolean, default: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
+    dni: { type: String },
     selected_period: { type: String },
     qrCode: { type: String },
   },

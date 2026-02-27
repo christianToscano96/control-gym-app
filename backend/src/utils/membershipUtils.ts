@@ -16,6 +16,12 @@ export function calculateEndDate(
   ) {
     endDate.setDate(endDate.getDate() + 1);
   } else if (
+    period.includes("7 días") ||
+    period.includes("semanal") ||
+    period.includes("7 dias")
+  ) {
+    endDate.setDate(endDate.getDate() + 7);
+  } else if (
     period.includes("15 días") ||
     period.includes("quincenal") ||
     period.includes("15 dias")

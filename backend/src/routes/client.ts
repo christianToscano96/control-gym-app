@@ -10,6 +10,7 @@ import { sendWelcomeEmail } from "../services/emailService";
 import QRCode from "qrcode";
 import { calculateEndDate } from "../utils/membershipUtils";
 import { expireClientsForGym } from "../utils/expireClients";
+import { Payment } from "../models/Payment";
 
 const router = Router();
 
@@ -79,6 +80,26 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
     await client.save();
   } catch (qrErr) {
     console.error("Error generando QR code:", qrErr);
+  }
+
+  // Crear registro de pago si hay precio configurado
+  if (client.selected_period) {
+    const periodKey = client.selected_period.toLowerCase();
+    const configuredPrice =
+      gym.periodPricing?.[periodKey as keyof typeof gym.periodPricing] || 0;
+    const amount = req.body.paymentAmount || configuredPrice;
+
+    if (amount > 0) {
+      await Payment.create({
+        gym: gymId,
+        client: client._id,
+        amount,
+        method: client.paymentMethod,
+        period: client.selected_period,
+        status: "completed",
+        date: new Date(),
+      });
+    }
   }
 
   // Actualizar contador de clientes

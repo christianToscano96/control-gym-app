@@ -2,6 +2,7 @@ import { FlatList, Text, View } from "react-native";
 import React, { useCallback, useMemo } from "react";
 import ItemClient from "./ItemClient";
 import { useTheme } from "@/context/ThemeContext";
+import { calculateExpirationDate } from "@/utils/membershipUtils";
 
 interface ListClientsProps {
   clients?: any[];
@@ -9,20 +10,27 @@ interface ListClientsProps {
 const ListClients = ({ clients }: ListClientsProps) => {
   const { colors } = useTheme();
 
-  const renderItem = useCallback(
-    ({ item }: { item: any }) => (
+  const renderItem = useCallback(({ item }: { item: any }) => {
+    const expirationDate = calculateExpirationDate(
+      item.startDate,
+      item.createdAt,
+      item.selected_period
+    );
+    const daysLeft = expirationDate
+      ? Math.ceil(
+          (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
+      : undefined;
+
+    return (
       <ItemClient
         name={item.firstName + " " + item.lastName}
-        status={item.active ? "Activo" : "Inactivo"}
-        avatarUri={
-          item.avatarUri ||
-          "https://ui-avatars.com/api/?name=+&background=cccccc&color=ffffff&size=128"
-        }
+        isActive={!!item.isActive}
+        daysLeft={daysLeft}
         clientId={item._id}
       />
-    ),
-    [],
-  );
+    );
+  }, []);
 
   const keyExtractor = useCallback((item: any) => item._id, []);
 

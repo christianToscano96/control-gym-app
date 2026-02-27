@@ -31,7 +31,7 @@ interface CreateClientData {
   instagramLink?: string;
   paymentMethod: string;
   membershipType: string;
-  active: boolean;
+  isActive: boolean;
   startDate: Date | null;
   selected_period: string;
   dni?: string;

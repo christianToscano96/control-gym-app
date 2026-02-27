@@ -8,6 +8,8 @@ import {
 } from "../middleware/auth";
 import { sendWelcomeEmail } from "../services/emailService";
 import QRCode from "qrcode";
+import { calculateEndDate } from "../utils/membershipUtils";
+import { expireClientsForGym } from "../utils/expireClients";
 
 const router = Router();
 
@@ -20,6 +22,10 @@ router.get(
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
     const gymId = req.user.gym;
+
+    // Expirar clientes cuyo endDate ya pasó antes de devolver resultados
+    await expireClientsForGym(gymId);
+
     const clients = await Client.find({ gym: gymId });
     res.json(clients);
   },
@@ -45,7 +51,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
   // Contar clientes activos
   const currentClients = await Client.countDocuments({
     gym: gymId,
-    active: true,
+    isActive: true,
   });
   if (currentClients >= maxClients) {
     return res.status(403).json({
@@ -54,6 +60,12 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
   }
 
   const client = new Client({ ...req.body, gym: gymId });
+
+  // Calcular endDate basado en startDate + selected_period
+  if (client.startDate && client.selected_period) {
+    client.endDate = calculateEndDate(client.startDate, client.selected_period);
+  }
+
   await client.save();
 
   // Generar QR Code con el ID del cliente
@@ -101,9 +113,27 @@ router.put(
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
     const gymId = req.user.gym;
+    const updateData = { ...req.body };
+
+    // Si cambia startDate o selected_period, recalcular endDate
+    if (updateData.startDate || updateData.selected_period) {
+      const existing = await Client.findOne({
+        _id: req.params.id,
+        gym: gymId,
+      });
+      if (!existing)
+        return res.status(404).json({ message: "Cliente no encontrado" });
+
+      const startDate = new Date(updateData.startDate || existing.startDate);
+      const period = updateData.selected_period || existing.selected_period;
+      if (period) {
+        updateData.endDate = calculateEndDate(startDate, period);
+      }
+    }
+
     const client = await Client.findOneAndUpdate(
       { _id: req.params.id, gym: gymId },
-      req.body,
+      updateData,
       { new: true },
     );
     if (!client)
@@ -133,6 +163,13 @@ router.get(
     const client = await Client.findOne({ _id: req.params.id, gym: gymId });
     if (!client)
       return res.status(404).json({ message: "Cliente no encontrado" });
+
+    // Expirar individualmente si su endDate ya pasó
+    if (client.isActive && client.endDate && new Date(client.endDate) < new Date()) {
+      client.isActive = false;
+      await client.save();
+    }
+
     res.json(client);
   },
 );

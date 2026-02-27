@@ -8,15 +8,30 @@ interface BadgeProps {
 }
 
 const Badge: React.FC<BadgeProps> = ({ label, color, backgroundColor }) => {
-  // Si el label es 'Expirado', usa rojo, si no, verde
-  const isExpired = label?.toLowerCase() === "inactivo";
+  const normalizedLabel = label?.toLowerCase();
+  const isExpired = normalizedLabel === "inactivo";
+  const isExpiring = normalizedLabel === "por vencer";
+  const isUrgent = normalizedLabel === "vence hoy";
+
   const badgeColor = useMemo(
-    () => color || (isExpired ? "#DC2626" : "#059669"),
-    [color, isExpired],
+    () =>
+      color ||
+      (isExpired || isUrgent
+        ? "#DC2626"
+        : isExpiring
+          ? "#D97706"
+          : "#059669"),
+    [color, isExpired, isExpiring, isUrgent],
   );
   const badgeBg = useMemo(
-    () => backgroundColor || (isExpired ? "#FECACA" : "#D1FAE5"),
-    [backgroundColor, isExpired],
+    () =>
+      backgroundColor ||
+      (isExpired || isUrgent
+        ? "#FECACA"
+        : isExpiring
+          ? "#FEF3C7"
+          : "#D1FAE5"),
+    [backgroundColor, isExpired, isExpiring, isUrgent],
   );
   return (
     <View

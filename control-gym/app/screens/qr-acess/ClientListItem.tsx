@@ -6,7 +6,7 @@ export interface Client {
   id: number;
   name: string;
   membership: string;
-  active: boolean;
+  isActive: boolean;
 }
 
 interface ClientListItemProps {
@@ -27,13 +27,13 @@ export const ClientListItem: React.FC<ClientListItemProps> = ({
   onPress,
 }) => {
   const statusColor = useMemo(
-    () => (client.active ? "#10b981" : "#ef4444"),
-    [client.active],
+    () => (client.isActive ? "#10b981" : "#ef4444"),
+    [client.isActive],
   );
 
   const statusBgColor = useMemo(
-    () => (client.active ? "#10b98120" : "#ef444420"),
-    [client.active],
+    () => (client.isActive ? "#10b98120" : "#ef444420"),
+    [client.isActive],
   );
 
   const membershipBadgeStyle = useMemo(
@@ -79,7 +79,7 @@ export const ClientListItem: React.FC<ClientListItemProps> = ({
               style={{ color: statusColor }}
               className="text-xs font-semibold"
             >
-              {client.active ? "Activo" : "Inactivo"}
+              {client.isActive ? "Activo" : "Inactivo"}
             </Text>
           </View>
         </View>

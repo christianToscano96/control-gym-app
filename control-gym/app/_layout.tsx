@@ -83,6 +83,10 @@ export default function RootLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="screens/clients/RenewMembershipScreen"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="screens/config/PeriodPricingScreen"
               options={{ headerShown: false }}
             />

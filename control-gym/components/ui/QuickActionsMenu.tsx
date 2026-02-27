@@ -49,7 +49,7 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
               onPress={handleNewClient}
             />
             <ActionItem
-              label="Nuevo Pago"
+              label="Actualizar Membresía"
               iconName="credit-card-plus-outline"
               onPress={handleNewPayment}
             />

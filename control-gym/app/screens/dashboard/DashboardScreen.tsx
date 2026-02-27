@@ -38,8 +38,11 @@ export default function DashboardScreen() {
 
   // ─── TanStack Query ──────────────────────────────────────────
   const { data: profile } = useProfileQuery();
-  const { data: stats, isLoading: loadingStats, refetch: refetchStats } =
-    useDashboardStatsQuery(!isStaff);
+  const {
+    data: stats,
+    isLoading: loadingStats,
+    refetch: refetchStats,
+  } = useDashboardStatsQuery(!isStaff);
   const { data: weeklyData, refetch: refetchWeekly } =
     useWeeklyAttendanceQuery(!isStaff);
   const { data: activityData, refetch: refetchActivity } =
@@ -70,11 +73,21 @@ export default function DashboardScreen() {
       queryClient.invalidateQueries({ queryKey: queryKeys.access.recent }),
     ]);
     setRefreshing(false);
-  }, [refetchStats, refetchWeekly, refetchActivity, refetchMembership, refetchExpiring, queryClient]);
+  }, [
+    refetchStats,
+    refetchWeekly,
+    refetchActivity,
+    refetchMembership,
+    refetchExpiring,
+    queryClient,
+  ]);
 
   const handleActionPress = (action: string) => {
     if (action === "new-client") {
       router.push("/screens/clients/NewClientScreen");
+    }
+    if (action === "new-payment") {
+      router.push("/screens/clients/RenewMembershipScreen");
     }
     if (action === "staff") {
       router.push("/screens/staff");
@@ -117,6 +130,19 @@ export default function DashboardScreen() {
               >
                 Resumen
               </Text>
+              {/* Card de ingresos del mes - ancho completo */}
+              <View className="px-2">
+                <SummaryCard
+                  icon="attach-money"
+                  title="INGRESOS DEL MES"
+                  value={
+                    loadingStats
+                      ? "..."
+                      : `$${stats?.monthlyRevenue?.toLocaleString() || "0"}`
+                  }
+                  persent={loadingStats ? "..." : stats?.revenuePercent || "0%"}
+                />
+              </View>
 
               <View className="flex flex-row justify-between gap-4 p-2">
                 <SummaryCard
@@ -137,22 +163,6 @@ export default function DashboardScreen() {
                   }
                   persent={
                     loadingStats ? "..." : stats?.checkInsPercent || "0%"
-                  }
-                />
-              </View>
-
-              {/* Card de ingresos del mes - ancho completo */}
-              <View className="px-2">
-                <SummaryCard
-                  icon="attach-money"
-                  title="INGRESOS DEL MES"
-                  value={
-                    loadingStats
-                      ? "..."
-                      : `$${stats?.monthlyRevenue?.toLocaleString() || "0"}`
-                  }
-                  persent={
-                    loadingStats ? "..." : stats?.revenuePercent || "0%"
                   }
                 />
               </View>

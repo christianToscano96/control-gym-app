@@ -163,6 +163,57 @@ router.put(
   },
 );
 
+// Renovar membresía de un cliente (admin, superadmin y empleado)
+router.put(
+  "/:id/renew",
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    const gymId = req.user.gym;
+    const { startDate, selected_period, paymentMethod, paymentAmount } =
+      req.body;
+
+    if (!startDate || !selected_period || !paymentMethod) {
+      return res.status(400).json({
+        message: "startDate, selected_period y paymentMethod son obligatorios",
+      });
+    }
+
+    const client = await Client.findOne({ _id: req.params.id, gym: gymId });
+    if (!client)
+      return res.status(404).json({ message: "Cliente no encontrado" });
+
+    // Actualizar datos de membresía
+    client.startDate = new Date(startDate);
+    client.selected_period = selected_period;
+    client.paymentMethod = paymentMethod;
+    client.isActive = true;
+    client.endDate = calculateEndDate(client.startDate, selected_period);
+
+    await client.save();
+
+    // Crear registro de pago
+    const gym = await Gym.findById(gymId);
+    const periodKey = selected_period.toLowerCase();
+    const configuredPrice =
+      gym?.periodPricing?.[periodKey as keyof typeof gym.periodPricing] || 0;
+    const amount = paymentAmount || configuredPrice;
+
+    if (amount > 0) {
+      await Payment.create({
+        gym: gymId,
+        client: client._id,
+        amount,
+        method: paymentMethod,
+        period: selected_period,
+        status: "completed",
+        date: new Date(),
+      });
+    }
+
+    res.json(client);
+  },
+);
+
 // Eliminar cliente (solo admin y superadmin)
 router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
   const gymId = req.user.gym;

@@ -33,4 +33,7 @@ export const queryKeys = {
   periodPricing: {
     current: ["periodPricing"] as const,
   },
+  payments: {
+    all: ["payments"] as const,
+  },
 };

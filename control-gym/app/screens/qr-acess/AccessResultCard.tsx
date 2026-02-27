@@ -130,6 +130,14 @@ export const AccessResultCard: React.FC<AccessResultCardProps> = ({
           <Text style={{ color: statusColor }} className="text-xl font-bold">
             {statusTitle}
           </Text>
+          {result.message && (
+            <Text
+              style={{ color: statusColor }}
+              className="text-sm mt-1 text-center opacity-80"
+            >
+              {result.message}
+            </Text>
+          )}
         </View>
 
         {/* Client Name */}

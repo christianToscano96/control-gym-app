@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Text, View, StyleSheet, Alert } from "react-native";
+import React, { useState, useMemo, useRef } from "react";
+import { Text, View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/context/ThemeContext";
@@ -23,27 +23,21 @@ const QRAccessScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [accessResult, setAccessResult] = useState<AccessResult | null>(null);
+  const [validating, setValidating] = useState(false);
   const isProcessingRef = useRef(false);
 
   // ─── TanStack Query ──────────────────────────────────────────
   const queryClient = useQueryClient();
   const { data: clients = [], isLoading: loading } = useClientsQuery();
 
-  // Efecto para buscar automáticamente cuando el usuario escribe
-  useEffect(() => {
-    if (searchQuery.length >= 3 && clients.length > 0) {
-      const found = clients.find((client: any) => {
-        const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
-        return fullName.includes(searchQuery.toLowerCase());
-      });
-      if (found) {
-        setSelectedClient(found);
-      } else {
-        setSelectedClient(null);
-      }
-    } else {
-      setSelectedClient(null);
-    }
+  // Filtrar clientes por búsqueda (devuelve múltiples resultados)
+  const searchResults = useMemo(() => {
+    if (searchQuery.length < 2 || clients.length === 0) return [];
+    const q = searchQuery.toLowerCase();
+    return clients.filter((client: any) => {
+      const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+      return fullName.includes(q);
+    });
   }, [searchQuery, clients]);
 
   const resetScanState = () => {
@@ -64,6 +58,7 @@ const QRAccessScreen = () => {
 
     setScanned(true);
     setCameraActive(false);
+    setValidating(true);
 
     try {
       const response = await apiClient<AccessResult>(
@@ -87,6 +82,8 @@ const QRAccessScreen = () => {
         clientName: "Error",
         message: error?.message || "No se pudo validar el código QR",
       });
+    } finally {
+      setValidating(false);
     }
   };
 
@@ -206,6 +203,27 @@ const QRAccessScreen = () => {
           onToggleFlash={toggleFlash}
           onClose={stopScanning}
         />
+      ) : validating ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <View
+            style={{ backgroundColor: colors.card, borderColor: colors.border }}
+            className="w-full rounded-3xl border p-8 items-center"
+          >
+            <ActivityIndicator size="large" color={primaryColor} />
+            <Text
+              style={{ color: colors.text }}
+              className="text-lg font-bold mt-4"
+            >
+              Validando acceso...
+            </Text>
+            <Text
+              style={{ color: colors.textSecondary }}
+              className="text-sm mt-1 text-center"
+            >
+              Verificando membresía del cliente
+            </Text>
+          </View>
+        </View>
       ) : accessResult ? (
         <AccessResultCard
           result={accessResult}
@@ -244,7 +262,7 @@ const QRAccessScreen = () => {
       <ManualEntryModal
         visible={manualEntryVisible}
         searchQuery={searchQuery}
-        filteredClients={clients}
+        searchResults={searchResults}
         selectedClient={selectedClient}
         backgroundColor={colors.background}
         cardColor={colors.card}

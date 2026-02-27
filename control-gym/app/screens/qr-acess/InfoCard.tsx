@@ -9,6 +9,19 @@ interface InfoCardProps {
   textSecondaryColor: string;
 }
 
+const features = [
+  {
+    icon: "verified" as const,
+    title: "Verifica y registra",
+    desc: "El acceso se valida y registra automáticamente",
+  },
+  {
+    icon: "flash-on" as const,
+    title: "Flash disponible",
+    desc: "Activa la linterna en poca luz",
+  },
+];
+
 export const InfoCard: React.FC<InfoCardProps> = ({
   cardColor,
   primaryColor,
@@ -20,17 +33,17 @@ export const InfoCard: React.FC<InfoCardProps> = ({
       style={[styles.infoCard, { backgroundColor: cardColor }]}
       className="rounded-3xl p-6 mb-6"
     >
-      <View className="items-center mb-6">
+      <View className="items-center mb-5">
         <View
           style={[
             styles.iconContainer,
             { backgroundColor: `${primaryColor}20` },
           ]}
-          className="rounded-full p-6 mb-4"
+          className="rounded-full p-5 mb-3"
         >
           <MaterialIcons
             name="qr-code-scanner"
-            size={64}
+            size={56}
             color={primaryColor}
           />
         </View>
@@ -40,68 +53,39 @@ export const InfoCard: React.FC<InfoCardProps> = ({
         >
           Escaneo de Código QR
         </Text>
+        <Text
+          style={{ color: textSecondaryColor }}
+          className="text-sm text-center mt-1"
+        >
+          Escanea la membresía del cliente para dar acceso
+        </Text>
       </View>
 
-      <View className="space-y-4">
-        <View className="flex-row items-start">
-          <MaterialIcons
-            name="check-circle"
-            size={24}
-            color={primaryColor}
-            style={{ marginRight: 12 }}
-          />
-          <View className="flex-1">
-            <Text
-              style={{ color: textColor }}
-              className="text-base font-semibold"
+      <View className="gap-3">
+        {features.map((f) => (
+          <View key={f.icon} className="flex-row items-center">
+            <View
+              className="w-9 h-9 rounded-full items-center justify-center mr-3"
+              style={{ backgroundColor: `${primaryColor}15` }}
             >
-              Verifica el acceso
-            </Text>
-            <Text style={{ color: textSecondaryColor }} className="text-sm">
-              Escanea el código QR de la membresía del cliente
-            </Text>
+              <MaterialIcons name={f.icon} size={18} color={primaryColor} />
+            </View>
+            <View className="flex-1">
+              <Text
+                style={{ color: textColor }}
+                className="text-sm font-semibold"
+              >
+                {f.title}
+              </Text>
+              <Text
+                style={{ color: textSecondaryColor }}
+                className="text-xs"
+              >
+                {f.desc}
+              </Text>
+            </View>
           </View>
-        </View>
-
-        <View className="flex-row items-start">
-          <MaterialIcons
-            name="verified"
-            size={24}
-            color={primaryColor}
-            style={{ marginRight: 12 }}
-          />
-          <View className="flex-1">
-            <Text
-              style={{ color: textColor }}
-              className="text-base font-semibold"
-            >
-              Registro automático
-            </Text>
-            <Text style={{ color: textSecondaryColor }} className="text-sm">
-              El acceso se registra automáticamente en el sistema
-            </Text>
-          </View>
-        </View>
-
-        <View className="flex-row items-start">
-          <MaterialIcons
-            name="flash-on"
-            size={24}
-            color={primaryColor}
-            style={{ marginRight: 12 }}
-          />
-          <View className="flex-1">
-            <Text
-              style={{ color: textColor }}
-              className="text-base font-semibold"
-            >
-              Usa la linterna
-            </Text>
-            <Text style={{ color: textSecondaryColor }} className="text-sm">
-              Activa el flash en condiciones de poca luz
-            </Text>
-          </View>
-        </View>
+        ))}
       </View>
     </View>
   );

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData, getMembershipDistribution, MembershipDistribution, getExpiringMemberships, ExpiringMemberships } from "@/api/dashboard";
+import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData, getMembershipDistribution, MembershipDistribution, getExpiringMemberships, ExpiringMemberships, getGymSubscription, GymSubscription } from "@/api/dashboard";
 import { queryKeys } from "./queryKeys";
 
 export function useDashboardStatsQuery(enabled: boolean = true) {
@@ -60,6 +60,17 @@ export function useExpiringMembershipsQuery(enabled: boolean = true) {
   return useQuery<ExpiringMemberships>({
     queryKey: queryKeys.dashboard.expiringMemberships,
     queryFn: getExpiringMemberships,
+    enabled,
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+}
+
+export function useGymSubscriptionQuery(enabled: boolean = true) {
+  return useQuery<GymSubscription | null>({
+    queryKey: queryKeys.gymSubscription.active,
+    queryFn: getGymSubscription,
     enabled,
     staleTime: 60000,
     refetchOnWindowFocus: true,

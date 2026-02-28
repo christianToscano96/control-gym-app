@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { User } from "../models/User";
+import { Gym } from "../models/Gym";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
@@ -54,9 +55,16 @@ router.post("/login", async (req, res) => {
     process.env.JWT_SECRET || "secret",
     { expiresIn: "1d" },
   );
+  // Check gym active status for admin users
+  let gymActive = true;
+  if (user.role === "admin" && user.gymId) {
+    const gym = await Gym.findById(user.gymId).select("active").lean();
+    gymActive = gym?.active ?? false;
+  }
+
   res.json({
     token,
-    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId },
+    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId, gymActive },
   });
 });
 

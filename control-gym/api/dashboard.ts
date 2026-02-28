@@ -81,3 +81,17 @@ export interface ExpiringMemberships {
 export async function getExpiringMemberships(): Promise<ExpiringMemberships> {
   return apiClient<ExpiringMemberships>("/api/dashboard/expiring-memberships");
 }
+
+export interface GymSubscription {
+  _id: string;
+  plan: "basico" | "pro" | "proplus";
+  amount: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+}
+
+export async function getGymSubscription(): Promise<GymSubscription | null> {
+  const memberships = await apiClient<GymSubscription[]>("/api/membership");
+  return memberships.find((m) => m.active) || null;
+}

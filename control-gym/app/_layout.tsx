@@ -27,7 +27,13 @@ export default function RootLayout() {
   useEffect(() => {
     // Evitar navegación prematura: usar setTimeout para esperar montaje
     const timeout = setTimeout(() => {
-      if (!user && pathname !== "/login" && pathname !== "/login/register" && pathname !== "/login/forgot-password") {
+      if (
+        !user &&
+        pathname !== "/login" &&
+        pathname !== "/login/register" &&
+        pathname !== "/login/forgot-password" &&
+        pathname !== "/gym-suspended"
+      ) {
         router.replace("/login");
       }
       if (user && pathname === "/login") {
@@ -88,6 +94,14 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="screens/config/PeriodPricingScreen"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/superadmin/gym-detail"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="gym-suspended"
               options={{ headerShown: false }}
             />
           </Stack>

@@ -9,6 +9,7 @@ export default function TabLayout() {
   const { primaryColor, colors } = useTheme();
   const user = useUserStore((s) => s.user);
   const isStaff = user?.role === "empleado";
+  const isSuperAdmin = user?.role === "superadmin";
   return (
     <Tabs
       screenOptions={{
@@ -43,6 +44,7 @@ export default function TabLayout() {
               color={color}
             />
           ),
+          href: isSuperAdmin ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -52,6 +54,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="qrcode" color={color} />
           ),
+          href: isSuperAdmin ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -61,7 +64,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="chart.bar.fill" color={color} />
           ),
-          href: isStaff ? null : undefined,
+          href: isStaff || isSuperAdmin ? null : undefined,
         }}
       />
       <Tabs.Screen

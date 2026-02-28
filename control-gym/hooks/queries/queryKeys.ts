@@ -39,4 +39,11 @@ export const queryKeys = {
   payments: {
     all: ["payments"] as const,
   },
+  gymSubscription: {
+    active: ["gymSubscription", "active"] as const,
+  },
+  superadmin: {
+    overview: ["superadmin", "overview"] as const,
+    gymDetail: (id: string) => ["superadmin", "gym", id] as const,
+  },
 };

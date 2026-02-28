@@ -108,10 +108,10 @@ const QRAccessScreen = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
 
-      // Invalidar queries del dashboard si el acceso fue exitoso
+      // Invalidar queries del dashboard (tanto permitidos como rechazados se registran)
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
       if (response.allowed) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
-        queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
         queryClient.invalidateQueries({
           queryKey: queryKeys.dashboard.weeklyAttendance,
         });
@@ -171,15 +171,17 @@ const QRAccessScreen = () => {
         if (response.allowed) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           queryClient.invalidateQueries({
-            queryKey: queryKeys.dashboard.stats,
-          });
-          queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
-          queryClient.invalidateQueries({
             queryKey: queryKeys.dashboard.weeklyAttendance,
           });
         } else {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
+
+        // Invalidar queries del dashboard (tanto permitidos como rechazados se registran)
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.stats,
+        });
+        queryClient.invalidateQueries({ queryKey: queryKeys.access.recent });
       } catch (error: any) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert(

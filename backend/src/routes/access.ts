@@ -61,9 +61,17 @@ router.get(
   async (req: AuthRequest, res) => {
     try {
       const gymId = req.user.gymId;
-      const logs = await AccessLog.find({ gymId })
+
+      // Filtrar solo últimas 24 horas
+      const last24h = new Date();
+      last24h.setHours(last24h.getHours() - 24);
+
+      const logs = await AccessLog.find({
+        gymId,
+        date: { $gte: last24h },
+      })
         .sort({ date: -1 })
-        .limit(10)
+        .limit(50)
         .populate("client", "firstName lastName membershipType");
 
       const recentCheckIns = logs
@@ -74,6 +82,8 @@ router.get(
           membershipType: log.client.membershipType,
           method: log.method,
           date: log.date,
+          status: log.status || "allowed",
+          denyReason: log.denyReason,
         }));
 
       res.json(recentCheckIns);
@@ -119,6 +129,13 @@ router.post(
       };
 
       if (!client.isActive) {
+        await AccessLog.create({
+          client: client._id,
+          gymId,
+          method: "QR",
+          status: "denied",
+          denyReason: "Membresía inactiva",
+        });
         return res.status(200).json({
           allowed: false,
           ...clientInfo,
@@ -132,6 +149,13 @@ router.post(
           client.isActive = false;
           await client.save();
         }
+        await AccessLog.create({
+          client: client._id,
+          gymId,
+          method: "QR",
+          status: "denied",
+          denyReason: "Membresía expirada",
+        });
         return res.status(200).json({
           allowed: false,
           ...clientInfo,
@@ -143,6 +167,7 @@ router.post(
         client: client._id,
         gymId,
         method: "QR",
+        status: "allowed",
       });
 
       return res.status(200).json({

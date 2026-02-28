@@ -10,6 +10,7 @@ export interface DashboardStats {
   clientsPercent: string;
   todayCheckIns: number;
   checkInsPercent: string;
+  todayDenied: number;
   monthlyRevenue: number;
   revenuePercent: string;
   peakHours: PeakHourData[];
@@ -21,6 +22,8 @@ export interface RecentCheckIn {
   membershipType: string;
   method: string;
   date: string;
+  status: "allowed" | "denied";
+  denyReason?: string;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

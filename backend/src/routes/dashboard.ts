@@ -47,10 +47,18 @@ router.get(
             )
           : 0;
 
-      // Contar check-ins del día (ingresos del día)
+      // Contar check-ins del día (solo los permitidos)
       const todayCheckIns = await AccessLog.countDocuments({
         gymId,
         date: { $gte: today },
+        $or: [{ status: "allowed" }, { status: { $exists: false } }],
+      });
+
+      // Contar rechazados del día
+      const todayDenied = await AccessLog.countDocuments({
+        gymId,
+        date: { $gte: today },
+        status: "denied",
       });
 
       // Contar check-ins de ayer para comparar
@@ -184,6 +192,7 @@ router.get(
         clientsPercent: `${clientsPercent > 0 ? "+" : ""}${clientsPercent}%`,
         todayCheckIns,
         checkInsPercent: `${checkInsPercent > 0 ? "+" : ""}${checkInsPercent}%`,
+        todayDenied,
         monthlyRevenue,
         revenuePercent: `${revenuePercent > 0 ? "+" : ""}${revenuePercent}%`,
         peakHours,

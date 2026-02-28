@@ -10,7 +10,7 @@ interface BadgeProps {
 const Badge: React.FC<BadgeProps> = ({ label, color, backgroundColor }) => {
   const normalizedLabel = label?.toLowerCase();
   const isExpired = normalizedLabel === "inactivo";
-  const isExpiring = normalizedLabel === "por vencer";
+  const isExpiring = normalizedLabel === "por vencer" || normalizedLabel === "vence mañana";
   const isUrgent = normalizedLabel === "vence hoy";
 
   const badgeColor = useMemo(

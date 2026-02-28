@@ -39,7 +39,7 @@ const ItemClient = ({
 
   const isExpiringSoon =
     isActive && daysLeft != null && daysLeft >= 0 && daysLeft <= EXPIRING_SOON_DAYS;
-  const isUrgent = isActive && daysLeft != null && daysLeft <= 1;
+  const isUrgent = isActive && daysLeft != null && daysLeft === 0;
 
   const handlePress = useCallback(() => {
     router.push({
@@ -185,7 +185,7 @@ const ItemClient = ({
       </View>
 
       {/* Right side: single badge */}
-      <Badge label={isActive ? (isUrgent ? "Vence hoy" : isExpiringSoon ? "Por vencer" : "Activo") : "Inactivo"} />
+      <Badge label={isActive ? (isExpiringSoon || isUrgent ? "Por vencer" : "Activo") : "Inactivo"} />
 
       <MaterialIcons
         name="chevron-right"

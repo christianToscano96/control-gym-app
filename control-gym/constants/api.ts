@@ -12,7 +12,6 @@ function getApiBaseUrl(): string {
     return `http://${host}:${API_PORT}`;
   }
 
-  // Fallback: en Android emulator, localhost apunta al propio emulador,
   // se usa 10.0.2.2 para acceder a la máquina host
   if (Platform.OS === "android") {
     return `http://10.0.2.2:${API_PORT}`;

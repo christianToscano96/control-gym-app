@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData, getMembershipDistribution, MembershipDistribution, getExpiringMemberships, ExpiringMemberships } from "@/api/dashboard";
+import { getDashboardStats, DashboardStats, getRecentCheckIns, RecentCheckIn, getWeeklyAttendance, WeeklyAttendance, getActivityRate, ActivityRateData, getMembershipDistribution, MembershipDistribution, getExpiringMemberships, ExpiringMemberships, getSnapshots, MonthlySnapshot } from "@/api/dashboard";
 import { queryKeys } from "./queryKeys";
 
 export function useDashboardStatsQuery(enabled: boolean = true) {
@@ -64,5 +64,13 @@ export function useExpiringMembershipsQuery(enabled: boolean = true) {
     staleTime: 60000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
+  });
+}
+
+export function useSnapshotsQuery() {
+  return useQuery<MonthlySnapshot[]>({
+    queryKey: queryKeys.snapshots.all,
+    queryFn: getSnapshots,
+    staleTime: 5 * 60 * 1000,
   });
 }

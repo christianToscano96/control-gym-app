@@ -78,3 +78,23 @@ export interface ExpiringMemberships {
 export async function getExpiringMemberships(): Promise<ExpiringMemberships> {
   return apiClient<ExpiringMemberships>("/api/dashboard/expiring-memberships");
 }
+
+// ─── Snapshots ──────────────────────────────────────────────────
+
+export interface MonthlySnapshot {
+  _id: string;
+  gymId: string;
+  year: number;
+  month: number;
+  revenue: number;
+  totalClients: number;
+  totalCheckIns: number;
+  newClients: number;
+}
+
+export async function getSnapshots(): Promise<MonthlySnapshot[]> {
+  const now = new Date();
+  const from = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const to = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return apiClient<MonthlySnapshot[]>(`/api/snapshots?from=${from}&to=${to}`);
+}

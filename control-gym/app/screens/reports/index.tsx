@@ -1,415 +1,379 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
+  Text,
   ScrollView,
   RefreshControl,
-  Alert,
+  TouchableOpacity,
   ActivityIndicator,
-  FlatList,
+  Alert,
 } from "react-native";
-import { useTheme } from "@/context/ThemeContext";
-import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
-import SearchInput from "@/components/ui/SearchInput";
-import Select, { SelectOption } from "@/components/ui/Select";
-import DateSelect from "@/components/ui/DateSelect";
-import ButtonCustom from "@/components/ui/ButtonCustom";
-import ReportCard, { ReportData } from "@/components/ui/ReportCard";
-import EmptyState from "@/components/ui/EmptyState";
-import { API_BASE_URL } from "@/constants/api";
 import { SafeAreaView } from "react-native-safe-area-context";
-// TODO: Descomentar cuando se habilite la exportación con las dependencias
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import * as FileSystem from "expo-file-system";
-// import * as Sharing from "expo-sharing";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import {
+  useDashboardStatsQuery,
+  useSnapshotsQuery,
+  useActivityRateQuery,
+  useExpiringMembershipsQuery,
+} from "@/hooks/queries/useDashboard";
+import { exportClientsCSV, exportPaymentsCSV, exportAttendanceCSV } from "@/api/exports";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/hooks/queries/queryKeys";
+
+const MONTH_NAMES = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
 
 const ReportsScreen = () => {
-  const { colors, primaryColor } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const { colors, primaryColor, isDark } = useTheme();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState<string | null>(null);
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
 
-  // Filtros
-  const [searchQuery, setSearchQuery] = useState("");
-  const [reportType, setReportType] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+  const { data: stats, isLoading: loadingStats } = useDashboardStatsQuery();
+  const { data: snapshots, isLoading: loadingSnapshots } = useSnapshotsQuery();
+  const { data: activityRate } = useActivityRateQuery();
+  const { data: expiring } = useExpiringMembershipsQuery();
 
-  // Datos
-  const [reports, setReports] = useState<ReportData[]>([]);
-
-  // Opciones de filtros
-  const reportTypeOptions: SelectOption[] = [
-    { label: "Todos los reportes", value: "" },
-    { label: "Clientes", value: "clients" },
-    { label: "Pagos", value: "payments" },
-    { label: "Asistencias", value: "attendance" },
-    { label: "Membresías", value: "memberships" },
-    { label: "Ingresos", value: "revenue" },
-    { label: "Personal", value: "staff" },
-  ];
-
-  const statusOptions: SelectOption[] = [
-    { label: "Todos los estados", value: "" },
-    { label: "Completado", value: "completed" },
-    { label: "Pendiente", value: "pending" },
-    { label: "Error", value: "error" },
-  ];
-
-  // Cargar reportes iniciales (mock data o desde API)
-  useEffect(() => {
-    loadReports();
-  }, []);
-
-  // Aplicar filtros usando useMemo para cálculos derivados
-  const filteredReports = useMemo(() => {
-    let filtered = [...reports];
-
-    // Filtro de búsqueda
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(
-        (report) =>
-          report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          report.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    // Filtro por tipo de reporte
-    if (reportType) {
-      filtered = filtered.filter((report) => report.type === reportType);
-    }
-
-    // Filtro por estado
-    if (statusFilter) {
-      filtered = filtered.filter((report) => report.status === statusFilter);
-    }
-
-    // Filtro por rango de fechas
-    if (startDate) {
-      filtered = filtered.filter(
-        (report) => new Date(report.date) >= startDate,
-      );
-    }
-    if (endDate) {
-      filtered = filtered.filter((report) => new Date(report.date) <= endDate);
-    }
-
-    return filtered;
-  }, [reports, searchQuery, reportType, startDate, endDate, statusFilter]);
-
-  const loadReports = async () => {
-    setLoading(true);
-    try {
-      // TODO: Reemplazar con llamada real a la API
-      // const response = await fetch(`${API_BASE_URL}/reports`, {
-      //   headers: {
-      //     Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
-      //   },
-      // });
-      // const data = await response.json();
-
-      // Mock data temporal
-      const mockReports: ReportData[] = [
-        {
-          id: "1",
-          type: "clients",
-          title: "Reporte de Clientes",
-          date: "2026-02-01",
-          description: "Listado completo de clientes activos e inactivos",
-          status: "completed",
-          metadata: {
-            totalRecords: 150,
-            period: "Enero 2026",
-          },
-        },
-        {
-          id: "2",
-          type: "payments",
-          title: "Reporte de Pagos",
-          date: "2026-02-03",
-          description: "Detalle de todos los pagos recibidos",
-          status: "completed",
-          metadata: {
-            totalRecords: 85,
-            period: "Último mes",
-          },
-        },
-        {
-          id: "3",
-          type: "attendance",
-          title: "Reporte de Asistencias",
-          date: "2026-02-04",
-          description: "Registro de entradas y salidas del gimnasio",
-          status: "completed",
-          metadata: {
-            totalRecords: 320,
-            period: "Última semana",
-          },
-        },
-        {
-          id: "4",
-          type: "memberships",
-          title: "Reporte de Membresías",
-          date: "2026-02-05",
-          description: "Estado de todas las membresías activas",
-          status: "pending",
-          metadata: {
-            totalRecords: 120,
-            period: "Activo",
-          },
-        },
-        {
-          id: "5",
-          type: "revenue",
-          title: "Reporte de Ingresos",
-          date: "2026-01-31",
-          description: "Análisis de ingresos mensuales y anuales",
-          status: "completed",
-          metadata: {
-            totalRecords: 45,
-            period: "Enero 2026",
-          },
-        },
-      ];
-
-      setReports(mockReports);
-    } catch (error) {
-      console.error("Error cargando reportes:", error);
-      Alert.alert("Error", "No se pudieron cargar los reportes");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadReports();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.snapshots.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.activityRate }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.expiringMemberships }),
+    ]);
     setRefreshing(false);
-  };
+  }, [queryClient]);
 
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setReportType("");
-    setStartDate(null);
-    setEndDate(null);
-    setStatusFilter("");
-  };
-
-  const handleExportReport = async (report: ReportData) => {
-    setExporting(report.id);
+  const handleExport = async (key: string, fn: () => Promise<void>, label: string) => {
+    setExportingKey(key);
     try {
-      // const token = await AsyncStorage.getItem("token");
-
-      // Endpoint para exportar según el tipo de reporte
-      const exportEndpoints: { [key: string]: string } = {
-        clients: "/export/clients/csv",
-        payments: "/export/payments/csv",
-        attendance: "/export/attendance/csv",
-        memberships: "/export/memberships/csv",
-        revenue: "/export/revenue/csv",
-        staff: "/export/staff/csv",
-      };
-
-      const endpoint = exportEndpoints[report.type] || "/export/report/pdf";
-      const url = `${API_BASE_URL}${endpoint}`;
-
-      // TODO: Implementar descarga y compartir con expo-file-system y expo-sharing
-      // Por ahora, solo mostrar mensaje de éxito
-
-      Alert.alert(
-        "Exportar Reporte",
-        `El reporte "${report.title}" se exportará desde:\n${url}\n\nPara habilitar la descarga, instala:\nnpx expo install expo-file-system expo-sharing`,
-        [{ text: "OK" }],
-      );
-
-      // Código de descarga cuando se instalen las dependencias:
-      /*
-      const filename = `${report.type}_${Date.now()}.csv`;
-      const fileUri = FileSystem.documentDirectory + filename;
-
-      const downloadResult = await FileSystem.downloadAsync(url, fileUri, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (downloadResult.status === 200) {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: "text/csv",
-            dialogTitle: `Exportar ${report.title}`,
-          });
-        } else {
-          Alert.alert("Éxito", `Reporte exportado a: ${downloadResult.uri}`);
-        }
-      }
-      */
-    } catch (error) {
-      console.error("Error exportando reporte:", error);
-      Alert.alert(
-        "Error",
-        "No se pudo exportar el reporte. Intenta nuevamente.",
-      );
+      await fn();
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || `No se pudo exportar ${label}`);
     } finally {
-      setExporting(null);
+      setExportingKey(null);
     }
   };
 
-  const handleExportAll = async () => {
-    Alert.alert(
-      "Exportar todos los reportes",
-      "¿Deseas exportar todos los reportes filtrados?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Exportar",
-          onPress: async () => {
-            setExporting("all");
-            try {
-              // TODO: Implementar exportación masiva
-              for (const report of filteredReports) {
-                await handleExportReport(report);
-              }
-              Alert.alert("Éxito", "Reportes exportados correctamente");
-            } catch (exportError) {
-              console.error("Error al exportar:", exportError);
-              Alert.alert(
-                "Error",
-                "No se pudieron exportar todos los reportes",
-              );
-            } finally {
-              setExporting(null);
-            }
-          },
-        },
-      ],
-    );
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString("es-AR")}`;
   };
 
-  const handleReportPress = (report: ReportData) => {
-    Alert.alert(
-      report.title,
-      `Tipo: ${report.type}\nFecha: ${report.date}\n${report.description || ""}`,
-      [
-        { text: "Cerrar", style: "cancel" },
-        {
-          text: "Exportar",
-          onPress: () => handleExportReport(report),
-        },
-      ],
-    );
-  };
+  const recentSnapshots = (snapshots || [])
+    .sort((a, b) => b.year - a.year || b.month - a.month)
+    .slice(0, 6);
+
+  const isLoading = loadingStats && loadingSnapshots;
+
+  const kpis = [
+    {
+      icon: "attach-money" as const,
+      label: "Ingresos del mes",
+      value: stats ? formatCurrency(stats.monthlyRevenue) : "—",
+      percent: stats?.revenuePercent || "",
+      color: "#10B981",
+    },
+    {
+      icon: "people" as const,
+      label: "Clientes activos",
+      value: stats ? String(stats.totalClients) : "—",
+      percent: stats?.clientsPercent || "",
+      color: primaryColor,
+    },
+    {
+      icon: "speed" as const,
+      label: "Tasa de actividad",
+      value: activityRate ? `${activityRate.activityRate}%` : "—",
+      percent: "",
+      color: "#8B5CF6",
+    },
+    {
+      icon: "warning" as const,
+      label: "Membresías por vencer",
+      value: expiring ? String(expiring.count) : "—",
+      percent: "",
+      color: "#F59E0B",
+    },
+  ];
+
+  const exportOptions = [
+    { key: "clients", label: "Clientes", desc: "Listado completo de clientes", icon: "people" as const, fn: exportClientsCSV },
+    { key: "payments", label: "Pagos", desc: "Historial de pagos recibidos", icon: "payments" as const, fn: exportPaymentsCSV },
+    { key: "attendance", label: "Asistencias", desc: "Registro de entradas al gimnasio", icon: "login" as const, fn: exportAttendanceCSV },
+  ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View className="flex-1" style={{ backgroundColor: colors.background }}>
-        <HeaderTopScrenn title="Reportes" isBackButton={false} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        {/* Header */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}>
+          <Text style={{ fontSize: 28, fontWeight: "800", color: colors.text }}>
+            Reportes
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
+            Resumen y exportación de datos
+          </Text>
+        </View>
 
-        <ScrollView
-          className="flex-1 px-4"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        >
-          {/* Barra de búsqueda */}
-          <SearchInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Buscar reportes..."
-            onClear={() => setSearchQuery("")}
-          />
-
-          {/* Filtros */}
-          <View className="mb-4">
-            <View className="flex-row gap-2 mb-2">
-              <View className="flex-1">
-                <Select
-                  placeholder="Tipo de reporte"
-                  options={reportTypeOptions}
-                  value={reportType}
-                  onChange={setReportType}
-                />
-              </View>
-              <View className="flex-1">
-                <Select
-                  placeholder="Estado"
-                  options={statusOptions}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                />
-              </View>
-            </View>
-
-            <View className="flex-row gap-2 mb-2">
-              <View className="flex-1">
-                <DateSelect
-                  placeholder="Fecha inicio"
-                  value={startDate}
-                  onChange={setStartDate}
-                  maximumDate={endDate || new Date()}
-                />
-              </View>
-              <View className="flex-1">
-                <DateSelect
-                  placeholder="Fecha fin"
-                  value={endDate}
-                  onChange={setEndDate}
-                  minimumDate={startDate || undefined}
-                  maximumDate={new Date()}
-                />
-              </View>
-            </View>
-
-            {/* Botones de acción */}
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <ButtonCustom
-                  title="Limpiar filtros"
-                  onPress={handleClearFilters}
-                  secondary
-                  width="full"
-                />
-              </View>
-              <View className="flex-1">
-                <ButtonCustom
-                  title="Exportar todo"
-                  onPress={handleExportAll}
-                  width="full"
-                  disabled={filteredReports.length === 0 || exporting !== null}
-                />
-              </View>
-            </View>
+        {isLoading ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" color={primaryColor} />
           </View>
-
-          {/* Lista de reportes */}
-          {loading ? (
-            <View className="py-12">
-              <ActivityIndicator size="large" color={primaryColor} />
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {/* KPI Cards */}
+            <View style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  marginBottom: 12,
+                  paddingHorizontal: 4,
+                }}
+              >
+                Mes actual
+              </Text>
+              <View style={{ gap: 10 }}>
+                {kpis.map((kpi) => (
+                  <View
+                    key={kpi.label}
+                    style={{
+                      backgroundColor: colors.card,
+                      borderRadius: 16,
+                      padding: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderWidth: isDark ? 0 : 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        backgroundColor: isDark ? kpi.color + "20" : kpi.color + "14",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 14,
+                      }}
+                    >
+                      <MaterialIcons name={kpi.icon} size={22} color={kpi.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>
+                        {kpi.label}
+                      </Text>
+                      <Text style={{ fontSize: 22, fontWeight: "700", color: colors.text }}>
+                        {kpi.value}
+                      </Text>
+                    </View>
+                    {kpi.percent ? (
+                      <View
+                        style={{
+                          backgroundColor: kpi.percent.startsWith("-")
+                            ? isDark ? "#DC262620" : "#FEE2E2"
+                            : isDark ? "#10B98120" : "#D1FAE5",
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "600",
+                            color: kpi.percent.startsWith("-") ? "#DC2626" : "#10B981",
+                          }}
+                        >
+                          {kpi.percent}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
             </View>
-          ) : filteredReports.length === 0 ? (
-            <EmptyState
-              icon="assessment"
-              title="No hay reportes"
-              description="No se encontraron reportes con los filtros aplicados"
-            />
-          ) : (
-            <FlatList
-              data={filteredReports}
-              renderItem={({ item: report }: { item: ReportData }) => (
-                <ReportCard
-                  report={report}
-                  onPress={() => handleReportPress(report)}
-                  onExport={() => handleExportReport(report)}
-                />
+
+            {/* Monthly Snapshots */}
+            <View style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  marginBottom: 12,
+                  paddingHorizontal: 4,
+                }}
+              >
+                Resumen mensual
+              </Text>
+
+              {recentSnapshots.length === 0 ? (
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    padding: 24,
+                    alignItems: "center",
+                    borderWidth: isDark ? 0 : 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <MaterialIcons
+                    name="bar-chart"
+                    size={40}
+                    color={colors.textSecondary}
+                    style={{ marginBottom: 8 }}
+                  />
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
+                    Aún no hay datos históricos.{"\n"}Los snapshots se generan al inicio de cada mes.
+                  </Text>
+                </View>
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    borderWidth: isDark ? 0 : 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  {recentSnapshots.map((snap, idx) => (
+                    <View
+                      key={`${snap.year}-${snap.month}`}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingHorizontal: 16,
+                        paddingVertical: 14,
+                        borderBottomWidth: idx < recentSnapshots.length - 1 ? 1 : 0,
+                        borderBottomColor: isDark ? "#ffffff10" : "#f1f5f9",
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          backgroundColor: isDark ? primaryColor + "20" : primaryColor + "14",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginRight: 12,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "700",
+                            color: primaryColor,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {MONTH_NAMES[snap.month - 1]}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>
+                          {MONTH_NAMES[snap.month - 1]} {snap.year}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                          {snap.totalClients} clientes · {snap.totalCheckIns} check-ins
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#10B981" }}>
+                        {formatCurrency(snap.revenue)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               )}
-              keyExtractor={(item: ReportData) => item.id}
-              contentContainerStyle={{ paddingBottom: 24 }}
-              scrollEnabled={false}
-            />
-          )}
-        </ScrollView>
+            </View>
+
+            {/* Export Section */}
+            <View style={{ paddingHorizontal: 16 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  marginBottom: 12,
+                  paddingHorizontal: 4,
+                }}
+              >
+                Exportar datos
+              </Text>
+              <View style={{ gap: 10 }}>
+                {exportOptions.map((opt) => {
+                  const isExporting = exportingKey === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      activeOpacity={0.7}
+                      disabled={exportingKey !== null}
+                      onPress={() => handleExport(opt.key, opt.fn, opt.label)}
+                      style={{
+                        backgroundColor: colors.card,
+                        borderRadius: 16,
+                        padding: 16,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        borderWidth: isDark ? 0 : 1,
+                        borderColor: colors.border,
+                        opacity: exportingKey !== null && !isExporting ? 0.5 : 1,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          backgroundColor: isDark ? primaryColor + "20" : primaryColor + "14",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginRight: 14,
+                        }}
+                      >
+                        <MaterialIcons name={opt.icon} size={22} color={primaryColor} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>
+                          Exportar {opt.label}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                          {opt.desc}
+                        </Text>
+                      </View>
+                      {isExporting ? (
+                        <ActivityIndicator size="small" color={primaryColor} />
+                      ) : (
+                        <MaterialIcons name="file-download" size={22} color={primaryColor} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );

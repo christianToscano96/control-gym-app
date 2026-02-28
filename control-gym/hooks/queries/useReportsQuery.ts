@@ -1,53 +1,102 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/api/client";
-import { ReportData } from "@/components/ui/ReportCard";
+import { Alert, Share, Platform } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { fetchReports, generateCSV } from "@/api/reports";
 import { queryKeys } from "./queryKeys";
+import { ReportData, ReportFilters, ExportFormat } from "@/types/reports";
 
-// ─── Queries ─────────────────────────────────────────────────────
+// Lazy import expo-sharing (may not be available in Expo Go)
+let Sharing: typeof import("expo-sharing") | null = null;
+try {
+  Sharing = require("expo-sharing");
+} catch {
+  Sharing = null;
+}
 
-export function useReportsQuery() {
+// ─── Query: Fetch Reports ───────────────────────────────────────
+export function useReportsQuery(filters?: ReportFilters) {
   return useQuery<ReportData[]>({
     queryKey: queryKeys.reports.all,
-    queryFn: () => apiClient<ReportData[]>("/reports"),
+    queryFn: () => fetchReports(),
+    staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
-// ─── Mutations ───────────────────────────────────────────────────
-
-export function useGenerateReport() {
+// ─── Mutation: Refresh all reports ──────────────────────────────
+export function useRefreshReports() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({ type, params }: { type: string; params?: Record<string, any> }) =>
-      apiClient<ReportData>("/reports/generate", {
-        method: "POST",
-        body: { type, ...params },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
-    },
-  });
+  return {
+    refresh: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
+  };
 }
 
+// ─── Helper: share a file ───────────────────────────────────────
+async function shareFile(fileUri: string, mimeType: string) {
+  if (Sharing) {
+    try {
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType,
+          dialogTitle: "Exportar reporte",
+        });
+        return;
+      }
+    } catch {
+      // Fall through to RN Share
+    }
+  }
+
+  // Fallback: React Native Share API
+  if (Platform.OS === "ios") {
+    await Share.share({ url: fileUri });
+  } else {
+    await Share.share({
+      message: `Reporte descargado: ${fileUri}`,
+      title: "Exportar reporte",
+    });
+  }
+}
+
+// ─── Mutation: Export Report (generate CSV client-side) ──────────
 export function useExportReport() {
   return useMutation({
     mutationFn: async ({
-      reportType,
+      report,
+      format = "csv",
     }: {
-      reportId: string;
-      reportType: string;
+      report: ReportData;
+      format?: ExportFormat;
     }) => {
-      const exportEndpoints: Record<string, string> = {
-        clients: "/export/clients/csv",
-        payments: "/export/payments/csv",
-        attendance: "/export/attendance/csv",
-        memberships: "/export/memberships/csv",
-        revenue: "/export/revenue/csv",
-        staff: "/export/staff/csv",
-      };
-      const endpoint = exportEndpoints[reportType] || "/export/report/pdf";
-      const response = await apiClient<Response>(endpoint);
-      return (response as unknown as Response).blob();
+      // Generate CSV content from the report's raw data
+      const csvContent = generateCSV(report);
+
+      if (!csvContent) {
+        throw new Error("No hay datos para exportar en este reporte");
+      }
+
+      // Write CSV to local file
+      const filename = `${report.type}_${report.id}_${Date.now()}.csv`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      // Share the file
+      await shareFile(fileUri, "text/csv");
+
+      return { uri: fileUri, filename };
+    },
+    onError: (error: Error) => {
+      Alert.alert(
+        "Error al exportar",
+        error.message ||
+          "No se pudo exportar el reporte. Intenta nuevamente.",
+      );
     },
   });
 }

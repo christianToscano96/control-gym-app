@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -6,186 +6,151 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+  Text,
+  TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import SearchInput from "@/components/ui/SearchInput";
 import Select, { SelectOption } from "@/components/ui/Select";
 import DateSelect from "@/components/ui/DateSelect";
 import ButtonCustom from "@/components/ui/ButtonCustom";
-import ReportCard, { ReportData } from "@/components/ui/ReportCard";
+import ReportCard from "@/components/ui/ReportCard";
 import EmptyState from "@/components/ui/EmptyState";
-import { API_BASE_URL } from "@/constants/api";
-import { SafeAreaView } from "react-native-safe-area-context";
-// TODO: Descomentar cuando se habilite la exportación con las dependencias
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import * as FileSystem from "expo-file-system";
-// import * as Sharing from "expo-sharing";
+import {
+  useReportsQuery,
+  useExportReport,
+} from "@/hooks/queries/useReportsQuery";
+import {
+  ReportData,
+  ExportFormat,
+  ReportsSummary,
+} from "@/types/reports";
 
+// ─── Filter options ─────────────────────────────────────────────
+const reportTypeOptions: SelectOption[] = [
+  { label: "Todos los reportes", value: "" },
+  { label: "Clientes", value: "clients" },
+  { label: "Asistencias", value: "attendance" },
+  { label: "Membresías", value: "memberships" },
+  { label: "Ingresos", value: "revenue" },
+  { label: "Personal", value: "staff" },
+  { label: "Hora pico", value: "peak_hour" },
+];
+
+const statusOptions: SelectOption[] = [
+  { label: "Todos los estados", value: "" },
+  { label: "Completado", value: "completed" },
+  { label: "Pendiente", value: "pending" },
+];
+
+// ─── Summary Pill Component ────────────────────────────────────
+const SummaryPill = ({
+  label,
+  count,
+  color,
+  bgColor,
+}: {
+  label: string;
+  count: number;
+  color: string;
+  bgColor: string;
+}) => (
+  <View
+    className="flex-1 rounded-xl py-2 px-3 items-center"
+    style={{ backgroundColor: bgColor }}
+  >
+    <Text className="text-lg font-bold" style={{ color }}>
+      {count}
+    </Text>
+    <Text className="text-xs" style={{ color }}>
+      {label}
+    </Text>
+  </View>
+);
+
+// ─── Main Screen ────────────────────────────────────────────────
 const ReportsScreen = () => {
   const { colors, primaryColor } = useTheme();
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState<string | null>(null);
 
-  // Filtros
+  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [reportType, setReportType] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Datos
-  const [reports, setReports] = useState<ReportData[]>([]);
+  // Export tracking
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
-  // Opciones de filtros
-  const reportTypeOptions: SelectOption[] = [
-    { label: "Todos los reportes", value: "" },
-    { label: "Clientes", value: "clients" },
-    { label: "Pagos", value: "payments" },
-    { label: "Asistencias", value: "attendance" },
-    { label: "Membresías", value: "memberships" },
-    { label: "Ingresos", value: "revenue" },
-    { label: "Personal", value: "staff" },
-  ];
+  // Pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
 
-  const statusOptions: SelectOption[] = [
-    { label: "Todos los estados", value: "" },
-    { label: "Completado", value: "completed" },
-    { label: "Pendiente", value: "pending" },
-    { label: "Error", value: "error" },
-  ];
+  // React Query hooks
+  const {
+    data: reports = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useReportsQuery();
 
-  // Cargar reportes iniciales (mock data o desde API)
-  useEffect(() => {
-    loadReports();
-  }, []);
+  const exportMutation = useExportReport();
 
-  // Aplicar filtros usando useMemo para cálculos derivados
+  // Client-side filtering (all filters applied locally)
   const filteredReports = useMemo(() => {
     let filtered = [...reports];
 
-    // Filtro de búsqueda
+    // Text search
     if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (report) =>
-          report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          report.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          r.description?.toLowerCase().includes(q),
       );
     }
 
-    // Filtro por tipo de reporte
+    // Type filter
     if (reportType) {
-      filtered = filtered.filter((report) => report.type === reportType);
+      filtered = filtered.filter((r) => r.type === reportType);
     }
 
-    // Filtro por estado
+    // Status filter
     if (statusFilter) {
-      filtered = filtered.filter((report) => report.status === statusFilter);
+      filtered = filtered.filter((r) => r.status === statusFilter);
     }
 
-    // Filtro por rango de fechas
+    // Date range filter
     if (startDate) {
-      filtered = filtered.filter(
-        (report) => new Date(report.date) >= startDate,
-      );
+      filtered = filtered.filter((r) => new Date(r.date) >= startDate);
     }
     if (endDate) {
-      filtered = filtered.filter((report) => new Date(report.date) <= endDate);
+      filtered = filtered.filter((r) => new Date(r.date) <= endDate);
     }
 
     return filtered;
-  }, [reports, searchQuery, reportType, startDate, endDate, statusFilter]);
+  }, [reports, searchQuery, reportType, statusFilter, startDate, endDate]);
 
-  const loadReports = async () => {
-    setLoading(true);
-    try {
-      // TODO: Reemplazar con llamada real a la API
-      // const response = await fetch(`${API_BASE_URL}/reports`, {
-      //   headers: {
-      //     Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
-      //   },
-      // });
-      // const data = await response.json();
+  // Summary stats
+  const summary: ReportsSummary = useMemo(
+    () => ({
+      total: reports.length,
+      completed: reports.filter((r) => r.status === "completed").length,
+      pending: reports.filter((r) => r.status === "pending").length,
+      processing: reports.filter((r) => r.status === "processing").length,
+      error: reports.filter((r) => r.status === "error").length,
+    }),
+    [reports],
+  );
 
-      // Mock data temporal
-      const mockReports: ReportData[] = [
-        {
-          id: "1",
-          type: "clients",
-          title: "Reporte de Clientes",
-          date: "2026-02-01",
-          description: "Listado completo de clientes activos e inactivos",
-          status: "completed",
-          metadata: {
-            totalRecords: 150,
-            period: "Enero 2026",
-          },
-        },
-        {
-          id: "2",
-          type: "payments",
-          title: "Reporte de Pagos",
-          date: "2026-02-03",
-          description: "Detalle de todos los pagos recibidos",
-          status: "completed",
-          metadata: {
-            totalRecords: 85,
-            period: "Último mes",
-          },
-        },
-        {
-          id: "3",
-          type: "attendance",
-          title: "Reporte de Asistencias",
-          date: "2026-02-04",
-          description: "Registro de entradas y salidas del gimnasio",
-          status: "completed",
-          metadata: {
-            totalRecords: 320,
-            period: "Última semana",
-          },
-        },
-        {
-          id: "4",
-          type: "memberships",
-          title: "Reporte de Membresías",
-          date: "2026-02-05",
-          description: "Estado de todas las membresías activas",
-          status: "pending",
-          metadata: {
-            totalRecords: 120,
-            period: "Activo",
-          },
-        },
-        {
-          id: "5",
-          type: "revenue",
-          title: "Reporte de Ingresos",
-          date: "2026-01-31",
-          description: "Análisis de ingresos mensuales y anuales",
-          status: "completed",
-          metadata: {
-            totalRecords: 45,
-            period: "Enero 2026",
-          },
-        },
-      ];
-
-      setReports(mockReports);
-    } catch (error) {
-      console.error("Error cargando reportes:", error);
-      Alert.alert("Error", "No se pudieron cargar los reportes");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
+  // Handlers
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadReports();
+    await refetch();
     setRefreshing(false);
-  };
+  }, [refetch]);
 
   const handleClearFilters = () => {
     setSearchQuery("");
@@ -195,111 +160,37 @@ const ReportsScreen = () => {
     setStatusFilter("");
   };
 
-  const handleExportReport = async (report: ReportData) => {
-    setExporting(report.id);
-    try {
-      // const token = await AsyncStorage.getItem("token");
-
-      // Endpoint para exportar según el tipo de reporte
-      const exportEndpoints: { [key: string]: string } = {
-        clients: "/export/clients/csv",
-        payments: "/export/payments/csv",
-        attendance: "/export/attendance/csv",
-        memberships: "/export/memberships/csv",
-        revenue: "/export/revenue/csv",
-        staff: "/export/staff/csv",
-      };
-
-      const endpoint = exportEndpoints[report.type] || "/export/report/pdf";
-      const url = `${API_BASE_URL}${endpoint}`;
-
-      // TODO: Implementar descarga y compartir con expo-file-system y expo-sharing
-      // Por ahora, solo mostrar mensaje de éxito
-
-      Alert.alert(
-        "Exportar Reporte",
-        `El reporte "${report.title}" se exportará desde:\n${url}\n\nPara habilitar la descarga, instala:\nnpx expo install expo-file-system expo-sharing`,
-        [{ text: "OK" }],
-      );
-
-      // Código de descarga cuando se instalen las dependencias:
-      /*
-      const filename = `${report.type}_${Date.now()}.csv`;
-      const fileUri = FileSystem.documentDirectory + filename;
-
-      const downloadResult = await FileSystem.downloadAsync(url, fileUri, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (downloadResult.status === 200) {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: "text/csv",
-            dialogTitle: `Exportar ${report.title}`,
-          });
-        } else {
-          Alert.alert("Éxito", `Reporte exportado a: ${downloadResult.uri}`);
-        }
+  const handleExportReport = useCallback(
+    async (report: ReportData, format: ExportFormat) => {
+      setExportingId(report.id);
+      try {
+        await exportMutation.mutateAsync({ report, format });
+      } finally {
+        setExportingId(null);
       }
-      */
-    } catch (error) {
-      console.error("Error exportando reporte:", error);
-      Alert.alert(
-        "Error",
-        "No se pudo exportar el reporte. Intenta nuevamente.",
-      );
-    } finally {
-      setExporting(null);
-    }
-  };
-
-  const handleExportAll = async () => {
-    Alert.alert(
-      "Exportar todos los reportes",
-      "¿Deseas exportar todos los reportes filtrados?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Exportar",
-          onPress: async () => {
-            setExporting("all");
-            try {
-              // TODO: Implementar exportación masiva
-              for (const report of filteredReports) {
-                await handleExportReport(report);
-              }
-              Alert.alert("Éxito", "Reportes exportados correctamente");
-            } catch (exportError) {
-              console.error("Error al exportar:", exportError);
-              Alert.alert(
-                "Error",
-                "No se pudieron exportar todos los reportes",
-              );
-            } finally {
-              setExporting(null);
-            }
-          },
-        },
-      ],
-    );
-  };
+    },
+    [exportMutation],
+  );
 
   const handleReportPress = (report: ReportData) => {
+    const buttons: any[] = [{ text: "Cerrar", style: "cancel" }];
+
+    if (report.status === "completed") {
+      buttons.push({
+        text: "Exportar CSV",
+        onPress: () => handleExportReport(report, "csv"),
+      });
+    }
+
     Alert.alert(
       report.title,
-      `Tipo: ${report.type}\nFecha: ${report.date}\n${report.description || ""}`,
-      [
-        { text: "Cerrar", style: "cancel" },
-        {
-          text: "Exportar",
-          onPress: () => handleExportReport(report),
-        },
-      ],
+      `Tipo: ${report.type}\nFecha: ${report.date}\nEstado: ${report.status || "N/A"}\n${report.description || ""}`,
+      buttons,
     );
   };
+
+  const hasActiveFilters =
+    !!searchQuery || !!reportType || !!statusFilter || !!startDate || !!endDate;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -310,10 +201,41 @@ const ReportsScreen = () => {
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={primaryColor}
+              colors={[primaryColor]}
+            />
           }
         >
-          {/* Barra de búsqueda */}
+          {/* Summary Stats */}
+          {!isLoading && reports.length > 0 && (
+            <View className="flex-row gap-2 mb-4">
+              <SummaryPill
+                label="Total"
+                count={summary.total}
+                color={colors.textSecondary}
+                bgColor={colors.card}
+              />
+              <SummaryPill
+                label="OK"
+                count={summary.completed}
+                color="#10b981"
+                bgColor="#10b98115"
+              />
+              {summary.pending > 0 && (
+                <SummaryPill
+                  label="Pend."
+                  count={summary.pending}
+                  color="#f59e0b"
+                  bgColor="#f59e0b15"
+                />
+              )}
+            </View>
+          )}
+
+          {/* Search */}
           <SearchInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -321,7 +243,7 @@ const ReportsScreen = () => {
             onClear={() => setSearchQuery("")}
           />
 
-          {/* Filtros */}
+          {/* Filters */}
           <View className="mb-4">
             <View className="flex-row gap-2 mb-2">
               <View className="flex-1">
@@ -362,7 +284,7 @@ const ReportsScreen = () => {
               </View>
             </View>
 
-            {/* Botones de acción */}
+            {/* Action buttons */}
             <View className="flex-row gap-2">
               <View className="flex-1">
                 <ButtonCustom
@@ -374,17 +296,40 @@ const ReportsScreen = () => {
               </View>
               <View className="flex-1">
                 <ButtonCustom
-                  title="Exportar todo"
-                  onPress={handleExportAll}
+                  title={refreshing ? "Actualizando..." : "Actualizar datos"}
+                  onPress={handleRefresh}
                   width="full"
-                  disabled={filteredReports.length === 0 || exporting !== null}
+                  disabled={refreshing || isLoading}
                 />
               </View>
             </View>
           </View>
 
-          {/* Lista de reportes */}
-          {loading ? (
+          {/* Error State */}
+          {isError && (
+            <View
+              className="rounded-2xl p-4 mb-4"
+              style={{ backgroundColor: "#ef444415" }}
+            >
+              <Text
+                className="text-sm text-center"
+                style={{ color: "#ef4444" }}
+              >
+                {(error as Error)?.message || "Error al cargar los reportes"}
+              </Text>
+              <TouchableOpacity onPress={() => refetch()} className="mt-2">
+                <Text
+                  className="text-sm text-center font-bold"
+                  style={{ color: primaryColor }}
+                >
+                  Reintentar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Reports List */}
+          {isLoading ? (
             <View className="py-12">
               <ActivityIndicator size="large" color={primaryColor} />
             </View>
@@ -392,19 +337,24 @@ const ReportsScreen = () => {
             <EmptyState
               icon="assessment"
               title="No hay reportes"
-              description="No se encontraron reportes con los filtros aplicados"
+              description={
+                hasActiveFilters
+                  ? "No se encontraron reportes con los filtros aplicados"
+                  : "Desliza hacia abajo para cargar los reportes"
+              }
             />
           ) : (
             <FlatList
               data={filteredReports}
-              renderItem={({ item: report }: { item: ReportData }) => (
+              renderItem={({ item: report }) => (
                 <ReportCard
                   report={report}
                   onPress={() => handleReportPress(report)}
-                  onExport={() => handleExportReport(report)}
+                  onExport={(format) => handleExportReport(report, format)}
+                  isExporting={exportingId === report.id}
                 />
               )}
-              keyExtractor={(item: ReportData) => item.id}
+              keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingBottom: 24 }}
               scrollEnabled={false}
             />

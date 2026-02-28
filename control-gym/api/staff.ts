@@ -20,7 +20,7 @@ export interface StaffResponse {
   phone?: string;
   avatar?: string;
   active: boolean;
-  gym: string;
+  gymId: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -21,12 +21,12 @@ router.post(
       if (!["basico", "pro", "proplus"].includes(newPlan)) {
         return res.status(400).json({ message: "Plan inválido" });
       }
-      const gym = await Gym.findById(req.user.gym);
+      const gym = await Gym.findById(req.user.gymId);
       if (!gym)
         return res.status(404).json({ message: "Gimnasio no encontrado" });
       // Finalizar membresía anterior
       await Membership.updateMany(
-        { gym: gym._id, active: true },
+        { gymId: gym._id, active: true },
         { active: false, endDate: new Date() },
       );
       // Crear nueva membresía (1 mes)
@@ -34,7 +34,7 @@ router.post(
       const endDate = new Date(now);
       endDate.setMonth(now.getMonth() + 1);
       await Membership.create({
-        gym: gym._id,
+        gymId: gym._id,
         plan: newPlan,
         startDate: now,
         endDate,
@@ -61,7 +61,7 @@ router.get(
       if (req.user.role === "superadmin") {
         memberships = await Membership.find().populate("gym");
       } else {
-        memberships = await Membership.find({ gym: req.user.gym });
+        memberships = await Membership.find({ gymId: req.user.gymId });
       }
       res.json(memberships);
     } catch (err) {
@@ -80,9 +80,9 @@ router.post(
   async (req: AuthRequest, res) => {
     try {
       const { gym, plan, startDate, endDate, active } = req.body;
-      const gymId = req.user.role === "superadmin" ? gym : req.user.gym;
+      const gymId = req.user.role === "superadmin" ? gym : req.user.gymId;
       const membership = new Membership({
-        gym: gymId,
+        gymId,
         plan,
         startDate,
         endDate,
@@ -106,7 +106,7 @@ router.put(
       const filter =
         req.user.role === "superadmin"
           ? { _id: req.params.id }
-          : { _id: req.params.id, gym: req.user.gym };
+          : { _id: req.params.id, gymId: req.user.gymId };
       const membership = await Membership.findOneAndUpdate(filter, req.body, {
         new: true,
       });
@@ -131,7 +131,7 @@ router.delete(
       const filter =
         req.user.role === "superadmin"
           ? { _id: req.params.id }
-          : { _id: req.params.id, gym: req.user.gym };
+          : { _id: req.params.id, gymId: req.user.gymId };
       const membership = await Membership.findOneAndDelete(filter);
       if (!membership)
         return res.status(404).json({ message: "Membresía no encontrada" });

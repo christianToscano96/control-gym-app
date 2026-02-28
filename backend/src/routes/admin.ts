@@ -11,11 +11,11 @@ router.get(
   authenticateJWT,
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
+    const gymId = req.user.gymId;
     const gym = await Gym.findById(gymId);
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
-    const membership = await Membership.findOne({ gym: gymId, active: true });
+    const membership = await Membership.findOne({ gymId, active: true });
     res.json({
       plan: gym.plan,
       membership,
@@ -29,7 +29,7 @@ router.get(
   authenticateJWT,
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const gym = await Gym.findById(req.user.gym);
+    const gym = await Gym.findById(req.user.gymId);
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
@@ -57,7 +57,7 @@ router.put(
     }
 
     const gym = await Gym.findByIdAndUpdate(
-      req.user.gym,
+      req.user.gymId,
       { emailConfig: { gmailUser, gmailAppPassword } },
       { new: true },
     );
@@ -79,7 +79,7 @@ router.get(
   authenticateJWT,
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const gym = await Gym.findById(req.user.gym);
+    const gym = await Gym.findById(req.user.gymId);
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
@@ -109,7 +109,7 @@ router.put(
     }
 
     const gym = await Gym.findByIdAndUpdate(
-      req.user.gym,
+      req.user.gymId,
       { periodPricing },
       { new: true },
     );

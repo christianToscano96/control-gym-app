@@ -5,7 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "admin" | "superadmin" | "empleado" | "entrenador";
-  gym?: Schema.Types.ObjectId;
+  gymId?: Schema.Types.ObjectId;
   active: boolean;
   phone?: string;
   avatar?: string;
@@ -23,7 +23,7 @@ const UserSchema = new Schema<IUser>(
       enum: ["admin", "superadmin", "empleado", "entrenador"],
       required: true,
     },
-    gym: { type: Schema.Types.ObjectId, ref: "Gym" },
+    gymId: { type: Schema.Types.ObjectId, ref: "Gym" },
     active: { type: Boolean, default: true },
     phone: { type: String },
     avatar: { type: String },

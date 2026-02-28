@@ -32,8 +32,8 @@ router.post("/forgot", async (req, res) => {
     await user.save();
 
     // Intentar enviar email real usando la config del gym
-    if (user.gym) {
-      const gym = await Gym.findById(user.gym);
+    if (user.gymId) {
+      const gym = await Gym.findById(user.gymId);
       if (gym?.emailConfig?.gmailUser && gym?.emailConfig?.gmailAppPassword) {
         await sendPasswordResetEmail({
           toEmail: email,

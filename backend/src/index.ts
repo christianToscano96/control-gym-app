@@ -19,6 +19,8 @@ import accessRoutes from "./routes/access";
 import exportRoutes from "./routes/export";
 import userRoutes from "./routes/user";
 import dashboardRoutes from "./routes/dashboard";
+import snapshotRoutes from "./routes/snapshot";
+import { startCronJobs } from "./jobs/cronScheduler";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -70,6 +72,9 @@ app.use("/api/users", userRoutes);
 // Rutas para dashboard
 app.use("/api/dashboard", dashboardRoutes);
 
+// Rutas para snapshots mensuales
+app.use("/api/snapshots", snapshotRoutes);
+
 app.get("/", (req, res) => {
   res.send("API Gym SaaS funcionando");
 });
@@ -78,4 +83,5 @@ connectDB().then(() => {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Servidor backend escuchando en puerto ${PORT}`);
   });
+  startCronJobs();
 });

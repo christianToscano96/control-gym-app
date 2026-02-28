@@ -50,13 +50,13 @@ router.post("/login", async (req, res) => {
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(401).json({ message: "Contraseña incorrecta" });
   const token = jwt.sign(
-    { id: user._id, role: user.role, gym: user.gym },
+    { id: user._id, role: user.role, gymId: user.gymId },
     process.env.JWT_SECRET || "secret",
     { expiresIn: "1d" },
   );
   res.json({
     token,
-    user: { id: user._id, name: user.name, role: user.role, gym: user.gym },
+    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId },
   });
 });
 

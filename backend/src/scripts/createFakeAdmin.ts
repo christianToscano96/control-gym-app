@@ -21,7 +21,7 @@ async function createFakeAdmin() {
     email: "admin@gym.com",
     password: hashed,
     role: "admin",
-    gym: gym._id,
+    gymId: gym._id,
     active: true,
   });
   gym.owner = admin._id.toString();

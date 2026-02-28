@@ -31,6 +31,9 @@ export function useRenewMembership() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.activityRate,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.clients.payments(variables.clientId),
+      });
     },
   });
 }

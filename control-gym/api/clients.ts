@@ -7,3 +7,7 @@ export async function fetchClients() {
 export async function fetchClientById(clientId: string) {
   return apiClient(`/api/clients/${clientId}`);
 }
+
+export async function fetchClientPayments(clientId: string) {
+  return apiClient(`/api/clients/${clientId}/payments`);
+}

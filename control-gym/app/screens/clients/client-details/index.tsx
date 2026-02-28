@@ -1,8 +1,7 @@
-import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast from "@/components/ui/Toast";
 import { useTheme } from "@/context/ThemeContext";
-import { useClientDetailQuery, useDeleteClient } from "@/hooks/queries/useClients";
+import { useClientDetailQuery, useClientPaymentsQuery, useDeleteClient } from "@/hooks/queries/useClients";
 import { useToast } from "@/hooks/useToast";
 import {
   calculateExpirationDate,
@@ -13,41 +12,23 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import React from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ClientHeader } from "./components/ClientHeader";
 import { ClientInfoCard } from "./components/ClientInfoCard";
 import { PaymentHistory } from "./components/PaymentHistory";
 import { StatsCards } from "./components/StatsCards";
 
-// Mock payment data - replace with actual API call when backend supports it
-const MOCK_PAYMENTS = [
-  {
-    _id: "1",
-    amount: 50,
-    date: "2026-01-15",
-    method: "Efectivo",
-    status: "Completado",
-  },
-  {
-    _id: "2",
-    amount: 50,
-    date: "2025-12-15",
-    method: "Transferencia",
-    status: "Completado",
-  },
-  {
-    _id: "3",
-    amount: 50,
-    date: "2025-11-15",
-    method: "Efectivo",
-    status: "Completado",
-  },
-];
-
 const UserDetailsScreen = () => {
   const { clientId } = useLocalSearchParams();
-  const { primaryColor, colors } = useTheme();
+  const { primaryColor, colors, isDark } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   // ─── TanStack Query ──────────────────────────────────────────
@@ -57,6 +38,11 @@ const UserDetailsScreen = () => {
     error: queryError,
   } = useClientDetailQuery(clientId as string);
 
+  const {
+    data: payments = [],
+    isLoading: loadingPayments,
+  } = useClientPaymentsQuery(clientId as string);
+
   const deleteClientMutation = useDeleteClient();
   const deleting = deleteClientMutation.isPending;
 
@@ -65,7 +51,6 @@ const UserDetailsScreen = () => {
   // Derived state
   const fullName =
     `${clientData?.firstName || ""} ${clientData?.lastName || ""}`.trim();
-  const statusLabel = clientData?.isActive ? "Activo" : "Inactivo";
 
   // Membership expiration calculations
   const expirationDate = calculateExpirationDate(
@@ -76,17 +61,17 @@ const UserDetailsScreen = () => {
   const expired = hasExpired(expirationDate);
   const expiringSoon = isExpiringSoon(expirationDate);
   const expirationDateText = formatDate(expirationDate);
-  const expirationLabel = expired ? "Expiró" : "Válido hasta";
+  const expirationLabel = expired ? "Expiro" : "Valido hasta";
   const daysLeft = expirationDate
     ? Math.ceil(
-        (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       )
     : undefined;
 
   const onDeleteClient = () => {
     Alert.alert(
       "Eliminar Cliente",
-      `¿Estás seguro de que deseas eliminar a ${clientData?.firstName || "este cliente"}? Esta acción no se puede deshacer.`,
+      `Estas seguro de que deseas eliminar a ${clientData?.firstName || "este cliente"}? Esta accion no se puede deshacer.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -110,14 +95,19 @@ const UserDetailsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: colors.background }}
-      >
-        <View className="flex-1 justify-center items-center">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={primaryColor} />
-          <Text className="mt-4" style={{ color: colors.textSecondary }}>
-            Cargando información...
+          <Text
+            style={{
+              marginTop: 16,
+              color: colors.textSecondary,
+              fontSize: 14,
+            }}
+          >
+            Cargando informacion...
           </Text>
         </View>
       </SafeAreaView>
@@ -126,16 +116,26 @@ const UserDetailsScreen = () => {
 
   if (error) {
     return (
-      <SafeAreaView
-        className="flex-1 px-6"
-        style={{ backgroundColor: colors.background }}
-      >
-        <HeaderTopScrenn title="Detalles" isBackButton />
-        <View className="flex-1 justify-center items-center">
-          <MaterialIcons name="error-outline" size={64} color={colors.error} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={{ paddingHorizontal: 24 }}>
+          <HeaderTopScrenn title="Detalles" isBackButton />
+        </View>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 32,
+          }}
+        >
+          <MaterialIcons name="error-outline" size={56} color={colors.error} />
           <Text
-            className="mt-4 text-center text-lg"
-            style={{ color: colors.error }}
+            style={{
+              marginTop: 16,
+              textAlign: "center",
+              fontSize: 16,
+              color: colors.error,
+            }}
           >
             {error}
           </Text>
@@ -146,22 +146,32 @@ const UserDetailsScreen = () => {
 
   if (!clientData) {
     return (
-      <SafeAreaView
-        className="flex-1 px-6"
-        style={{ backgroundColor: colors.background }}
-      >
-        <HeaderTopScrenn title="Detalles" isBackButton />
-        <View className="flex-1 justify-center items-center">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={{ paddingHorizontal: 24 }}>
+          <HeaderTopScrenn title="Detalles" isBackButton />
+        </View>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 32,
+          }}
+        >
           <MaterialIcons
             name="person-off"
-            size={64}
+            size={56}
             color={colors.textSecondary}
           />
           <Text
-            className="mt-4 text-center text-lg"
-            style={{ color: colors.textSecondary }}
+            style={{
+              marginTop: 16,
+              textAlign: "center",
+              fontSize: 16,
+              color: colors.textSecondary,
+            }}
           >
-            No se encontró el cliente.
+            No se encontro el cliente.
           </Text>
         </View>
       </SafeAreaView>
@@ -169,16 +179,22 @@ const UserDetailsScreen = () => {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.background }}
-    >
-      <View className="px-6" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ paddingHorizontal: 16 }}>
         <HeaderTopScrenn title="Detalles" isBackButton />
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <ClientHeader avatarUri={clientData.avatarUri} fullName={fullName} />
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
+        <ClientHeader
+          avatarUri={clientData.avatarUri}
+          fullName={fullName}
+          isActive={clientData.isActive}
+          membershipType={clientData.membershipType}
+        />
 
         <StatsCards
           primaryColor={primaryColor}
@@ -187,7 +203,7 @@ const UserDetailsScreen = () => {
           expirationLabel={expirationLabel}
           hasExpired={expired}
           isExpiringSoon={expiringSoon}
-          statusLabel={statusLabel}
+          statusLabel={clientData.isActive ? "Activo" : "Inactivo"}
           isActive={clientData.isActive}
           daysLeft={daysLeft}
         />
@@ -197,29 +213,74 @@ const UserDetailsScreen = () => {
           phone={clientData.phone}
           membershipType={clientData.membershipType}
           selectedPeriod={clientData.selected_period}
+          dni={clientData.dni}
         />
 
-        <PaymentHistory payments={MOCK_PAYMENTS} primaryColor={primaryColor} />
+        <PaymentHistory
+          payments={payments}
+          primaryColor={primaryColor}
+          loading={loadingPayments}
+        />
       </ScrollView>
 
       {/* Action Buttons */}
-      <View className="px-4 pb-8 flex-row gap-4 mt-2">
-        <ButtonCustom
-          title="Editar Cliente"
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingBottom: 32,
+          paddingTop: 8,
+          flexDirection: "row",
+          gap: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
+        <TouchableOpacity
           onPress={() => {
-            // TODO: Implementar edición
+            // TODO: Implementar edicion
             console.log("Editar cliente");
           }}
-          width="flex"
           disabled={deleting}
-        />
-        <ButtonCustom
-          title={deleting ? "Eliminando..." : "Eliminar"}
-          secondary
+          activeOpacity={0.8}
+          style={{
+            flex: 1,
+            backgroundColor: primaryColor,
+            borderRadius: 14,
+            paddingVertical: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            opacity: deleting ? 0.5 : 1,
+          }}
+        >
+          <MaterialIcons name="edit" size={18} color="#fff" />
+          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+            Editar
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={onDeleteClient}
-          width="flex"
           disabled={deleting}
-        />
+          activeOpacity={0.8}
+          style={{
+            flex: 1,
+            backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
+            borderRadius: 14,
+            paddingVertical: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            opacity: deleting ? 0.5 : 1,
+          }}
+        >
+          <MaterialIcons name="delete-outline" size={18} color="#DC2626" />
+          <Text style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}>
+            {deleting ? "Eliminando..." : "Eliminar"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Toast

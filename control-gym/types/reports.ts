@@ -1,4 +1,19 @@
 // types/reports.ts
+
+export type ReportType =
+  | "clients"
+  | "payments"
+  | "attendance"
+  | "memberships"
+  | "revenue"
+  | "staff"
+  | "peak_hour"
+  | "general";
+
+export type ReportStatus = "completed" | "pending" | "error" | "processing";
+
+export type ExportFormat = "csv" | "pdf" | "xlsx";
+
 export interface ReportData {
   id: string;
   type: ReportType;
@@ -9,36 +24,32 @@ export interface ReportData {
   metadata?: ReportMetadata;
 }
 
-export type ReportType =
-  | "clients"
-  | "payments"
-  | "attendance"
-  | "memberships"
-  | "revenue"
-  | "staff"
-  | "general";
-
-export type ReportStatus = "completed" | "pending" | "error" | "processing";
-
 export interface ReportMetadata {
   totalRecords?: number;
   period?: string;
   generatedBy?: string;
   fileSize?: number;
-  format?: "csv" | "pdf" | "xlsx";
+  format?: ExportFormat;
   [key: string]: any;
 }
 
 export interface ReportFilters {
   searchQuery?: string;
-  reportType?: string;
+  reportType?: ReportType | "";
   startDate?: Date | null;
   endDate?: Date | null;
-  statusFilter?: string;
+  statusFilter?: ReportStatus | "";
+}
+
+export interface GenerateReportParams {
+  type: ReportType;
+  startDate?: string;
+  endDate?: string;
+  format?: ExportFormat;
 }
 
 export interface ExportOptions {
-  format?: "csv" | "pdf" | "xlsx";
+  format?: ExportFormat;
   includeHeaders?: boolean;
   dateRange?: {
     start: Date;
@@ -57,5 +68,14 @@ export interface ExportResponse {
   success: boolean;
   url?: string;
   filename?: string;
+  mimeType?: string;
   error?: string;
+}
+
+export interface ReportsSummary {
+  total: number;
+  completed: number;
+  pending: number;
+  processing: number;
+  error: number;
 }

@@ -119,12 +119,6 @@ export default function DashboardScreen() {
         >
           {!isStaff && (
             <>
-              {/* Alerta de membresías por vencer */}
-              <ExpiringMembershipsAlert
-                count={expiringData?.count ?? 0}
-                onPress={() => router.push("/screens/clients" as any)}
-              />
-
               {/* ─── Resumen ─── */}
               <Text
                 style={{ color: colors.textSecondary }}
@@ -194,11 +188,7 @@ export default function DashboardScreen() {
                         marginRight: 12,
                       }}
                     >
-                      <MaterialIcons
-                        name="block"
-                        size={20}
-                        color="#DC2626"
-                      />
+                      <MaterialIcons name="block" size={20} color="#DC2626" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
@@ -244,7 +234,11 @@ export default function DashboardScreen() {
                   </View>
                 </View>
               )}
-
+              {/* Alerta de membresías por vencer */}
+              <ExpiringMembershipsAlert
+                count={expiringData?.count ?? 0}
+                onPress={() => router.push("/screens/clients" as any)}
+              />
               {/* ─── Tendencias ─── */}
               <Text
                 style={{ color: colors.textSecondary }}

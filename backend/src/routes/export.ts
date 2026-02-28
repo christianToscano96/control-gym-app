@@ -12,8 +12,8 @@ router.get(
   authenticateJWT,
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
-    const clients = await Client.find({ gym: gymId });
+    const gymId = req.user.gymId;
+    const clients = await Client.find({ gymId });
     const fields = [
       "name",
       "email",

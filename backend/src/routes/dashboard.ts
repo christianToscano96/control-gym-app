@@ -5,6 +5,7 @@ import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
 import { authenticateJWT, requireRole, AuthRequest } from "../middleware/auth";
 import { expireClientsForGym } from "../utils/expireClients";
+import { MonthlySnapshot } from "../models/MonthlySnapshot";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get(
   requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const gymId = new mongoose.Types.ObjectId(req.user.gym);
+      const gymId = new mongoose.Types.ObjectId(req.user.gymId);
 
       // Obtener fecha de hoy (inicio del día)
       const today = new Date();
@@ -29,12 +30,12 @@ router.get(
 
       // Contar total de clientes
       const totalClients = await Client.countDocuments({
-        gym: gymId,
+        gymId,
       });
 
       // Contar clientes del mes anterior para calcular porcentaje
       const clientsLastMonth = await Client.countDocuments({
-        gym: gymId,
+        gymId,
         createdAt: { $lt: thirtyDaysAgo },
       });
 
@@ -48,7 +49,7 @@ router.get(
 
       // Contar check-ins del día (ingresos del día)
       const todayCheckIns = await AccessLog.countDocuments({
-        gym: gymId,
+        gymId,
         date: { $gte: today },
       });
 
@@ -56,7 +57,7 @@ router.get(
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayCheckIns = await AccessLog.countDocuments({
-        gym: gymId,
+        gymId,
         date: { $gte: yesterday, $lt: today },
       });
 
@@ -77,7 +78,7 @@ router.get(
       const monthlyPayments = await Payment.aggregate([
         {
           $match: {
-            gym: gymId,
+            gymId,
             date: { $gte: firstDayOfMonth },
           },
         },
@@ -92,34 +93,51 @@ router.get(
       const monthlyRevenue =
         monthlyPayments.length > 0 ? monthlyPayments[0].total : 0;
 
-      // Ingresos del mes anterior
-      const firstDayOfLastMonth = new Date(
-        today.getFullYear(),
-        today.getMonth() - 1,
-        1,
-      );
-      const lastDayOfLastMonth = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        0,
-      );
-      const lastMonthPayments = await Payment.aggregate([
-        {
-          $match: {
-            gym: gymId,
-            date: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-          },
-        },
-      ]);
+      // Ingresos del mes anterior (snapshot con fallback a query live)
+      const lastMonth = today.getMonth() === 0 ? 12 : today.getMonth();
+      const lastMonthYear =
+        today.getMonth() === 0
+          ? today.getFullYear() - 1
+          : today.getFullYear();
 
-      const lastMonthRevenue =
-        lastMonthPayments.length > 0 ? lastMonthPayments[0].total : 0;
+      let lastMonthRevenue = 0;
+      const lastMonthSnapshot = await MonthlySnapshot.findOne({
+        gymId,
+        year: lastMonthYear,
+        month: lastMonth,
+      });
+
+      if (lastMonthSnapshot) {
+        lastMonthRevenue = lastMonthSnapshot.revenue;
+      } else {
+        // Fallback: query live si no hay snapshot
+        const firstDayOfLastMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() - 1,
+          1,
+        );
+        const lastDayOfLastMonth = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          0,
+        );
+        const lastMonthPayments = await Payment.aggregate([
+          {
+            $match: {
+              gymId,
+              date: { $gte: firstDayOfLastMonth, $lte: lastDayOfLastMonth },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: "$amount" },
+            },
+          },
+        ]);
+        lastMonthRevenue =
+          lastMonthPayments.length > 0 ? lastMonthPayments[0].total : 0;
+      }
 
       // Calcular porcentaje de cambio de ingresos
       const revenuePercent =
@@ -135,7 +153,7 @@ router.get(
       const peakHoursRaw = await AccessLog.aggregate([
         {
           $match: {
-            gym: gymId,
+            gymId,
             date: { $gte: today, $lt: tomorrow },
           },
         },
@@ -184,7 +202,7 @@ router.get(
   requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const gymId = new mongoose.Types.ObjectId(req.user.gym);
+      const gymId = new mongoose.Types.ObjectId(req.user.gymId);
 
       // Calcular inicio de la semana actual (lunes)
       const now = new Date();
@@ -206,7 +224,7 @@ router.get(
       const currentWeekRaw = await AccessLog.aggregate([
         {
           $match: {
-            gym: gymId,
+            gymId,
             date: { $gte: startOfWeek, $lt: endOfWeek },
           },
         },
@@ -220,7 +238,7 @@ router.get(
 
       // Total de la semana anterior
       const lastWeekTotal = await AccessLog.countDocuments({
-        gym: gymId,
+        gymId,
         date: { $gte: startOfLastWeek, $lt: startOfWeek },
       });
 
@@ -277,18 +295,18 @@ router.get(
   requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const gymId = new mongoose.Types.ObjectId(req.user.gym);
+      const gymId = new mongoose.Types.ObjectId(req.user.gymId);
 
       // Expirar clientes antes de calcular la tasa de actividad
       await expireClientsForGym(gymId);
 
       const activeCount = await Client.countDocuments({
-        gym: gymId,
+        gymId,
         isActive: true,
       });
 
       const inactiveCount = await Client.countDocuments({
-        gym: gymId,
+        gymId,
         isActive: false,
       });
 
@@ -305,6 +323,83 @@ router.get(
       res
         .status(500)
         .json({ message: "Error al obtener tasa de actividad", error: err });
+    }
+  },
+);
+
+// Obtener distribución de membresías (basico, pro, proplus)
+router.get(
+  "/membership-distribution",
+  requireRole(["admin", "superadmin"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = new mongoose.Types.ObjectId(req.user.gymId);
+
+      const distribution = await Client.aggregate([
+        { $match: { gymId } },
+        {
+          $group: {
+            _id: "$membershipType",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const result = { basico: 0, pro: 0, proplus: 0, total: 0 };
+      for (const item of distribution) {
+        if (item._id === "basico") result.basico = item.count;
+        else if (item._id === "pro") result.pro = item.count;
+        else if (item._id === "proplus") result.proplus = item.count;
+      }
+      result.total = result.basico + result.pro + result.proplus;
+
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({
+        message: "Error al obtener distribución de membresías",
+        error: err,
+      });
+    }
+  },
+);
+
+// Obtener clientes con membresías próximas a vencer (7 días)
+router.get(
+  "/expiring-memberships",
+  requireRole(["admin", "superadmin"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = new mongoose.Types.ObjectId(req.user.gymId);
+
+      const now = new Date();
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(now.getDate() + 7);
+
+      const clients = await Client.find({
+        gymId,
+        isActive: true,
+        endDate: { $gte: now, $lte: sevenDaysFromNow },
+      })
+        .select("firstName lastName endDate membershipType")
+        .sort({ endDate: 1 })
+        .lean();
+
+      const mapped = clients.map((c: any) => ({
+        _id: c._id,
+        name: `${c.firstName} ${c.lastName}`,
+        expiresAt: c.endDate,
+        membershipType: c.membershipType,
+      }));
+
+      res.json({
+        count: mapped.length,
+        clients: mapped,
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: "Error al obtener membresías por vencer",
+        error: err,
+      });
     }
   },
 );

@@ -24,7 +24,7 @@ async function createTestAdmins() {
     email: "admin1@gym.com",
     password: hashed1,
     role: "admin",
-    gym: gym1._id,
+    gymId: gym1._id,
     active: true,
   });
   gym1.owner = admin1._id.toString();
@@ -45,7 +45,7 @@ async function createTestAdmins() {
     email: "admin2@gym.com",
     password: hashed2,
     role: "admin",
-    gym: gym2._id,
+    gymId: gym2._id,
     active: true,
   });
   gym2.owner = admin2._id.toString();
@@ -56,7 +56,7 @@ async function createTestAdmins() {
   const end = new Date(now);
   end.setMonth(end.getMonth() + 1);
   await Membership.create({
-    gym: gym2._id,
+    gymId: gym2._id,
     plan: "pro",
     startDate: now,
     endDate: end,

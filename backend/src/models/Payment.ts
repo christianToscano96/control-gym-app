@@ -1,7 +1,7 @@
 import { Schema, model, Document } from "mongoose";
 
 export interface IPayment extends Document {
-  gym: Schema.Types.ObjectId;
+  gymId: Schema.Types.ObjectId;
   membership?: Schema.Types.ObjectId;
   client?: Schema.Types.ObjectId;
   amount: number;
@@ -13,7 +13,7 @@ export interface IPayment extends Document {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    gym: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
+    gymId: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
     membership: {
       type: Schema.Types.ObjectId,
       ref: "Membership",

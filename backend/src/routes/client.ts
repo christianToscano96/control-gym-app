@@ -22,12 +22,12 @@ router.get(
   "/",
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
+    const gymId = req.user.gymId;
 
     // Expirar clientes cuyo endDate ya pasó antes de devolver resultados
     await expireClientsForGym(gymId);
 
-    const clients = await Client.find({ gym: gymId });
+    const clients = await Client.find({ gymId });
     res.json(clients);
   },
 );
@@ -36,7 +36,7 @@ router.get(
 import { Gym } from "../models/Gym";
 
 router.post("/", requireAdmin, async (req: AuthRequest, res) => {
-  const gymId = req.user.gym;
+  const gymId = req.user.gymId;
   // Obtener el gimnasio y su plan
   const gym = await Gym.findById(gymId);
   if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
@@ -51,7 +51,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
 
   // Contar clientes activos
   const currentClients = await Client.countDocuments({
-    gym: gymId,
+    gymId,
     isActive: true,
   });
   if (currentClients >= maxClients) {
@@ -60,7 +60,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
     });
   }
 
-  const client = new Client({ ...req.body, gym: gymId });
+  const client = new Client({ ...req.body, gymId });
 
   // Calcular endDate basado en startDate + selected_period
   if (client.startDate && client.selected_period) {
@@ -91,7 +91,7 @@ router.post("/", requireAdmin, async (req: AuthRequest, res) => {
 
     if (amount > 0) {
       await Payment.create({
-        gym: gymId,
+        gymId,
         client: client._id,
         amount,
         method: client.paymentMethod,
@@ -133,14 +133,14 @@ router.put(
   "/:id",
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
+    const gymId = req.user.gymId;
     const updateData = { ...req.body };
 
     // Si cambia startDate o selected_period, recalcular endDate
     if (updateData.startDate || updateData.selected_period) {
       const existing = await Client.findOne({
         _id: req.params.id,
-        gym: gymId,
+        gymId,
       });
       if (!existing)
         return res.status(404).json({ message: "Cliente no encontrado" });
@@ -153,7 +153,7 @@ router.put(
     }
 
     const client = await Client.findOneAndUpdate(
-      { _id: req.params.id, gym: gymId },
+      { _id: req.params.id, gymId },
       updateData,
       { new: true },
     );
@@ -168,7 +168,7 @@ router.put(
   "/:id/renew",
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
+    const gymId = req.user.gymId;
     const { startDate, selected_period, paymentMethod, paymentAmount } =
       req.body;
 
@@ -178,7 +178,7 @@ router.put(
       });
     }
 
-    const client = await Client.findOne({ _id: req.params.id, gym: gymId });
+    const client = await Client.findOne({ _id: req.params.id, gymId });
     if (!client)
       return res.status(404).json({ message: "Cliente no encontrado" });
 
@@ -200,7 +200,7 @@ router.put(
 
     if (amount > 0) {
       await Payment.create({
-        gym: gymId,
+        gymId,
         client: client._id,
         amount,
         method: paymentMethod,
@@ -216,10 +216,10 @@ router.put(
 
 // Eliminar cliente (solo admin y superadmin)
 router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
-  const gymId = req.user.gym;
+  const gymId = req.user.gymId;
   const client = await Client.findOneAndDelete({
     _id: req.params.id,
-    gym: gymId,
+    gymId,
   });
   if (!client)
     return res.status(404).json({ message: "Cliente no encontrado" });
@@ -231,8 +231,8 @@ router.get(
   "/:id",
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
-    const client = await Client.findOne({ _id: req.params.id, gym: gymId });
+    const gymId = req.user.gymId;
+    const client = await Client.findOne({ _id: req.params.id, gymId });
     if (!client)
       return res.status(404).json({ message: "Cliente no encontrado" });
 

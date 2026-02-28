@@ -1,7 +1,7 @@
 import { Schema, model, Document } from "mongoose";
 
 export interface IClient extends Document {
-  gym: Schema.Types.ObjectId;
+  gymId: Schema.Types.ObjectId;
   firstName: string;
   lastName: string;
   email: string;
@@ -19,7 +19,7 @@ export interface IClient extends Document {
 
 const ClientSchema = new Schema<IClient>(
   {
-    gym: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
+    gymId: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true },

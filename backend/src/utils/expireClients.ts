@@ -11,7 +11,7 @@ export async function expireClientsForGym(
   const now = new Date();
   const result = await Client.updateMany(
     {
-      gym: gymId,
+      gymId,
       isActive: true,
       endDate: { $exists: true, $lt: now },
     },

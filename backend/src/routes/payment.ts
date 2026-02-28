@@ -24,7 +24,7 @@ router.post(
     // Simular procesamiento de pago
     const paymentStatus = "completed"; // Aquí iría integración real con Stripe, MercadoPago, etc.
     const payment = await Payment.create({
-      gym: membership.gym,
+      gymId: membership.gymId,
       membership: membership._id,
       amount,
       method,
@@ -64,9 +64,9 @@ router.get(
   authenticateJWT,
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const gymId = req.user.gym;
-    const payments = await Payment.find({ gym: gymId }).populate("membership");
-    const memberships = await Membership.find({ gym: gymId });
+    const gymId = req.user.gymId;
+    const payments = await Payment.find({ gymId }).populate("membership");
+    const memberships = await Membership.find({ gymId });
     res.json({ payments, memberships });
   },
 );

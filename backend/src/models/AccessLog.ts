@@ -2,7 +2,7 @@ import { Schema, model, Document } from "mongoose";
 
 export interface IAccessLog extends Document {
   client: Schema.Types.ObjectId;
-  gym: Schema.Types.ObjectId;
+  gymId: Schema.Types.ObjectId;
   method: string;
   date: Date;
 }
@@ -10,7 +10,7 @@ export interface IAccessLog extends Document {
 const AccessLogSchema = new Schema<IAccessLog>(
   {
     client: { type: Schema.Types.ObjectId, ref: "Client", required: true },
-    gym: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
+    gymId: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
     method: { type: String, required: true }, // QR, NFC, etc.
     date: { type: Date, default: Date.now },
   },

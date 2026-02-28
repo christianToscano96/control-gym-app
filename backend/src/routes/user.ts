@@ -12,7 +12,7 @@ router.get("/", authenticateJWT, requireRole(["admin", "superadmin"]), async (re
     if (req.user.role === "superadmin") {
       users = await User.find();
     } else {
-      users = await User.find({ gym: req.user.gym });
+      users = await User.find({ gymId: req.user.gymId });
     }
     res.json(users);
   } catch (err) {
@@ -24,9 +24,9 @@ router.get("/", authenticateJWT, requireRole(["admin", "superadmin"]), async (re
 router.post("/", authenticateJWT, requireRole(["admin", "superadmin"]), async (req: AuthRequest, res) => {
   try {
     const { name, email, password, role, gym, active } = req.body;
-    const gymId = req.user.role === "superadmin" ? gym : req.user.gym;
+    const gymId = req.user.role === "superadmin" ? gym : req.user.gymId;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashedPassword, role, gym: gymId, active });
+    const user = new User({ name, email, password: hashedPassword, role, gymId, active });
     await user.save();
     res.status(201).json(user);
   } catch (err) {
@@ -41,7 +41,7 @@ router.put("/:id", authenticateJWT, requireRole(["admin", "superadmin"]), async 
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
-    const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gym: req.user.gym };
+    const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gymId: req.user.gymId };
     const user = await User.findOneAndUpdate(filter, updateData, { new: true });
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
     res.json(user);
@@ -53,7 +53,7 @@ router.put("/:id", authenticateJWT, requireRole(["admin", "superadmin"]), async 
 // Eliminar usuario
 router.delete("/:id", authenticateJWT, requireRole(["admin", "superadmin"]), async (req: AuthRequest, res) => {
   try {
-    const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gym: req.user.gym };
+    const filter = req.user.role === "superadmin" ? { _id: req.params.id } : { _id: req.params.id, gymId: req.user.gymId };
     const user = await User.findOneAndDelete(filter);
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
     res.json({ message: "Usuario eliminado" });

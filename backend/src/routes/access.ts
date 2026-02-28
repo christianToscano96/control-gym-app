@@ -30,7 +30,7 @@ router.post(
         .json({ message: "Cliente no encontrado o inactivo" });
     const log = await AccessLog.create({
       client: client._id,
-      gym: req.user.gym,
+      gymId: req.user.gymId,
       method,
     });
     res.status(201).json({ message: "Acceso registrado", log });
@@ -45,7 +45,7 @@ router.get(
   async (req: AuthRequest, res) => {
     const logs = await AccessLog.find({
       client: req.params.clientId,
-      gym: req.user.gym,
+      gymId: req.user.gymId,
     })
       .sort({ createdAt: -1 })
       .limit(100);
@@ -60,8 +60,8 @@ router.get(
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
     try {
-      const gymId = req.user.gym;
-      const logs = await AccessLog.find({ gym: gymId })
+      const gymId = req.user.gymId;
+      const logs = await AccessLog.find({ gymId })
         .sort({ date: -1 })
         .limit(10)
         .populate("client", "firstName lastName membershipType");
@@ -90,7 +90,7 @@ router.post(
   requireRole(["admin", "superadmin", "empleado"]),
   async (req: AuthRequest, res) => {
     const { clientId } = req.body;
-    const gymId = req.user.gym;
+    const gymId = req.user.gymId;
 
     if (!clientId) {
       return res.status(400).json({
@@ -100,7 +100,7 @@ router.post(
     }
 
     try {
-      const client = await Client.findOne({ _id: clientId, gym: gymId });
+      const client = await Client.findOne({ _id: clientId, gymId });
 
       if (!client) {
         return res.status(404).json({
@@ -141,7 +141,7 @@ router.post(
 
       await AccessLog.create({
         client: client._id,
-        gym: gymId,
+        gymId,
         method: "QR",
       });
 

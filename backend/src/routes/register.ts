@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
       email: adminEmail,
       password: hashed,
       role: "admin",
-      gym: gym._id,
+      gymId: gym._id,
       active: true,
     });
     gym.owner = admin._id as any;
@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
     const endDate = new Date(now);
     endDate.setMonth(now.getMonth() + 1); // 1 mes por defecto
     await Membership.create({
-      gym: gym._id,
+      gymId: gym._id,
       plan,
       startDate: now,
       endDate,

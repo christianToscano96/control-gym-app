@@ -42,7 +42,7 @@ router.get("/report/clients", async (req, res) => {
   // Clientes por gimnasio
   const porGimnasio = await Client.aggregate([
     { $match: { isActive: true } },
-    { $group: { _id: "$gym", count: { $sum: 1 } } },
+    { $group: { _id: "$gymId", count: { $sum: 1 } } },
   ]);
   res.json({ total, porGimnasio });
 });
@@ -82,7 +82,7 @@ router.get("/gyms", async (req, res) => {
 
 // Ver y editar un admin de gimnasio
 router.get("/admins/:id", async (req, res) => {
-  const admin = await User.findById(req.params.id).populate("gym", "name");
+  const admin = await User.findById(req.params.id).populate("gymId", "name");
   if (!admin || admin.role !== "admin")
     return res.status(404).json({ message: "Admin no encontrado" });
   res.json(admin);
@@ -100,7 +100,7 @@ router.put("/admins/:id", async (req, res) => {
 
 // Listar membresías de un gimnasio
 router.get("/gyms/:gymId/memberships", async (req, res) => {
-  const memberships = await Membership.find({ gym: req.params.gymId });
+  const memberships = await Membership.find({ gymId: req.params.gymId });
   res.json(memberships);
 });
 

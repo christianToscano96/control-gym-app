@@ -1,7 +1,7 @@
 import { Schema, model, Document } from "mongoose";
 
 export interface IMembership extends Document {
-  gym: Schema.Types.ObjectId;
+  gymId: Schema.Types.ObjectId;
   plan: "basico" | "pro" | "proplus";
   startDate: Date;
   endDate: Date;
@@ -10,7 +10,7 @@ export interface IMembership extends Document {
 
 const MembershipSchema = new Schema<IMembership>(
   {
-    gym: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
+    gymId: { type: Schema.Types.ObjectId, ref: "Gym", required: true },
     plan: { type: String, enum: ["basico", "pro", "proplus"], required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

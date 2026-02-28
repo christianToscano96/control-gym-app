@@ -7,6 +7,7 @@ import MembershipDistributionChart from "@/components/ui/MembershipDistributionC
 import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
+import { RevenueCard } from "@/components/ui/RevenueCard";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -132,15 +133,10 @@ export default function DashboardScreen() {
               </Text>
               {/* Card de ingresos del mes - ancho completo */}
               <View className="px-2">
-                <SummaryCard
-                  icon="attach-money"
-                  title="INGRESOS DEL MES"
-                  value={
-                    loadingStats
-                      ? "..."
-                      : `$${stats?.monthlyRevenue?.toLocaleString() || "0"}`
-                  }
-                  persent={loadingStats ? "..." : stats?.revenuePercent || "0%"}
+                <RevenueCard
+                  value={`$${stats?.monthlyRevenue?.toLocaleString() || "0"}`}
+                  percent={stats?.revenuePercent || "0%"}
+                  loading={loadingStats}
                 />
               </View>
 

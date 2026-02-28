@@ -91,7 +91,7 @@ router.post(
         email,
         password: hashedPassword,
         role,
-        gym: req.user.gym,
+        gymId: req.user.gymId,
         active: true,
       };
 
@@ -133,9 +133,9 @@ router.get(
   requireAdmin,
   async (req: AuthRequest, res) => {
     try {
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
       const staff = await User.find({
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       })
         .select("-password")
@@ -163,11 +163,11 @@ router.get(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       const staff = await User.findOne({
         _id: id,
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       }).select("-password");
 
@@ -196,12 +196,12 @@ router.put(
     try {
       const { id } = req.params;
       const { name, email, phone, role, active } = req.body;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       // Buscar el staff
       const staff = await User.findOne({
         _id: id,
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       });
 
@@ -275,7 +275,7 @@ router.patch(
     try {
       const { id } = req.params;
       const { password } = req.body;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       if (!password || password.length < 6) {
         return res.status(400).json({
@@ -285,7 +285,7 @@ router.patch(
 
       const staff = await User.findOne({
         _id: id,
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       });
 
@@ -316,11 +316,11 @@ router.patch(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       const staff = await User.findOne({
         _id: id,
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       });
 
@@ -355,11 +355,11 @@ router.delete(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       const staff = await User.findOne({
         _id: id,
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
       });
 
@@ -390,10 +390,10 @@ router.get(
   async (req: AuthRequest, res) => {
     try {
       const { query } = req.params;
-      const gymId = req.user.gym;
+      const gymId = req.user.gymId;
 
       const staff = await User.find({
-        gym: gymId,
+        gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
         $or: [
           { name: { $regex: query, $options: "i" } },

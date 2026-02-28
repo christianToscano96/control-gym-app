@@ -1,17 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Alert, Share, Platform } from "react-native";
-import * as FileSystem from "expo-file-system";
+import * as Print from "expo-print";
 import { fetchReports, generateCSV } from "@/api/reports";
+import { generateReportHTML } from "@/utils/pdfTemplates";
 import { queryKeys } from "./queryKeys";
 import { ReportData, ReportFilters, ExportFormat } from "@/types/reports";
-
-// Lazy import expo-sharing (may not be available in Expo Go)
-let Sharing: typeof import("expo-sharing") | null = null;
-try {
-  Sharing = require("expo-sharing");
-} catch {
-  Sharing = null;
-}
 
 // ─── Query: Fetch Reports ───────────────────────────────────────
 export function useReportsQuery(filters?: ReportFilters) {
@@ -23,45 +16,7 @@ export function useReportsQuery(filters?: ReportFilters) {
   });
 }
 
-// ─── Mutation: Refresh all reports ──────────────────────────────
-export function useRefreshReports() {
-  const queryClient = useQueryClient();
-
-  return {
-    refresh: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
-  };
-}
-
-// ─── Helper: share a file ───────────────────────────────────────
-async function shareFile(fileUri: string, mimeType: string) {
-  if (Sharing) {
-    try {
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType,
-          dialogTitle: "Exportar reporte",
-        });
-        return;
-      }
-    } catch {
-      // Fall through to RN Share
-    }
-  }
-
-  // Fallback: React Native Share API
-  if (Platform.OS === "ios") {
-    await Share.share({ url: fileUri });
-  } else {
-    await Share.share({
-      message: `Reporte descargado: ${fileUri}`,
-      title: "Exportar reporte",
-    });
-  }
-}
-
-// ─── Mutation: Export Report (generate CSV client-side) ──────────
+// ─── Mutation: Export Report ────────────────────────────────────
 export function useExportReport() {
   return useMutation({
     mutationFn: async ({
@@ -71,25 +26,10 @@ export function useExportReport() {
       report: ReportData;
       format?: ExportFormat;
     }) => {
-      // Generate CSV content from the report's raw data
-      const csvContent = generateCSV(report);
-
-      if (!csvContent) {
-        throw new Error("No hay datos para exportar en este reporte");
+      if (format === "pdf") {
+        return exportAsPDF(report);
       }
-
-      // Write CSV to local file
-      const filename = `${report.type}_${report.id}_${Date.now()}.csv`;
-      const fileUri = FileSystem.documentDirectory + filename;
-
-      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      // Share the file
-      await shareFile(fileUri, "text/csv");
-
-      return { uri: fileUri, filename };
+      return exportAsCSV(report);
     },
     onError: (error: Error) => {
       Alert.alert(
@@ -99,4 +39,46 @@ export function useExportReport() {
       );
     },
   });
+}
+
+// ─── PDF Export (expo-print → Share) ────────────────────────────
+async function exportAsPDF(report: ReportData) {
+  const html = generateReportHTML(report);
+
+  // Generate PDF file from HTML
+  const { uri } = await Print.printToFileAsync({ html });
+
+  // Share the PDF file
+  if (Platform.OS === "ios") {
+    await Share.share({ url: uri });
+  } else {
+    await Share.share({
+      message: `Reporte: ${report.title}`,
+      title: report.title,
+    });
+  }
+
+  return { uri, format: "pdf" as const };
+}
+
+// ─── CSV Export (Share as text) ──────────────────────────────────
+async function exportAsCSV(report: ReportData) {
+  const csvContent = generateCSV(report);
+
+  if (!csvContent) {
+    throw new Error("No hay datos para exportar en este reporte");
+  }
+
+  await Share.share(
+    {
+      message: csvContent,
+      title: `${report.title}.csv`,
+    },
+    {
+      subject: `${report.title} - Reporte`,
+      ...(Platform.OS === "ios" ? {} : { dialogTitle: "Exportar reporte" }),
+    },
+  );
+
+  return { format: "csv" as const };
 }

@@ -11,15 +11,6 @@ interface ListClientsProps {
 const ListClients = ({ clients }: ListClientsProps) => {
   const { colors } = useTheme();
 
-  const activeCount = useMemo(
-    () => clients?.filter((c) => !!c.isActive).length || 0,
-    [clients],
-  );
-  const inactiveCount = useMemo(
-    () => (clients?.length || 0) - activeCount,
-    [clients?.length, activeCount],
-  );
-
   const renderItem = useCallback(({ item }: { item: any }) => {
     const expirationDate = calculateExpirationDate(
       item.startDate,
@@ -38,6 +29,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
         isActive={!!item.isActive}
         daysLeft={daysLeft}
         clientId={item._id}
+        membershipType={item.membershipType}
       />
     );
   }, []);
@@ -46,55 +38,16 @@ const ListClients = ({ clients }: ListClientsProps) => {
 
   const listHeader = useMemo(
     () => (
-      <View className="flex-row items-center justify-between mb-4">
-        <View
-          className="flex-row items-center rounded-full px-3 py-1.5"
-          style={{ backgroundColor: colors.border + "40" }}
+      <View className="flex-row items-center justify-between mb-3">
+        <Text
+          style={{ color: colors.textSecondary }}
+          className="text-xs font-semibold uppercase tracking-wider"
         >
-          <Text
-            style={{ color: colors.text }}
-            className="text-sm font-bold"
-          >
-            {clients?.length || 0}
-          </Text>
-          <Text
-            style={{ color: colors.textSecondary }}
-            className="text-sm ml-1"
-          >
-            total
-          </Text>
-        </View>
-
-        <View className="flex-row items-center gap-2">
-          <View
-            className="flex-row items-center rounded-full px-3 py-1.5"
-            style={{ backgroundColor: "#D1FAE5" }}
-          >
-            <View className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: "#059669" }} />
-            <Text style={{ color: "#059669" }} className="text-sm font-semibold">
-              {activeCount}
-            </Text>
-            <Text style={{ color: "#059669" }} className="text-sm ml-1 opacity-80">
-              activos
-            </Text>
-          </View>
-
-          <View
-            className="flex-row items-center rounded-full px-3 py-1.5"
-            style={{ backgroundColor: "#FECACA" }}
-          >
-            <View className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: "#DC2626" }} />
-            <Text style={{ color: "#DC2626" }} className="text-sm font-semibold">
-              {inactiveCount}
-            </Text>
-            <Text style={{ color: "#DC2626" }} className="text-sm ml-1 opacity-80">
-              inactivos
-            </Text>
-          </View>
-        </View>
+          {clients?.length || 0} resultados
+        </Text>
       </View>
     ),
-    [colors.text, colors.textSecondary, colors.border, clients?.length, activeCount, inactiveCount],
+    [colors.textSecondary, clients?.length],
   );
 
   const emptyComponent = useMemo(
@@ -109,7 +62,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
   );
 
   return (
-    <View className="px-5 pt-5 flex-1">
+    <View className="px-4 pt-3 flex-1">
       <FlatList
         data={clients || []}
         renderItem={renderItem}

@@ -11,17 +11,25 @@ interface ItemClientProps {
   name: string;
   isActive: boolean;
   daysLeft?: number;
+  membershipType?: string;
 }
 
 const EXPIRING_SOON_DAYS = 7;
+
+const membershipLabels: Record<string, string> = {
+  basico: "Basico",
+  pro: "Pro",
+  proplus: "Pro+",
+};
 
 const ItemClient = ({
   clientId,
   name,
   isActive,
   daysLeft,
+  membershipType,
 }: ItemClientProps) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const isExpiringSoon =
     isActive && daysLeft != null && daysLeft >= 0 && daysLeft <= EXPIRING_SOON_DAYS;
@@ -49,32 +57,57 @@ const ItemClient = ({
     <TouchableOpacity
       onPress={handlePress}
       activeOpacity={0.7}
-      style={{ backgroundColor: colors.card, borderColor: colors.border }}
-      className="w-full rounded-2xl mb-3 border flex-row items-center p-3"
+      style={{
+        backgroundColor: colors.card,
+        borderColor: colors.border,
+        borderWidth: 1,
+        borderRadius: 16,
+        marginBottom: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 14,
+        shadowColor: isDark ? "transparent" : "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+      }}
     >
       <Avatar size="sm" name={name} />
-      <View className="flex-1 ml-3 mr-2">
+      <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
         <Text
-          style={{ color: colors.text }}
-          className="text-base font-semibold"
+          style={{ color: colors.text, fontSize: 15, fontWeight: "600" }}
           numberOfLines={1}
         >
           {name || "John Doe"}
         </Text>
-        {daysLabel && (
-          <View className="flex-row items-center mt-0.5">
-            <MaterialIcons
-              name={isExpiringSoon ? "warning" : "schedule"}
-              size={11}
-              color={daysColor}
-            />
-            <Text style={{ color: daysColor, fontSize: 11 }} className="ml-1">
-              {daysLabel}
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3, gap: 8 }}>
+          {membershipType && (
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontWeight: "500",
+              }}
+            >
+              {membershipLabels[membershipType] || membershipType}
             </Text>
-          </View>
-        )}
+          )}
+          {daysLabel && (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialIcons
+                name={isExpiringSoon ? "warning" : "schedule"}
+                size={11}
+                color={daysColor}
+              />
+              <Text style={{ color: daysColor, fontSize: 11, marginLeft: 3 }}>
+                {daysLabel}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-      <View className="flex-row items-center gap-1.5">
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <Badge label={isActive ? "Activo" : "Inactivo"} />
         {isExpiringSoon && (
           <Badge label={isUrgent ? "Vence hoy" : "Por vencer"} />
@@ -82,7 +115,7 @@ const ItemClient = ({
       </View>
       <MaterialIcons
         name="chevron-right"
-        size={22}
+        size={20}
         color={colors.textSecondary}
         style={{ marginLeft: 4 }}
       />

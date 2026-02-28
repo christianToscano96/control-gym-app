@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TextInput, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 
 interface SearchInputProps {
   value: string;
@@ -20,18 +21,37 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onClear,
   ...props
 }) => {
+  const { colors, isDark } = useTheme();
+
   return (
-    <View className={`mb-4 w-full ${containerClassName || ""}`}>
-      <View className="relative">
-        <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-          <MaterialIcons name="search" size={22} color="#64748b" />
-        </View>
+    <View className={`mb-3 w-full ${containerClassName || ""}`}>
+      <View
+        style={{
+          backgroundColor: isDark ? colors.card : "#f1f5f9",
+          borderRadius: 16,
+          borderWidth: isDark ? 1 : 0,
+          borderColor: colors.border,
+          flexDirection: "row",
+          alignItems: "center",
+          height: 48,
+          paddingHorizontal: 14,
+        }}
+      >
+        <MaterialIcons
+          name="search"
+          size={22}
+          color={colors.textSecondary}
+        />
         <TextInput
-          className={
-            className ||
-            `w-full rounded-2xl text-dark-blue bg-slate-50 h-12 pl-12 pr-10 text-base font-normal border-0`
-          }
-          placeholderTextColor="#94a3b8"
+          className={className}
+          style={{
+            flex: 1,
+            color: colors.text,
+            fontSize: 15,
+            marginLeft: 10,
+            paddingVertical: 0,
+          }}
+          placeholderTextColor={colors.textSecondary}
           autoCapitalize="none"
           value={value}
           onChangeText={onChangeText}
@@ -39,11 +59,12 @@ const SearchInput: React.FC<SearchInputProps> = ({
           {...props}
         />
         {value.length > 0 && (
-          <TouchableOpacity
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-            onPress={onClear}
-          >
-            <MaterialIcons name="close" size={20} color="#64748b" />
+          <TouchableOpacity onPress={onClear} hitSlop={8}>
+            <MaterialIcons
+              name="close"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>

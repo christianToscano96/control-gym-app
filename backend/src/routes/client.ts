@@ -214,6 +214,28 @@ router.put(
   },
 );
 
+// Obtener historial de pagos de un cliente
+router.get(
+  "/:id/payments",
+  requireRole(["admin", "superadmin", "empleado"]),
+  async (req: AuthRequest, res) => {
+    try {
+      const gymId = req.user.gymId;
+      const payments = await Payment.find({
+        client: req.params.id,
+        gymId,
+      })
+        .sort({ date: -1 })
+        .select("amount date method period status")
+        .lean();
+
+      res.json(payments);
+    } catch (err) {
+      res.status(500).json({ message: "Error al obtener pagos", error: err });
+    }
+  },
+);
+
 // Eliminar cliente (solo admin y superadmin)
 router.delete("/:id", requireAdmin, async (req: AuthRequest, res) => {
   const gymId = req.user.gymId;

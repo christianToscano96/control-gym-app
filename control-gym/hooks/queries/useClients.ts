@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchClients, fetchClientById } from "@/api/clients";
+import { fetchClients, fetchClientById, fetchClientPayments } from "@/api/clients";
 import { apiClient } from "@/api/client";
 import { queryKeys } from "./queryKeys";
 
@@ -17,6 +17,15 @@ export function useClientDetailQuery(clientId: string | string[]) {
   return useQuery({
     queryKey: queryKeys.clients.detail(id),
     queryFn: () => fetchClientById(id),
+    enabled: !!id,
+  });
+}
+
+export function useClientPaymentsQuery(clientId: string) {
+  const id = String(clientId);
+  return useQuery({
+    queryKey: queryKeys.clients.payments(id),
+    queryFn: () => fetchClientPayments(id),
     enabled: !!id,
   });
 }

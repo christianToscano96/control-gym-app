@@ -3,6 +3,8 @@ import {
   fetchSuperAdminOverview,
   fetchGymDetail,
   toggleGymActive,
+  updateGym,
+  deleteGym,
 } from "@/api/superadmin";
 import { SuperAdminOverview, GymDetailResponse } from "@/types/superadmin";
 import { queryKeys } from "./queryKeys";
@@ -34,6 +36,39 @@ export function useToggleGymActive() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.gymDetail(variables.gymId),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.overview,
+      });
+    },
+  });
+}
+
+export function useUpdateGym() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      gymId,
+      data,
+    }: {
+      gymId: string;
+      data: { name?: string; address?: string; plan?: string };
+    }) => updateGym(gymId, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.gymDetail(variables.gymId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.overview,
+      });
+    },
+  });
+}
+
+export function useDeleteGym() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (gymId: string) => deleteGym(gymId),
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
       });

@@ -166,14 +166,40 @@ router.get("/report/clients", async (req, res) => {
 
 // Activar/desactivar gimnasio
 router.put("/gyms/:gymId/active", async (req, res) => {
-  const { active } = req.body;
-  const gym = await Gym.findByIdAndUpdate(
-    req.params.gymId,
-    { active },
-    { new: true },
-  );
-  if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
-  res.json(gym);
+  try {
+    const { active } = req.body;
+    const gym = await Gym.findByIdAndUpdate(
+      req.params.gymId,
+      { active },
+      { new: true },
+    );
+    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+
+    const activeMembership = await Membership.findOne({
+      gymId: gym._id,
+      active: true,
+    });
+
+    if (activeMembership) {
+      const now = new Date();
+      if (active) {
+        // Enabling: reset start to now, expiration to +1 month
+        const endDate = new Date(now);
+        endDate.setMonth(now.getMonth() + 1);
+        activeMembership.startDate = now;
+        activeMembership.endDate = endDate;
+      } else {
+        // Disabling: expire membership immediately
+        activeMembership.endDate = now;
+      }
+      await activeMembership.save();
+    }
+
+    res.json(gym);
+  } catch (error) {
+    console.error("Error toggling gym active:", error);
+    res.status(500).json({ message: "Error al cambiar estado del gimnasio" });
+  }
 });
 
 // Resetear contraseña de admin
@@ -213,6 +239,47 @@ router.put("/admins/:id", async (req, res) => {
   );
   if (!admin) return res.status(404).json({ message: "Admin no encontrado" });
   res.json(admin);
+});
+
+// Editar gimnasio (nombre, dirección, plan)
+router.put("/gyms/:gymId", async (req, res) => {
+  try {
+    const { name, address, plan } = req.body;
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (address) updateData.address = address;
+    if (plan && ["basico", "pro", "proplus"].includes(plan)) {
+      updateData.plan = plan;
+    }
+    const gym = await Gym.findByIdAndUpdate(req.params.gymId, updateData, {
+      new: true,
+    });
+    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+    res.json(gym);
+  } catch (error) {
+    console.error("Error updating gym:", error);
+    res.status(500).json({ message: "Error al editar gimnasio" });
+  }
+});
+
+// Eliminar gimnasio + admin + membresías + clientes
+router.delete("/gyms/:gymId", async (req, res) => {
+  try {
+    const gym = await Gym.findById(req.params.gymId);
+    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+
+    await Promise.all([
+      User.deleteMany({ gymId: gym._id }),
+      Membership.deleteMany({ gymId: gym._id }),
+      Client.deleteMany({ gymId: gym._id }),
+      Gym.findByIdAndDelete(gym._id),
+    ]);
+
+    res.json({ message: "Gimnasio eliminado correctamente" });
+  } catch (error) {
+    console.error("Error deleting gym:", error);
+    res.status(500).json({ message: "Error al eliminar gimnasio" });
+  }
 });
 
 // Listar membresías de un gimnasio

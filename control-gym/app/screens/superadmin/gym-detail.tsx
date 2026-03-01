@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
@@ -6,14 +6,18 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import {
   useGymDetailQuery,
   useToggleGymActive,
+  useUpdateGym,
+  useDeleteGym,
 } from "@/hooks/queries/useSuperAdmin";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Avatar from "@/components/ui/Avatar";
@@ -26,6 +30,12 @@ const planConfig: Record<string, { label: string; color: string; bg: string }> =
     pro: { label: "Pro", color: "#7C3AED", bg: "#F5F3FF" },
     proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
   };
+
+const planOptions = [
+  { key: "basico", label: "Básico" },
+  { key: "pro", label: "Pro" },
+  { key: "proplus", label: "Pro+" },
+];
 
 // ─── InfoRow ─────────────────────────────────────────────────
 const InfoRow = ({
@@ -82,6 +92,7 @@ const InfoRow = ({
 export default function GymDetailScreen() {
   const { gymId } = useLocalSearchParams();
   const { colors, primaryColor, isDark } = useTheme();
+  const router = useRouter();
 
   const {
     data,
@@ -90,6 +101,61 @@ export default function GymDetailScreen() {
   } = useGymDetailQuery(gymId as string);
 
   const toggleMutation = useToggleGymActive();
+  const updateMutation = useUpdateGym();
+  const deleteMutation = useDeleteGym();
+
+  // Edit modal state
+  const [editVisible, setEditVisible] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPlan, setEditPlan] = useState("");
+
+  const openEditModal = () => {
+    if (!data) return;
+    setEditName(data.gym.name);
+    setEditAddress(data.gym.address);
+    setEditPlan(data.gym.plan);
+    setEditVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editName.trim()) {
+      Alert.alert("Error", "El nombre es obligatorio");
+      return;
+    }
+    updateMutation.mutate(
+      {
+        gymId: data!.gym._id,
+        data: { name: editName.trim(), address: editAddress.trim(), plan: editPlan },
+      },
+      {
+        onSuccess: () => setEditVisible(false),
+        onError: () => Alert.alert("Error", "No se pudo actualizar el gimnasio"),
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    if (!data) return;
+    Alert.alert(
+      "Eliminar Gimnasio",
+      `¿Estás seguro de eliminar "${data.gym.name}"?\n\nSe borrarán todos los datos: admin, clientes y membresías. Esta acción no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            deleteMutation.mutate(data.gym._id, {
+              onSuccess: () => router.back(),
+              onError: () =>
+                Alert.alert("Error", "No se pudo eliminar el gimnasio"),
+            });
+          },
+        },
+      ],
+    );
+  };
 
   if (isLoading) {
     return (
@@ -405,6 +471,129 @@ export default function GymDetailScreen() {
           </View>
         </View>
 
+        {/* ─── Action Buttons ─── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: 11,
+              fontWeight: "600",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 8,
+              paddingLeft: 4,
+            }}
+          >
+            Acciones
+          </Text>
+
+          {/* Toggle */}
+          <TouchableOpacity
+            onPress={handleToggle}
+            disabled={toggleMutation.isPending}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: isActive
+                ? isDark
+                  ? "#DC262620"
+                  : "#FEE2E2"
+                : isDark
+                  ? "#10B98120"
+                  : "#D1FAE5",
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: toggleMutation.isPending ? 0.5 : 1,
+            }}
+          >
+            {toggleMutation.isPending ? (
+              <ActivityIndicator
+                size="small"
+                color={isActive ? "#DC2626" : "#10B981"}
+              />
+            ) : (
+              <MaterialIcons
+                name={isActive ? "block" : "check-circle"}
+                size={20}
+                color={isActive ? "#DC2626" : "#10B981"}
+              />
+            )}
+            <Text
+              style={{
+                color: isActive ? "#DC2626" : "#10B981",
+                fontWeight: "700",
+                fontSize: 15,
+              }}
+            >
+              {toggleMutation.isPending
+                ? "Procesando..."
+                : isActive
+                  ? "Deshabilitar Gimnasio"
+                  : "Habilitar Gimnasio"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Edit & Delete row */}
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            <TouchableOpacity
+              onPress={openEditModal}
+              activeOpacity={0.8}
+              style={{
+                flex: 1,
+                backgroundColor: isDark ? `${primaryColor}20` : "#F0FDF4",
+                borderRadius: 14,
+                paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <MaterialIcons name="edit" size={20} color={primaryColor} />
+              <Text
+                style={{
+                  color: primaryColor,
+                  fontWeight: "700",
+                  fontSize: 15,
+                }}
+              >
+                Editar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={deleteMutation.isPending}
+              activeOpacity={0.8}
+              style={{
+                flex: 1,
+                backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
+                borderRadius: 14,
+                paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                opacity: deleteMutation.isPending ? 0.5 : 1,
+              }}
+            >
+              {deleteMutation.isPending ? (
+                <ActivityIndicator size="small" color="#DC2626" />
+              ) : (
+                <MaterialIcons name="delete" size={20} color="#DC2626" />
+              )}
+              <Text
+                style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}
+              >
+                Eliminar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* ─── Info Card: Plan & Membership ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
           <Text
@@ -469,73 +658,177 @@ export default function GymDetailScreen() {
             </View>
           </View>
         </View>
+      </ScrollView>
 
-        {/* ─── Toggle Button ─── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <TouchableOpacity
-            onPress={handleToggle}
-            disabled={toggleMutation.isPending}
-            activeOpacity={0.8}
+      {/* ─── Edit Modal ─── */}
+      <Modal visible={editVisible} animationType="slide" transparent>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
             style={{
-              backgroundColor: isActive
-                ? isDark
-                  ? "#DC262620"
-                  : "#FEE2E2"
-                : isDark
-                  ? "#10B98120"
-                  : "#D1FAE5",
-              borderRadius: 14,
-              paddingVertical: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              opacity: toggleMutation.isPending ? 0.5 : 1,
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 24,
+              paddingBottom: 40,
             }}
           >
-            {toggleMutation.isPending ? (
-              <ActivityIndicator
-                size="small"
-                color={isActive ? "#DC2626" : "#10B981"}
-              />
-            ) : (
-              <MaterialIcons
-                name={isActive ? "block" : "check-circle"}
-                size={20}
-                color={isActive ? "#DC2626" : "#10B981"}
-              />
-            )}
-            <Text
+            {/* Modal header */}
+            <View
               style={{
-                color: isActive ? "#DC2626" : "#10B981",
-                fontWeight: "700",
-                fontSize: 16,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
               }}
             >
-              {toggleMutation.isPending
-                ? "Procesando..."
-                : isActive
-                  ? "Deshabilitar Gimnasio"
-                  : "Habilitar Gimnasio"}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
+              >
+                Editar Gimnasio
+              </Text>
+              <TouchableOpacity onPress={() => setEditVisible(false)}>
+                <MaterialIcons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-          {isActive && (
+            {/* Name */}
             <Text
               style={{
                 color: colors.textSecondary,
-                fontSize: 12,
-                textAlign: "center",
-                marginTop: 8,
-                paddingHorizontal: 16,
+                fontSize: 13,
+                fontWeight: "600",
+                marginBottom: 6,
               }}
             >
-              Al deshabilitar, el administrador deberá renovar su plan para
-              volver a usar la app.
+              Nombre
             </Text>
-          )}
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Nombre del gimnasio"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 14,
+              }}
+            />
+
+            {/* Address */}
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 13,
+                fontWeight: "600",
+                marginBottom: 6,
+              }}
+            >
+              Dirección
+            </Text>
+            <TextInput
+              value={editAddress}
+              onChangeText={setEditAddress}
+              placeholder="Dirección"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 14,
+              }}
+            />
+
+            {/* Plan selector */}
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 13,
+                fontWeight: "600",
+                marginBottom: 6,
+              }}
+            >
+              Plan
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
+              {planOptions.map((p) => {
+                const selected = editPlan === p.key;
+                const cfg = planConfig[p.key];
+                return (
+                  <TouchableOpacity
+                    key={p.key}
+                    onPress={() => setEditPlan(p.key)}
+                    activeOpacity={0.7}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      backgroundColor: selected
+                        ? isDark
+                          ? `${cfg.color}30`
+                          : cfg.bg
+                        : colors.card,
+                      borderWidth: selected ? 2 : 1,
+                      borderColor: selected ? cfg.color : colors.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? cfg.color : colors.textSecondary,
+                        fontWeight: "700",
+                        fontSize: 13,
+                      }}
+                    >
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Save button */}
+            <TouchableOpacity
+              onPress={handleSaveEdit}
+              disabled={updateMutation.isPending}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: primaryColor,
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                opacity: updateMutation.isPending ? 0.5 : 1,
+              }}
+            >
+              {updateMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
+                >
+                  Guardar Cambios
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 }

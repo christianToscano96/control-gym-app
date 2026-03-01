@@ -4,7 +4,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
@@ -13,19 +13,25 @@ import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
 import "../global.css";
 import { queryClient } from "../lib/queryClient";
 import { useUserStore } from "../stores/store";
+import { useGymStatusQuery } from "../hooks/queries/useGymStatus";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function NavigationGuard() {
   const user = useUserStore((s) => s.user);
   const router = useRouter();
   const pathname = usePathname();
 
+  const isAdmin = user?.role === "admin";
+  const qc = useQueryClient();
+
+  // Poll gym status only for admin users who are logged in
+  const { data: gymStatus } = useGymStatusQuery(!!user && isAdmin);
+
+  // Auth guard
   useEffect(() => {
-    // Evitar navegación prematura: usar setTimeout para esperar montaje
     const timeout = setTimeout(() => {
       if (
         !user &&
@@ -43,12 +49,33 @@ export default function RootLayout() {
     return () => clearTimeout(timeout);
   }, [user, pathname]);
 
+  // Gym active status guard (reactive)
+  useEffect(() => {
+    if (!user || !isAdmin || gymStatus === undefined) return;
+
+    if (!gymStatus.active && pathname !== "/gym-suspended") {
+      router.replace("/gym-suspended");
+    }
+    if (gymStatus.active && pathname === "/gym-suspended") {
+      // Invalidate all queries so dashboard loads fresh data after reactivation
+      qc.invalidateQueries();
+      router.replace("/(tabs)");
+    }
+  }, [gymStatus, user, isAdmin, pathname, router, qc]);
+
+  return null;
+}
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
   return (
     <QueryClientProvider client={queryClient}>
       <CustomThemeProvider primaryColor="#78e08f">
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
+          <NavigationGuard />
           <Stack>
             <Stack.Screen name="login/index" options={{ headerShown: false }} />
             <Stack.Screen

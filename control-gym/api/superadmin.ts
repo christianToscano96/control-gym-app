@@ -18,3 +18,19 @@ export async function toggleGymActive(
     body: { active },
   });
 }
+
+export async function updateGym(
+  gymId: string,
+  data: { name?: string; address?: string; plan?: string },
+): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function deleteGym(gymId: string): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}`, {
+    method: "DELETE",
+  });
+}

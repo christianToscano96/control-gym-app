@@ -68,6 +68,19 @@ router.post("/login", async (req, res) => {
   });
 });
 
+// Check gym active status (lightweight polling endpoint)
+router.get("/gym-status", authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    if (!req.user.gymId) {
+      return res.json({ active: true });
+    }
+    const gym = await Gym.findById(req.user.gymId).select("active").lean();
+    res.json({ active: gym?.active ?? false });
+  } catch (err) {
+    res.status(500).json({ message: "Error al verificar estado", active: false });
+  }
+});
+
 // Obtener perfil del usuario autenticado
 router.get("/profile", authenticateJWT, async (req: AuthRequest, res) => {
   try {

@@ -42,6 +42,9 @@ export const queryKeys = {
   gymSubscription: {
     active: ["gymSubscription", "active"] as const,
   },
+  gymStatus: {
+    current: ["gymStatus"] as const,
+  },
   superadmin: {
     overview: ["superadmin", "overview"] as const,
     gymDetail: (id: string) => ["superadmin", "gym", id] as const,

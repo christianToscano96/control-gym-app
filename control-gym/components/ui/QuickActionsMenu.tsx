@@ -26,10 +26,7 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
     () => onActionPress("new-payment"),
     [onActionPress],
   );
-  const handleCheckIn = useCallback(
-    () => onActionPress("check-in"),
-    [onActionPress],
-  );
+
   const handleStaff = useCallback(
     () => onActionPress("staff"),
     [onActionPress],
@@ -53,11 +50,7 @@ const QuickActionsMenu: React.FC<QuickActionsMenuProps> = ({
               iconName="credit-card-plus-outline"
               onPress={handleNewPayment}
             />
-            <ActionItem
-              label="Check-in"
-              iconName="qrcode-scan"
-              onPress={handleCheckIn}
-            />
+
             {!isStaff && (
               <ActionItem
                 label="Agregar Personal"

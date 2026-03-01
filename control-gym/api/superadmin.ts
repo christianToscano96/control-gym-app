@@ -1,0 +1,63 @@
+import { apiClient } from "./client";
+import { SuperAdminOverview, GymDetailResponse } from "@/types/superadmin";
+
+export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
+  return apiClient<SuperAdminOverview>("/api/superadmin/overview");
+}
+
+export async function fetchGymDetail(gymId: string): Promise<GymDetailResponse> {
+  return apiClient<GymDetailResponse>(`/api/superadmin/gyms/${gymId}/detail`);
+}
+
+export async function toggleGymActive(
+  gymId: string,
+  active: boolean,
+): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}/active`, {
+    method: "PUT",
+    body: { active },
+  });
+}
+
+export async function updateGym(
+  gymId: string,
+  data: { name?: string; address?: string; plan?: string },
+): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function deleteGym(gymId: string): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function resetAdminPassword(
+  adminId: string,
+  newPassword: string,
+): Promise<void> {
+  await apiClient(`/api/superadmin/admins/${adminId}/reset-password`, {
+    method: "PUT",
+    body: { newPassword },
+  });
+}
+
+export interface MembershipHistory {
+  _id: string;
+  plan: "basico" | "pro" | "proplus";
+  amount: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+}
+
+export async function fetchMembershipHistory(
+  gymId: string,
+): Promise<MembershipHistory[]> {
+  return apiClient<MembershipHistory[]>(
+    `/api/superadmin/gyms/${gymId}/memberships`,
+  );
+}

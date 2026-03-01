@@ -17,7 +17,7 @@ router.post(
   requireAdmin,
   async (req: AuthRequest, res) => {
     try {
-      const { newPlan } = req.body;
+      const { newPlan, amount } = req.body;
       if (!["basico", "pro", "proplus"].includes(newPlan)) {
         return res.status(400).json({ message: "Plan inválido" });
       }
@@ -36,6 +36,7 @@ router.post(
       await Membership.create({
         gymId: gym._id,
         plan: newPlan,
+        amount: amount || 0,
         startDate: now,
         endDate,
         active: true,
@@ -79,11 +80,12 @@ router.post(
   requireRole(["admin", "superadmin"]),
   async (req: AuthRequest, res) => {
     try {
-      const { gym, plan, startDate, endDate, active } = req.body;
+      const { gym, plan, startDate, endDate, active, amount } = req.body;
       const gymId = req.user.role === "superadmin" ? gym : req.user.gymId;
       const membership = new Membership({
         gymId,
         plan,
+        amount: amount || 0,
         startDate,
         endDate,
         active,

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { User } from "../models/User";
+import { Gym } from "../models/Gym";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
@@ -54,10 +55,30 @@ router.post("/login", async (req, res) => {
     process.env.JWT_SECRET || "secret",
     { expiresIn: "1d" },
   );
+  // Check gym active status for admin users
+  let gymActive = true;
+  if (user.role === "admin" && user.gymId) {
+    const gym = await Gym.findById(user.gymId).select("active").lean();
+    gymActive = gym?.active ?? false;
+  }
+
   res.json({
     token,
-    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId },
+    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId, gymActive },
   });
+});
+
+// Check gym active status (lightweight polling endpoint)
+router.get("/gym-status", authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    if (!req.user.gymId) {
+      return res.json({ active: true });
+    }
+    const gym = await Gym.findById(req.user.gymId).select("active").lean();
+    res.json({ active: gym?.active ?? false });
+  } catch (err) {
+    res.status(500).json({ message: "Error al verificar estado", active: false });
+  }
 });
 
 // Obtener perfil del usuario autenticado

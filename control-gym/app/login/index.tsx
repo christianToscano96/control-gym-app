@@ -73,9 +73,14 @@ export default function LoginScreen() {
         skipAuth: true,
       });
       setUser(data.user, data.token);
-      if (data.user.role === "empleado") {
+      if (data.user.role === "empleado" || data.user.role === "superadmin") {
         setHasActiveMembership(true);
         router.replace("/(tabs)");
+        return;
+      }
+      // Check if gym is active (disabled by superadmin)
+      if (data.user.gymActive === false) {
+        router.replace("/gym-suspended");
         return;
       }
       const memberships = await apiClient("/api/membership");

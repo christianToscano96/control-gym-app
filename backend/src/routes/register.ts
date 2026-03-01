@@ -9,7 +9,7 @@ const router = Router();
 // Registro de gimnasio + admin + plan
 router.post("/", async (req, res) => {
   try {
-    const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan } =
+    const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan, planAmount } =
       req.body;
     if (!["basico", "pro", "proplus"].includes(plan)) {
       return res.status(400).json({ message: "Plan inválido" });
@@ -45,6 +45,7 @@ router.post("/", async (req, res) => {
     await Membership.create({
       gymId: gym._id,
       plan,
+      amount: planAmount || 0,
       startDate: now,
       endDate,
       active: true,

@@ -2,6 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import ActivityRateChart from "@/components/ui/ActivityRateChart";
 import AttendanceChart from "@/components/ui/AttendanceChart";
 import ExpiringMembershipsAlert from "@/components/ui/ExpiringMembershipsAlert";
+import GymSubscriptionAlert from "@/components/ui/GymSubscriptionAlert";
 import FAB from "@/components/ui/FAB";
 import Header from "@/components/ui/Header";
 import MembershipDistributionChart from "@/components/ui/MembershipDistributionChart";
@@ -16,6 +17,7 @@ import {
   useActivityRateQuery,
   useDashboardStatsQuery,
   useExpiringMembershipsQuery,
+  useGymSubscriptionQuery,
   useMembershipDistributionQuery,
   useWeeklyAttendanceQuery,
 } from "@/hooks/queries/useDashboard";
@@ -53,6 +55,16 @@ export default function DashboardScreen() {
     useMembershipDistributionQuery(!isStaff);
   const { data: expiringData, refetch: refetchExpiring } =
     useExpiringMembershipsQuery(!isStaff);
+  const { data: gymSubscription, refetch: refetchSubscription } =
+    useGymSubscriptionQuery(!isStaff);
+
+  // Calculate days left for gym subscription
+  const subscriptionDaysLeft = gymSubscription?.endDate
+    ? Math.ceil(
+        (new Date(gymSubscription.endDate).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
 
   // Sync profile avatar to Zustand store
   useEffect(() => {
@@ -72,6 +84,7 @@ export default function DashboardScreen() {
       refetchActivity(),
       refetchMembership(),
       refetchExpiring(),
+      refetchSubscription(),
       queryClient.invalidateQueries({ queryKey: queryKeys.access.recent }),
     ]);
     setRefreshing(false);
@@ -81,6 +94,7 @@ export default function DashboardScreen() {
     refetchActivity,
     refetchMembership,
     refetchExpiring,
+    refetchSubscription,
     queryClient,
   ]);
 
@@ -117,14 +131,21 @@ export default function DashboardScreen() {
             />
           }
         >
+          {/* Alerta de suscripción del gimnasio por vencer */}
+          {!isStaff &&
+            subscriptionDaysLeft !== null &&
+            subscriptionDaysLeft <= 7 &&
+            gymSubscription && (
+              <GymSubscriptionAlert
+                daysLeft={subscriptionDaysLeft}
+                endDate={gymSubscription.endDate}
+                plan={gymSubscription.plan}
+                onPress={() => router.push("/membership" as any)}
+              />
+            )}
+
           {!isStaff && (
             <>
-              {/* Alerta de membresías por vencer */}
-              <ExpiringMembershipsAlert
-                count={expiringData?.count ?? 0}
-                onPress={() => router.push("/screens/clients" as any)}
-              />
-
               {/* ─── Resumen ─── */}
               <Text
                 style={{ color: colors.textSecondary }}
@@ -194,11 +215,7 @@ export default function DashboardScreen() {
                         marginRight: 12,
                       }}
                     >
-                      <MaterialIcons
-                        name="block"
-                        size={20}
-                        color="#DC2626"
-                      />
+                      <MaterialIcons name="block" size={20} color="#DC2626" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
@@ -244,7 +261,11 @@ export default function DashboardScreen() {
                   </View>
                 </View>
               )}
-
+              {/* Alerta de membresías por vencer */}
+              <ExpiringMembershipsAlert
+                count={expiringData?.count ?? 0}
+                onPress={() => router.push("/screens/clients" as any)}
+              />
               {/* ─── Tendencias ─── */}
               <Text
                 style={{ color: colors.textSecondary }}

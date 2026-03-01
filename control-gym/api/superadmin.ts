@@ -34,3 +34,30 @@ export async function deleteGym(gymId: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function resetAdminPassword(
+  adminId: string,
+  newPassword: string,
+): Promise<void> {
+  await apiClient(`/api/superadmin/admins/${adminId}/reset-password`, {
+    method: "PUT",
+    body: { newPassword },
+  });
+}
+
+export interface MembershipHistory {
+  _id: string;
+  plan: "basico" | "pro" | "proplus";
+  amount: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+}
+
+export async function fetchMembershipHistory(
+  gymId: string,
+): Promise<MembershipHistory[]> {
+  return apiClient<MembershipHistory[]>(
+    `/api/superadmin/gyms/${gymId}/memberships`,
+  );
+}

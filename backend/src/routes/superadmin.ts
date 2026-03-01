@@ -242,6 +242,12 @@ router.put("/admins/:id", async (req, res) => {
 });
 
 // Editar gimnasio (nombre, dirección, plan)
+const planPrices: Record<string, number> = {
+  basico: 15000,
+  pro: 25000,
+  proplus: 40000,
+};
+
 router.put("/gyms/:gymId", async (req, res) => {
   try {
     const { name, address, plan } = req.body;
@@ -255,6 +261,15 @@ router.put("/gyms/:gymId", async (req, res) => {
       new: true,
     });
     if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+
+    // Sync membership amount when plan changes
+    if (plan && planPrices[plan] !== undefined) {
+      await Membership.updateMany(
+        { gymId: gym._id, active: true },
+        { plan, amount: planPrices[plan] },
+      );
+    }
+
     res.json(gym);
   } catch (error) {
     console.error("Error updating gym:", error);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   ScrollView,
@@ -8,20 +8,26 @@ import {
   Alert,
   Modal,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import {
   useGymDetailQuery,
   useToggleGymActive,
   useUpdateGym,
   useDeleteGym,
+  useResetAdminPassword,
+  useMembershipHistoryQuery,
 } from "@/hooks/queries/useSuperAdmin";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
+import Toast, { ToastType } from "@/components/ui/Toast";
 
 // ─── Plan Config ─────────────────────────────────────────────
 const planConfig: Record<string, { label: string; color: string; bg: string }> =
@@ -36,6 +42,100 @@ const planOptions = [
   { key: "pro", label: "Pro" },
   { key: "proplus", label: "Pro+" },
 ];
+
+// ─── Skeleton ────────────────────────────────────────────────
+const SkeletonBox = ({
+  width,
+  height,
+  radius = 12,
+  style,
+}: {
+  width: number | string;
+  height: number;
+  radius?: number;
+  style?: any;
+}) => {
+  const { isDark } = useTheme();
+  return (
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      style={[
+        {
+          width: width as any,
+          height,
+          borderRadius: radius,
+          backgroundColor: isDark ? "#1f2937" : "#e5e7eb",
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const DetailSkeleton = () => {
+  const { colors, isDark } = useTheme();
+  return (
+    <ScrollView
+      style={{ flex: 1 }}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 32 }}
+    >
+      {/* Header card skeleton */}
+      <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+        <View
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: 20,
+            padding: 20,
+            alignItems: "center",
+            borderWidth: isDark ? 1 : 0,
+            borderColor: colors.border,
+          }}
+        >
+          <SkeletonBox width={64} height={64} radius={32} />
+          <SkeletonBox width={160} height={22} style={{ marginTop: 12 }} />
+          <SkeletonBox width={100} height={14} style={{ marginTop: 8 }} />
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              marginTop: 10,
+            }}
+          >
+            <SkeletonBox width={60} height={24} radius={8} />
+            <SkeletonBox width={60} height={24} radius={8} />
+          </View>
+        </View>
+      </View>
+      {/* Stats skeleton */}
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 10,
+          paddingHorizontal: 16,
+          marginTop: 16,
+        }}
+      >
+        <SkeletonBox width="48%" height={120} radius={16} />
+        <SkeletonBox width="48%" height={120} radius={16} />
+      </View>
+      {/* Actions skeleton */}
+      <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        <SkeletonBox width="100%" height={48} radius={14} />
+        <View
+          style={{ flexDirection: "row", gap: 10, marginTop: 10 }}
+        >
+          <SkeletonBox width="48%" height={48} radius={14} />
+          <SkeletonBox width="48%" height={48} radius={14} />
+        </View>
+      </View>
+      {/* Info skeleton */}
+      <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        <SkeletonBox width="100%" height={280} radius={16} />
+      </View>
+    </ScrollView>
+  );
+};
 
 // ─── InfoRow ─────────────────────────────────────────────────
 const InfoRow = ({
@@ -89,27 +189,85 @@ const InfoRow = ({
   );
 };
 
+// ─── Section Label ───────────────────────────────────────────
+const SectionLabel = ({ label }: { label: string }) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={{
+        color: colors.textSecondary,
+        fontSize: 11,
+        fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        marginBottom: 8,
+        paddingLeft: 4,
+      }}
+    >
+      {label}
+    </Text>
+  );
+};
+
 export default function GymDetailScreen() {
   const { gymId } = useLocalSearchParams();
   const { colors, primaryColor, isDark } = useTheme();
   const router = useRouter();
 
+  // ─── Queries ─────────────────────────────────────────────
   const {
     data,
     isLoading,
     error: queryError,
+    refetch,
   } = useGymDetailQuery(gymId as string);
 
+  const { data: membershipHistory } = useMembershipHistoryQuery(
+    gymId as string,
+  );
+
+  // ─── Mutations ───────────────────────────────────────────
   const toggleMutation = useToggleGymActive();
   const updateMutation = useUpdateGym();
   const deleteMutation = useDeleteGym();
+  const resetPasswordMutation = useResetAdminPassword();
 
-  // Edit modal state
+  // ─── Local State ─────────────────────────────────────────
+  const [refreshing, setRefreshing] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editPlan, setEditPlan] = useState("");
+  const [resetPwVisible, setResetPwVisible] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
+  // Toast
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    message: string;
+    type: ToastType;
+  }>({ visible: false, message: "", type: "success" });
+
+  const showToast = (message: string, type: ToastType = "success") => {
+    setToast({ visible: true, message, type });
+  };
+
+  const hapticSuccess = () =>
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const hapticWarning = () =>
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  const hapticError = () =>
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+  // ─── Pull to Refresh ────────────────────────────────────
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  // ─── Handlers ────────────────────────────────────────────
   const openEditModal = () => {
     if (!data) return;
     setEditName(data.gym.name);
@@ -126,20 +284,32 @@ export default function GymDetailScreen() {
     updateMutation.mutate(
       {
         gymId: data!.gym._id,
-        data: { name: editName.trim(), address: editAddress.trim(), plan: editPlan },
+        data: {
+          name: editName.trim(),
+          address: editAddress.trim(),
+          plan: editPlan,
+        },
       },
       {
-        onSuccess: () => setEditVisible(false),
-        onError: () => Alert.alert("Error", "No se pudo actualizar el gimnasio"),
+        onSuccess: () => {
+          setEditVisible(false);
+          hapticSuccess();
+          showToast("Gimnasio actualizado correctamente");
+        },
+        onError: () => {
+          hapticError();
+          showToast("No se pudo actualizar el gimnasio", "error");
+        },
       },
     );
   };
 
   const handleDelete = () => {
     if (!data) return;
+    hapticWarning();
     Alert.alert(
       "Eliminar Gimnasio",
-      `¿Estás seguro de eliminar "${data.gym.name}"?\n\nSe borrarán todos los datos: admin, clientes y membresías. Esta acción no se puede deshacer.`,
+      `¿Eliminar "${data.gym.name}"?\n\nSe borrarán admin, clientes y membresías. No se puede deshacer.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -147,9 +317,14 @@ export default function GymDetailScreen() {
           style: "destructive",
           onPress: () => {
             deleteMutation.mutate(data.gym._id, {
-              onSuccess: () => router.back(),
-              onError: () =>
-                Alert.alert("Error", "No se pudo eliminar el gimnasio"),
+              onSuccess: () => {
+                hapticSuccess();
+                router.back();
+              },
+              onError: () => {
+                hapticError();
+                showToast("No se pudo eliminar el gimnasio", "error");
+              },
             });
           },
         },
@@ -157,27 +332,75 @@ export default function GymDetailScreen() {
     );
   };
 
+  const handleToggle = () => {
+    if (!data) return;
+    const isActive = data.gym.active;
+    hapticWarning();
+    Alert.alert(
+      `${isActive ? "Deshabilitar" : "Habilitar"} Gimnasio`,
+      `¿${isActive ? "Deshabilitar" : "Habilitar"} "${data.gym.name}"?${isActive ? "\n\nSu plan será expirado inmediatamente." : "\n\nSe renovará su plan por 1 mes."}`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: isActive ? "Deshabilitar" : "Habilitar",
+          style: isActive ? "destructive" : "default",
+          onPress: () => {
+            toggleMutation.mutate(
+              { gymId: data.gym._id, active: !isActive },
+              {
+                onSuccess: () => {
+                  hapticSuccess();
+                  showToast(
+                    isActive
+                      ? "Gimnasio deshabilitado"
+                      : "Gimnasio habilitado exitosamente",
+                    isActive ? "warning" : "success",
+                  );
+                },
+              },
+            );
+          },
+        },
+      ],
+    );
+  };
+
+  const handleResetPassword = () => {
+    if (!data?.admin) return;
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    resetPasswordMutation.mutate(
+      { adminId: (data.admin as any)._id, newPassword },
+      {
+        onSuccess: () => {
+          setResetPwVisible(false);
+          setNewPassword("");
+          hapticSuccess();
+          showToast("Contraseña reseteada correctamente");
+        },
+        onError: () => {
+          hapticError();
+          showToast("No se pudo resetear la contraseña", "error");
+        },
+      },
+    );
+  };
+
+  // ─── Loading State (Skeleton) ────────────────────────────
   if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" color={primaryColor} />
-          <Text
-            style={{
-              marginTop: 16,
-              color: colors.textSecondary,
-              fontSize: 14,
-            }}
-          >
-            Cargando información...
-          </Text>
+        <View style={{ paddingHorizontal: 16 }}>
+          <HeaderTopScrenn title="Detalle Gimnasio" isBackButton />
         </View>
+        <DetailSkeleton />
       </SafeAreaView>
     );
   }
 
+  // ─── Error State ─────────────────────────────────────────
   if (queryError || !data) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -244,26 +467,13 @@ export default function GymDetailScreen() {
 
   const membershipStatus = getMembershipStatus();
 
-  const handleToggle = () => {
-    const action = isActive ? "deshabilitar" : "habilitar";
-    Alert.alert(
-      `${isActive ? "Deshabilitar" : "Habilitar"} Gimnasio`,
-      `¿Estás seguro de que deseas ${action} "${gym.name}"?${isActive ? "\n\nEl administrador deberá renovar su plan para volver a usar la app." : ""}`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: isActive ? "Deshabilitar" : "Habilitar",
-          style: isActive ? "destructive" : "default",
-          onPress: () => {
-            toggleMutation.mutate({
-              gymId: gym._id,
-              active: !isActive,
-            });
-          },
-        },
-      ],
+  // Past memberships (inactive)
+  const pastMemberships = (membershipHistory || [])
+    .filter((m) => !m.active)
+    .sort(
+      (a, b) =>
+        new Date(b.endDate).getTime() - new Date(a.endDate).getTime(),
     );
-  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -275,9 +485,20 @@ export default function GymDetailScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={primaryColor}
+            colors={[primaryColor]}
+          />
+        }
       >
         {/* ─── Header Card ─── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          style={{ paddingHorizontal: 16, marginTop: 8 }}
+        >
           <View
             style={{
               backgroundColor: colors.card,
@@ -293,7 +514,6 @@ export default function GymDetailScreen() {
               elevation: 2,
             }}
           >
-            {/* Avatar + status dot */}
             <View style={{ marginBottom: 12 }}>
               <Avatar
                 size="lg"
@@ -314,8 +534,6 @@ export default function GymDetailScreen() {
                 }}
               />
             </View>
-
-            {/* Gym name */}
             <Text
               style={{
                 color: colors.text,
@@ -327,8 +545,6 @@ export default function GymDetailScreen() {
             >
               {gym.name}
             </Text>
-
-            {/* Admin name */}
             {admin && (
               <Text
                 style={{
@@ -340,15 +556,7 @@ export default function GymDetailScreen() {
                 {admin.name}
               </Text>
             )}
-
-            {/* Badges row */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               {plan && (
                 <View
                   style={{
@@ -372,7 +580,7 @@ export default function GymDetailScreen() {
               <Badge label={isActive ? "Activo" : "Inactivo"} />
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* ─── Stats Cards ─── */}
         <View
@@ -383,7 +591,6 @@ export default function GymDetailScreen() {
             marginTop: 16,
           }}
         >
-          {/* Clients card */}
           <View
             style={{
               flex: 1,
@@ -430,8 +637,6 @@ export default function GymDetailScreen() {
               {clientsCount} totales
             </Text>
           </View>
-
-          {/* Revenue card */}
           <View
             style={{
               flex: 1,
@@ -471,21 +676,9 @@ export default function GymDetailScreen() {
           </View>
         </View>
 
-        {/* ─── Action Buttons ─── */}
+        {/* ─── Actions ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 11,
-              fontWeight: "600",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              marginBottom: 8,
-              paddingLeft: 4,
-            }}
-          >
-            Acciones
-          </Text>
+          <SectionLabel label="Acciones" />
 
           {/* Toggle */}
           <TouchableOpacity
@@ -494,12 +687,8 @@ export default function GymDetailScreen() {
             activeOpacity={0.8}
             style={{
               backgroundColor: isActive
-                ? isDark
-                  ? "#DC262620"
-                  : "#FEE2E2"
-                : isDark
-                  ? "#10B98120"
-                  : "#D1FAE5",
+                ? isDark ? "#DC262620" : "#FEE2E2"
+                : isDark ? "#10B98120" : "#D1FAE5",
               borderRadius: 14,
               paddingVertical: 14,
               flexDirection: "row",
@@ -536,7 +725,7 @@ export default function GymDetailScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Edit & Delete row */}
+          {/* Edit / Delete / Reset Password */}
           <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
             <TouchableOpacity
               onPress={openEditModal}
@@ -549,20 +738,51 @@ export default function GymDetailScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
+                gap: 6,
               }}
             >
-              <MaterialIcons name="edit" size={20} color={primaryColor} />
+              <MaterialIcons name="edit" size={18} color={primaryColor} />
               <Text
                 style={{
                   color: primaryColor,
                   fontWeight: "700",
-                  fontSize: 15,
+                  fontSize: 14,
                 }}
               >
                 Editar
               </Text>
             </TouchableOpacity>
+
+            {admin && (
+              <TouchableOpacity
+                onPress={() => {
+                  setNewPassword("");
+                  setResetPwVisible(true);
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  backgroundColor: isDark ? "#3B82F620" : "#EFF6FF",
+                  borderRadius: 14,
+                  paddingVertical: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                <MaterialIcons name="lock-reset" size={18} color="#3B82F6" />
+                <Text
+                  style={{
+                    color: "#3B82F6",
+                    fontWeight: "700",
+                    fontSize: 14,
+                  }}
+                >
+                  Password
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               onPress={handleDelete}
@@ -576,17 +796,17 @@ export default function GymDetailScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
+                gap: 6,
                 opacity: deleteMutation.isPending ? 0.5 : 1,
               }}
             >
               {deleteMutation.isPending ? (
                 <ActivityIndicator size="small" color="#DC2626" />
               ) : (
-                <MaterialIcons name="delete" size={20} color="#DC2626" />
+                <MaterialIcons name="delete" size={18} color="#DC2626" />
               )}
               <Text
-                style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}
+                style={{ color: "#DC2626", fontWeight: "700", fontSize: 14 }}
               >
                 Eliminar
               </Text>
@@ -596,19 +816,7 @@ export default function GymDetailScreen() {
 
         {/* ─── Info Card: Plan & Membership ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 11,
-              fontWeight: "600",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              marginBottom: 8,
-              paddingLeft: 4,
-            }}
-          >
-            Información del Plan
-          </Text>
+          <SectionLabel label="Información del Plan" />
           <View
             style={{
               backgroundColor: colors.card,
@@ -658,7 +866,121 @@ export default function GymDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* ─── Membership History ─── */}
+        {pastMemberships.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+            <TouchableOpacity
+              onPress={() => setHistoryExpanded(!historyExpanded)}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+                paddingLeft: 4,
+              }}
+            >
+              <SectionLabel label="Historial de Planes" />
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    marginRight: 4,
+                  }}
+                >
+                  {pastMemberships.length}
+                </Text>
+                <MaterialIcons
+                  name={historyExpanded ? "expand-less" : "expand-more"}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </View>
+            </TouchableOpacity>
+            {historyExpanded && (
+              <Animated.View entering={FadeIn.duration(300)}>
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: isDark ? 1 : 0,
+                    borderColor: colors.border,
+                    gap: 12,
+                  }}
+                >
+                  {pastMemberships.map((m) => {
+                    const cfg = planConfig[m.plan];
+                    return (
+                      <View
+                        key={m._id}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingVertical: 8,
+                          borderBottomWidth: 1,
+                          borderBottomColor: colors.border + "30",
+                        }}
+                      >
+                        <View
+                          style={{
+                            backgroundColor: isDark
+                              ? `${cfg?.color || "#666"}20`
+                              : cfg?.bg || "#f3f4f6",
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 6,
+                            marginRight: 10,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: cfg?.color || colors.textSecondary,
+                              fontSize: 11,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {cfg?.label || m.plan}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            }}
+                          >
+                            {formatDate(m.startDate)} → {formatDate(m.endDate)}
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: "600",
+                          }}
+                        >
+                          ${m.amount?.toLocaleString() || "0"}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            )}
+          </View>
+        )}
       </ScrollView>
+
+      {/* ─── Toast ─── */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast((t) => ({ ...t, visible: false }))}
+      />
 
       {/* ─── Edit Modal ─── */}
       <Modal visible={editVisible} animationType="slide" transparent>
@@ -678,7 +1000,6 @@ export default function GymDetailScreen() {
               paddingBottom: 40,
             }}
           >
-            {/* Modal header */}
             <View
               style={{
                 flexDirection: "row",
@@ -693,11 +1014,14 @@ export default function GymDetailScreen() {
                 Editar Gimnasio
               </Text>
               <TouchableOpacity onPress={() => setEditVisible(false)}>
-                <MaterialIcons name="close" size={24} color={colors.textSecondary} />
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Name */}
             <Text
               style={{
                 color: colors.textSecondary,
@@ -726,7 +1050,6 @@ export default function GymDetailScreen() {
               }}
             />
 
-            {/* Address */}
             <Text
               style={{
                 color: colors.textSecondary,
@@ -755,7 +1078,6 @@ export default function GymDetailScreen() {
               }}
             />
 
-            {/* Plan selector */}
             <Text
               style={{
                 color: colors.textSecondary,
@@ -803,7 +1125,6 @@ export default function GymDetailScreen() {
               })}
             </View>
 
-            {/* Save button */}
             <TouchableOpacity
               onPress={handleSaveEdit}
               disabled={updateMutation.isPending}
@@ -823,6 +1144,139 @@ export default function GymDetailScreen() {
                   style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
                 >
                   Guardar Cambios
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ─── Reset Password Modal ─── */}
+      <Modal visible={resetPwVisible} animationType="slide" transparent>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 24,
+              paddingBottom: 40,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <Text
+                style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
+              >
+                Resetear Contraseña
+              </Text>
+              <TouchableOpacity onPress={() => setResetPwVisible(false)}>
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {admin && (
+              <View
+                style={{
+                  backgroundColor: isDark ? "#1f2937" : "#f3f4f6",
+                  borderRadius: 12,
+                  padding: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <MaterialIcons
+                  name="person"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginLeft: 8,
+                  }}
+                >
+                  {admin.name}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    marginLeft: 8,
+                  }}
+                >
+                  {admin.email}
+                </Text>
+              </View>
+            )}
+
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 13,
+                fontWeight: "600",
+                marginBottom: 6,
+              }}
+            >
+              Nueva contraseña
+            </Text>
+            <TextInput
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Mínimo 6 caracteres"
+              placeholderTextColor={colors.textSecondary}
+              secureTextEntry
+              style={{
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 20,
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: "#3B82F6",
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                opacity: resetPasswordMutation.isPending ? 0.5 : 1,
+              }}
+            >
+              {resetPasswordMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
+                >
+                  Resetear Contraseña
                 </Text>
               )}
             </TouchableOpacity>

@@ -48,5 +48,7 @@ export const queryKeys = {
   superadmin: {
     overview: ["superadmin", "overview"] as const,
     gymDetail: (id: string) => ["superadmin", "gym", id] as const,
+    membershipHistory: (id: string) =>
+      ["superadmin", "gym", id, "memberships"] as const,
   },
 };

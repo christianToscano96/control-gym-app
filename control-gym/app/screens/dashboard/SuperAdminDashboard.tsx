@@ -64,6 +64,7 @@ export default function SuperAdminDashboard() {
           <RevenueCard
             isLoading={isLoading}
             totalRevenue={summary?.totalGymRevenue ?? 0}
+            platformRevenue={summary?.totalPlatformRevenue ?? 0}
           />
 
           <View className="flex-row gap-3 px-1 my-2">

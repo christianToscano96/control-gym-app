@@ -135,6 +135,10 @@ export default function RootLayout() {
               name="screens/superadmin/new-gym"
               options={{ headerShown: false }}
             />
+            <Stack.Screen
+              name="screens/clients/client-details/edit"
+              options={{ headerShown: false }}
+            />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

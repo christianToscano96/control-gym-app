@@ -237,8 +237,10 @@ const UserDetailsScreen = () => {
       >
         <TouchableOpacity
           onPress={() => {
-            // TODO: Implementar edicion
-            console.log("Editar cliente");
+            router.push({
+              pathname: "/screens/clients/client-details/edit",
+              params: { clientId },
+            });
           }}
           disabled={deleting}
           activeOpacity={0.8}

@@ -32,32 +32,27 @@ function NavigationGuard() {
 
   // Auth guard
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (
-        !user &&
-        pathname !== "/login" &&
-        pathname !== "/login/register" &&
-        pathname !== "/login/forgot-password" &&
-        pathname !== "/gym-suspended"
-      ) {
-        router.replace("/login");
-      }
-      if (user && pathname === "/login") {
-        router.replace("/(tabs)");
-      }
-    }, 0);
-    return () => clearTimeout(timeout);
-  }, [user, pathname]);
+    const publicRoutes = [
+      "/login",
+      "/login/register",
+      "/login/forgot-password",
+      "/gym-suspended",
+    ];
+    if (!user && !publicRoutes.includes(pathname)) {
+      router.replace("/login");
+    }
+    if (user && pathname === "/login") {
+      router.replace("/(tabs)");
+    }
+  }, [user, pathname, router]);
 
   // Gym active status guard (reactive)
   useEffect(() => {
     if (!user || !isAdmin || gymStatus === undefined) return;
-
     if (!gymStatus.active && pathname !== "/gym-suspended") {
       router.replace("/gym-suspended");
     }
     if (gymStatus.active && pathname === "/gym-suspended") {
-      // Invalidate all queries so dashboard loads fresh data after reactivation
       qc.invalidateQueries();
       router.replace("/(tabs)");
     }

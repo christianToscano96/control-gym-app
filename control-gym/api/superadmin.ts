@@ -1,12 +1,71 @@
 import { apiClient } from "./client";
-import { SuperAdminOverview, GymDetailResponse } from "@/types/superadmin";
+import {
+  SuperAdminOverview,
+  GymDetailResponse,
+  GymClientsResponse,
+  GymPaymentsResponse,
+  GymAccessLogsResponse,
+  GymStaffMember,
+  CreateGymData,
+} from "@/types/superadmin";
 
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
   return apiClient<SuperAdminOverview>("/api/superadmin/overview");
 }
 
-export async function fetchGymDetail(gymId: string): Promise<GymDetailResponse> {
+export async function fetchGymDetail(
+  gymId: string,
+): Promise<GymDetailResponse> {
   return apiClient<GymDetailResponse>(`/api/superadmin/gyms/${gymId}/detail`);
+}
+
+export async function fetchGymClients(
+  gymId: string,
+  params?: { search?: string; status?: string; limit?: number },
+): Promise<GymClientsResponse> {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  if (params?.limit) query.set("limit", String(params.limit));
+  const qs = query.toString();
+  return apiClient<GymClientsResponse>(
+    `/api/superadmin/gyms/${gymId}/clients${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function fetchGymPayments(
+  gymId: string,
+  limit?: number,
+): Promise<GymPaymentsResponse> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return apiClient<GymPaymentsResponse>(
+    `/api/superadmin/gyms/${gymId}/payments${qs}`,
+  );
+}
+
+export async function fetchGymAccessLogs(
+  gymId: string,
+  limit?: number,
+): Promise<GymAccessLogsResponse> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return apiClient<GymAccessLogsResponse>(
+    `/api/superadmin/gyms/${gymId}/access-logs${qs}`,
+  );
+}
+
+export async function fetchGymStaff(
+  gymId: string,
+): Promise<GymStaffMember[]> {
+  return apiClient<GymStaffMember[]>(
+    `/api/superadmin/gyms/${gymId}/staff`,
+  );
+}
+
+export async function createGym(data: CreateGymData): Promise<{ message: string; gymId: string }> {
+  return apiClient<{ message: string; gymId: string }>("/api/superadmin/gyms", {
+    method: "POST",
+    body: data,
+  });
 }
 
 export async function toggleGymActive(

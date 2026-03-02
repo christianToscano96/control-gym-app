@@ -131,6 +131,10 @@ export default function RootLayout() {
               name="gym-suspended"
               options={{ headerShown: false }}
             />
+            <Stack.Screen
+              name="screens/superadmin/new-gym"
+              options={{ headerShown: false }}
+            />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

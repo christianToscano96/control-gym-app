@@ -9,13 +9,24 @@ import { Gym } from "../models/Gym";
 import { User } from "../models/User";
 import { Membership } from "../models/Membership";
 import { Client } from "../models/Client";
+import { AccessLog } from "../models/AccessLog";
+import { Payment } from "../models/Payment";
+import { AuditLog } from "../models/AuditLog";
+import { MonthlySnapshot } from "../models/MonthlySnapshot";
 
 const router = Router();
 
 // Todas las rutas requieren superadmin
 router.use(authenticateJWT, requireSuperAdmin);
 
-// Vista general para el panel SuperAdmin
+// ─── Plan Prices ─────────────────────────────────────────────
+const planPrices: Record<string, number> = {
+  basico: 15000,
+  pro: 25000,
+  proplus: 40000,
+};
+
+// ─── Overview ────────────────────────────────────────────────
 router.get("/overview", async (req, res) => {
   try {
     const admins = await User.find({ role: "admin" })
@@ -28,20 +39,58 @@ router.get("/overview", async (req, res) => {
       { $group: { _id: "$gymId", count: { $sum: 1 } } },
     ]);
     const clientCountMap = new Map(
-      clientCounts.map((c: any) => [c._id.toString(), c.count])
+      clientCounts.map((c: any) => [c._id.toString(), c.count]),
     );
 
     const allGyms = await Gym.find().lean();
     const activeGyms = allGyms.filter((g) => g.active).length;
     const totalClients = clientCounts.reduce(
       (sum: number, c: any) => sum + c.count,
-      0
+      0,
     );
 
-    const revenueAgg = await Membership.aggregate([
+    // Ingresos plataforma (lo que los gyms pagan - Membership SaaS)
+    const platformRevenueAgg = await Membership.aggregate([
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
-    const totalRevenue = revenueAgg[0]?.total || 0;
+    const totalPlatformRevenue = platformRevenueAgg[0]?.total || 0;
+
+    // Ingresos de clientes (lo que los gyms facturan - Payment)
+    const gymRevenueAgg = await Payment.aggregate([
+      { $match: { status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
+
+    // Gyms con membresía SaaS por vencer (menos de 7 días)
+    const now = new Date();
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    const expiringGymMemberships = await Membership.find({
+      active: true,
+      endDate: { $gte: now, $lte: sevenDaysFromNow },
+    })
+      .populate("gymId", "name plan")
+      .lean();
+
+    const expiringGyms = expiringGymMemberships.map((m: any) => ({
+      gymId: m.gymId?._id,
+      gymName: m.gymId?.name || "Sin nombre",
+      plan: m.plan,
+      endDate: m.endDate,
+      daysLeft: Math.ceil(
+        (new Date(m.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    }));
+
+    // Check-ins globales hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCheckIns = await AccessLog.countDocuments({
+      date: { $gte: today },
+      $or: [{ status: "allowed" }, { status: { $exists: false } }],
+    });
 
     const formattedAdmins = admins.map((admin: any) => {
       const gym = admin.gymId;
@@ -70,12 +119,15 @@ router.get("/overview", async (req, res) => {
         activeGyms,
         inactiveGyms: allGyms.length - activeGyms,
         totalClients,
-        totalRevenue,
+        totalPlatformRevenue,
+        totalGymRevenue,
+        todayCheckIns,
         planDistribution: {
           basico: allGyms.filter((g) => g.plan === "basico").length,
           pro: allGyms.filter((g) => g.plan === "pro").length,
           proplus: allGyms.filter((g) => g.plan === "proplus").length,
         },
+        expiringGyms,
       },
       admins: formattedAdmins,
     });
@@ -85,17 +137,21 @@ router.get("/overview", async (req, res) => {
   }
 });
 
-// Detalle de un gimnasio para SuperAdmin
+// ─── Gym Detail ──────────────────────────────────────────────
 router.get("/gyms/:gymId/detail", async (req, res) => {
   try {
     const gym = await Gym.findById(req.params.gymId).lean();
-    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+    if (!gym)
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
 
     const admin = await User.findOne({ gymId: gym._id, role: "admin" })
       .select("name email avatar")
       .lean();
 
-    const membership = await Membership.findOne({ gymId: gym._id, active: true })
+    const membership = await Membership.findOne({
+      gymId: gym._id,
+      active: true,
+    })
       .select("plan startDate endDate active amount")
       .lean();
 
@@ -105,11 +161,48 @@ router.get("/gyms/:gymId/detail", async (req, res) => {
       isActive: true,
     });
 
-    const revenueAgg = await Membership.aggregate([
+    // Revenue plataforma (Membership SaaS)
+    const platformRevenueAgg = await Membership.aggregate([
       { $match: { gymId: gym._id } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
-    const totalRevenue = revenueAgg[0]?.total || 0;
+    const platformRevenue = platformRevenueAgg[0]?.total || 0;
+
+    // Revenue del gym (pagos de clientes)
+    const gymRevenueAgg = await Payment.aggregate([
+      { $match: { gymId: gym._id, status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const gymRevenue = gymRevenueAgg[0]?.total || 0;
+
+    // Revenue mensual del gym (mes actual)
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyRevenueAgg = await Payment.aggregate([
+      { $match: { gymId: gym._id, status: "completed", date: { $gte: firstDayOfMonth } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const monthlyGymRevenue = monthlyRevenueAgg[0]?.total || 0;
+
+    // Check-ins de hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCheckIns = await AccessLog.countDocuments({
+      gymId: gym._id,
+      date: { $gte: today },
+      $or: [{ status: "allowed" }, { status: { $exists: false } }],
+    });
+    const todayDenied = await AccessLog.countDocuments({
+      gymId: gym._id,
+      date: { $gte: today },
+      status: "denied",
+    });
+
+    // Staff count
+    const staffCount = await User.countDocuments({
+      gymId: gym._id,
+      role: "empleado",
+    });
 
     res.json({
       gym: {
@@ -124,7 +217,12 @@ router.get("/gyms/:gymId/detail", async (req, res) => {
       membership: membership || null,
       clientsCount,
       activeClientsCount,
-      totalRevenue,
+      platformRevenue,
+      gymRevenue,
+      monthlyGymRevenue,
+      todayCheckIns,
+      todayDenied,
+      staffCount,
     });
   } catch (error) {
     console.error("Error in gym detail:", error);
@@ -132,14 +230,233 @@ router.get("/gyms/:gymId/detail", async (req, res) => {
   }
 });
 
-// Reporte: gimnasios activos/inactivos
+// ─── Gym Clients ─────────────────────────────────────────────
+router.get("/gyms/:gymId/clients", async (req, res) => {
+  try {
+    const { search, status, limit: limitStr } = req.query;
+    const filter: any = { gymId: req.params.gymId };
+
+    if (status === "active") filter.isActive = true;
+    else if (status === "inactive") filter.isActive = false;
+
+    if (search) {
+      const regex = new RegExp(search as string, "i");
+      filter.$or = [{ firstName: regex }, { lastName: regex }, { email: regex }];
+    }
+
+    const limit = Math.min(Number(limitStr) || 50, 100);
+
+    const clients = await Client.find(filter)
+      .select("firstName lastName email membershipType isActive startDate endDate")
+      .sort({ isActive: -1, endDate: 1 })
+      .limit(limit)
+      .lean();
+
+    const total = await Client.countDocuments({ gymId: req.params.gymId });
+
+    res.json({ clients, total });
+  } catch (error) {
+    console.error("Error fetching gym clients:", error);
+    res.status(500).json({ message: "Error al obtener clientes del gym" });
+  }
+});
+
+// ─── Gym Payments ────────────────────────────────────────────
+router.get("/gyms/:gymId/payments", async (req, res) => {
+  try {
+    const { limit: limitStr } = req.query;
+    const limit = Math.min(Number(limitStr) || 20, 100);
+
+    const payments = await Payment.find({ gymId: req.params.gymId })
+      .populate("client", "firstName lastName")
+      .sort({ date: -1 })
+      .limit(limit)
+      .lean();
+
+    // Revenue mensual
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyAgg = await Payment.aggregate([
+      {
+        $match: {
+          gymId: (await Gym.findById(req.params.gymId))?._id,
+          status: "completed",
+          date: { $gte: firstDayOfMonth },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+
+    const totalAgg = await Payment.aggregate([
+      {
+        $match: {
+          gymId: (await Gym.findById(req.params.gymId))?._id,
+          status: "completed",
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+
+    res.json({
+      payments: payments.map((p: any) => ({
+        _id: p._id,
+        clientName: p.client
+          ? `${p.client.firstName} ${p.client.lastName}`
+          : "—",
+        amount: p.amount,
+        method: p.method,
+        period: p.period,
+        status: p.status,
+        date: p.date,
+      })),
+      monthlyRevenue: monthlyAgg[0]?.total || 0,
+      totalRevenue: totalAgg[0]?.total || 0,
+    });
+  } catch (error) {
+    console.error("Error fetching gym payments:", error);
+    res.status(500).json({ message: "Error al obtener pagos del gym" });
+  }
+});
+
+// ─── Gym Access Logs ─────────────────────────────────────────
+router.get("/gyms/:gymId/access-logs", async (req, res) => {
+  try {
+    const { limit: limitStr } = req.query;
+    const limit = Math.min(Number(limitStr) || 20, 100);
+
+    const logs = await AccessLog.find({ gymId: req.params.gymId })
+      .populate("client", "firstName lastName membershipType")
+      .sort({ date: -1 })
+      .limit(limit)
+      .lean();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayAllowed = await AccessLog.countDocuments({
+      gymId: req.params.gymId,
+      date: { $gte: today },
+      $or: [{ status: "allowed" }, { status: { $exists: false } }],
+    });
+
+    const todayDenied = await AccessLog.countDocuments({
+      gymId: req.params.gymId,
+      date: { $gte: today },
+      status: "denied",
+    });
+
+    res.json({
+      logs: logs.map((l: any) => ({
+        _id: l._id,
+        clientName: l.client
+          ? `${l.client.firstName} ${l.client.lastName}`
+          : "Desconocido",
+        membershipType: l.client?.membershipType || "—",
+        method: l.method,
+        status: l.status,
+        denyReason: l.denyReason,
+        date: l.date,
+      })),
+      todayAllowed,
+      todayDenied,
+    });
+  } catch (error) {
+    console.error("Error fetching gym access logs:", error);
+    res.status(500).json({ message: "Error al obtener accesos del gym" });
+  }
+});
+
+// ─── Gym Staff ───────────────────────────────────────────────
+router.get("/gyms/:gymId/staff", async (req, res) => {
+  try {
+    const staff = await User.find({
+      gymId: req.params.gymId,
+      role: "empleado",
+    })
+      .select("name email avatar active role")
+      .lean();
+
+    res.json(staff);
+  } catch (error) {
+    console.error("Error fetching gym staff:", error);
+    res.status(500).json({ message: "Error al obtener staff del gym" });
+  }
+});
+
+// ─── Create Gym ──────────────────────────────────────────────
+router.post("/gyms", async (req, res) => {
+  try {
+    const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan } =
+      req.body;
+
+    if (!gymName || !adminName || !adminEmail || !adminPassword || !plan) {
+      return res.status(400).json({ message: "Todos los campos son requeridos" });
+    }
+    if (!["basico", "pro", "proplus"].includes(plan)) {
+      return res.status(400).json({ message: "Plan inválido" });
+    }
+    if (adminPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "La contraseña debe tener al menos 6 caracteres" });
+    }
+
+    const exists = await User.findOne({ email: adminEmail });
+    if (exists) {
+      return res.status(400).json({ message: "El email ya está registrado" });
+    }
+
+    const gym = await Gym.create({
+      name: gymName,
+      address: gymAddress || "",
+      plan,
+      active: true,
+      clientsCount: 0,
+    });
+
+    const hashed = await bcrypt.hash(adminPassword, 10);
+    const admin = await User.create({
+      name: adminName,
+      email: adminEmail,
+      password: hashed,
+      role: "admin",
+      gymId: gym._id,
+      active: true,
+    });
+
+    gym.owner = admin._id as any;
+    await gym.save();
+
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setMonth(now.getMonth() + 1);
+
+    await Membership.create({
+      gymId: gym._id,
+      plan,
+      amount: planPrices[plan] || 0,
+      startDate: now,
+      endDate,
+      active: true,
+    });
+
+    res.status(201).json({
+      message: "Gimnasio creado correctamente",
+      gymId: gym._id,
+    });
+  } catch (error) {
+    console.error("Error creating gym:", error);
+    res.status(500).json({ message: "Error al crear el gimnasio" });
+  }
+});
+
+// ─── Reports ─────────────────────────────────────────────────
 router.get("/report/gyms-status", async (req, res) => {
   const activos = await Gym.countDocuments({ active: true });
   const inactivos = await Gym.countDocuments({ active: false });
   res.json({ activos, inactivos });
 });
 
-// Reporte: membresías por plan
 router.get("/report/memberships-by-plan", async (req, res) => {
   const basico = await Membership.countDocuments({
     plan: "basico",
@@ -153,10 +470,8 @@ router.get("/report/memberships-by-plan", async (req, res) => {
   res.json({ basico, pro, proplus });
 });
 
-// Reporte: clientes totales y por gimnasio
 router.get("/report/clients", async (req, res) => {
   const total = await Client.countDocuments({ isActive: true });
-  // Clientes por gimnasio
   const porGimnasio = await Client.aggregate([
     { $match: { isActive: true } },
     { $group: { _id: "$gymId", count: { $sum: 1 } } },
@@ -164,7 +479,7 @@ router.get("/report/clients", async (req, res) => {
   res.json({ total, porGimnasio });
 });
 
-// Activar/desactivar gimnasio
+// ─── Toggle Gym Active ───────────────────────────────────────
 router.put("/gyms/:gymId/active", async (req, res) => {
   try {
     const { active } = req.body;
@@ -173,7 +488,8 @@ router.put("/gyms/:gymId/active", async (req, res) => {
       { active },
       { new: true },
     );
-    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+    if (!gym)
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
 
     const activeMembership = await Membership.findOne({
       gymId: gym._id,
@@ -183,13 +499,11 @@ router.put("/gyms/:gymId/active", async (req, res) => {
     if (activeMembership) {
       const now = new Date();
       if (active) {
-        // Enabling: reset start to now, expiration to +1 month
         const endDate = new Date(now);
         endDate.setMonth(now.getMonth() + 1);
         activeMembership.startDate = now;
         activeMembership.endDate = endDate;
       } else {
-        // Disabling: expire membership immediately
         activeMembership.endDate = now;
       }
       await activeMembership.save();
@@ -202,7 +516,7 @@ router.put("/gyms/:gymId/active", async (req, res) => {
   }
 });
 
-// Resetear contraseña de admin
+// ─── Reset Admin Password ────────────────────────────────────
 router.put("/admins/:id/reset-password", async (req, res) => {
   const { newPassword } = req.body;
   if (!newPassword || newPassword.length < 6)
@@ -213,17 +527,18 @@ router.put("/admins/:id/reset-password", async (req, res) => {
     { password: hashed },
     { new: true },
   );
-  if (!admin) return res.status(404).json({ message: "Admin no encontrado" });
+  if (!admin)
+    return res.status(404).json({ message: "Admin no encontrado" });
   res.json({ message: "Contraseña reseteada correctamente" });
 });
 
-// Listar todos los gimnasios
+// ─── List Gyms ───────────────────────────────────────────────
 router.get("/gyms", async (req, res) => {
   const gyms = await Gym.find().populate("owner", "name email");
   res.json(gyms);
 });
 
-// Ver y editar un admin de gimnasio
+// ─── Admin CRUD ──────────────────────────────────────────────
 router.get("/admins/:id", async (req, res) => {
   const admin = await User.findById(req.params.id).populate("gymId", "name");
   if (!admin || admin.role !== "admin")
@@ -237,17 +552,12 @@ router.put("/admins/:id", async (req, res) => {
     req.body,
     { new: true },
   );
-  if (!admin) return res.status(404).json({ message: "Admin no encontrado" });
+  if (!admin)
+    return res.status(404).json({ message: "Admin no encontrado" });
   res.json(admin);
 });
 
-// Editar gimnasio (nombre, dirección, plan)
-const planPrices: Record<string, number> = {
-  basico: 15000,
-  pro: 25000,
-  proplus: 40000,
-};
-
+// ─── Edit Gym ────────────────────────────────────────────────
 router.put("/gyms/:gymId", async (req, res) => {
   try {
     const { name, address, plan } = req.body;
@@ -260,9 +570,9 @@ router.put("/gyms/:gymId", async (req, res) => {
     const gym = await Gym.findByIdAndUpdate(req.params.gymId, updateData, {
       new: true,
     });
-    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+    if (!gym)
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
 
-    // Sync membership amount when plan changes
     if (plan && planPrices[plan] !== undefined) {
       await Membership.updateMany(
         { gymId: gym._id, active: true },
@@ -277,16 +587,20 @@ router.put("/gyms/:gymId", async (req, res) => {
   }
 });
 
-// Eliminar gimnasio + admin + membresías + clientes
+// ─── Delete Gym (full cascade) ───────────────────────────────
 router.delete("/gyms/:gymId", async (req, res) => {
   try {
     const gym = await Gym.findById(req.params.gymId);
-    if (!gym) return res.status(404).json({ message: "Gimnasio no encontrado" });
+    if (!gym)
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
 
     await Promise.all([
       User.deleteMany({ gymId: gym._id }),
       Membership.deleteMany({ gymId: gym._id }),
       Client.deleteMany({ gymId: gym._id }),
+      AccessLog.deleteMany({ gymId: gym._id }),
+      Payment.deleteMany({ gymId: gym._id }),
+      MonthlySnapshot.deleteMany({ gymId: gym._id }),
       Gym.findByIdAndDelete(gym._id),
     ]);
 
@@ -297,13 +611,12 @@ router.delete("/gyms/:gymId", async (req, res) => {
   }
 });
 
-// Listar membresías de un gimnasio
+// ─── Gym Memberships (SaaS history) ─────────────────────────
 router.get("/gyms/:gymId/memberships", async (req, res) => {
   const memberships = await Membership.find({ gymId: req.params.gymId });
   res.json(memberships);
 });
 
-// Editar membresía (por ejemplo, cambiar fechas o estado)
 router.put("/memberships/:id", async (req, res) => {
   const membership = await Membership.findByIdAndUpdate(
     req.params.id,

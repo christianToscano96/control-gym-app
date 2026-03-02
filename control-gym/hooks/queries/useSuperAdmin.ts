@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchSuperAdminOverview,
   fetchGymDetail,
+  fetchGymClients,
+  fetchGymPayments,
+  fetchGymAccessLogs,
+  fetchGymStaff,
+  createGym,
   toggleGymActive,
   updateGym,
   deleteGym,
@@ -9,7 +14,15 @@ import {
   fetchMembershipHistory,
   MembershipHistory,
 } from "@/api/superadmin";
-import { SuperAdminOverview, GymDetailResponse } from "@/types/superadmin";
+import {
+  SuperAdminOverview,
+  GymDetailResponse,
+  GymClientsResponse,
+  GymPaymentsResponse,
+  GymAccessLogsResponse,
+  GymStaffMember,
+  CreateGymData,
+} from "@/types/superadmin";
 import { queryKeys } from "./queryKeys";
 
 export function useSuperAdminOverviewQuery() {
@@ -35,6 +48,53 @@ export function useMembershipHistoryQuery(gymId: string) {
     queryKey: queryKeys.superadmin.membershipHistory(gymId),
     queryFn: () => fetchMembershipHistory(gymId),
     enabled: !!gymId,
+  });
+}
+
+export function useGymClientsQuery(
+  gymId: string,
+  params?: { search?: string; status?: string; limit?: number },
+) {
+  return useQuery<GymClientsResponse>({
+    queryKey: [...queryKeys.superadmin.gymClients(gymId), params],
+    queryFn: () => fetchGymClients(gymId, params),
+    enabled: !!gymId,
+  });
+}
+
+export function useGymPaymentsQuery(gymId: string, limit?: number) {
+  return useQuery<GymPaymentsResponse>({
+    queryKey: queryKeys.superadmin.gymPayments(gymId),
+    queryFn: () => fetchGymPayments(gymId, limit),
+    enabled: !!gymId,
+  });
+}
+
+export function useGymAccessLogsQuery(gymId: string, limit?: number) {
+  return useQuery<GymAccessLogsResponse>({
+    queryKey: queryKeys.superadmin.gymAccessLogs(gymId),
+    queryFn: () => fetchGymAccessLogs(gymId, limit),
+    enabled: !!gymId,
+  });
+}
+
+export function useGymStaffQuery(gymId: string) {
+  return useQuery<GymStaffMember[]>({
+    queryKey: queryKeys.superadmin.gymStaff(gymId),
+    queryFn: () => fetchGymStaff(gymId),
+    enabled: !!gymId,
+  });
+}
+
+export function useCreateGym() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateGymData) => createGym(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.overview,
+      });
+    },
   });
 }
 

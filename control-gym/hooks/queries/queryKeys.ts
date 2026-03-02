@@ -50,5 +50,13 @@ export const queryKeys = {
     gymDetail: (id: string) => ["superadmin", "gym", id] as const,
     membershipHistory: (id: string) =>
       ["superadmin", "gym", id, "memberships"] as const,
+    gymClients: (id: string) =>
+      ["superadmin", "gym", id, "clients"] as const,
+    gymPayments: (id: string) =>
+      ["superadmin", "gym", id, "payments"] as const,
+    gymAccessLogs: (id: string) =>
+      ["superadmin", "gym", id, "access-logs"] as const,
+    gymStaff: (id: string) =>
+      ["superadmin", "gym", id, "staff"] as const,
   },
 };

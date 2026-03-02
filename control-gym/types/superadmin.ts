@@ -16,17 +16,28 @@ export interface SuperAdminEntry {
   gym: SuperAdminGym | null;
 }
 
+export interface ExpiringGym {
+  gymId: string;
+  gymName: string;
+  plan: string;
+  endDate: string;
+  daysLeft: number;
+}
+
 export interface SuperAdminSummary {
   totalGyms: number;
   activeGyms: number;
   inactiveGyms: number;
   totalClients: number;
-  totalRevenue: number;
+  totalPlatformRevenue: number;
+  totalGymRevenue: number;
+  todayCheckIns: number;
   planDistribution: {
     basico: number;
     pro: number;
     proplus: number;
   };
+  expiringGyms: ExpiringGym[];
 }
 
 export interface SuperAdminOverview {
@@ -62,5 +73,76 @@ export interface GymDetailResponse {
   membership: GymDetailMembership | null;
   clientsCount: number;
   activeClientsCount: number;
+  platformRevenue: number;
+  gymRevenue: number;
+  monthlyGymRevenue: number;
+  todayCheckIns: number;
+  todayDenied: number;
+  staffCount: number;
+}
+
+export interface GymClient {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  membershipType: "basico" | "pro" | "proplus";
+  isActive: boolean;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface GymClientsResponse {
+  clients: GymClient[];
+  total: number;
+}
+
+export interface GymPayment {
+  _id: string;
+  clientName: string;
+  amount: number;
+  method: string;
+  period?: string;
+  status: "completed" | "pending" | "failed";
+  date: string;
+}
+
+export interface GymPaymentsResponse {
+  payments: GymPayment[];
+  monthlyRevenue: number;
   totalRevenue: number;
+}
+
+export interface GymAccessLog {
+  _id: string;
+  clientName: string;
+  membershipType: string;
+  method: string;
+  status: "allowed" | "denied";
+  denyReason?: string;
+  date: string;
+}
+
+export interface GymAccessLogsResponse {
+  logs: GymAccessLog[];
+  todayAllowed: number;
+  todayDenied: number;
+}
+
+export interface GymStaffMember {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  active: boolean;
+  role: string;
+}
+
+export interface CreateGymData {
+  gymName: string;
+  gymAddress: string;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+  plan: "basico" | "pro" | "proplus";
 }

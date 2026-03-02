@@ -23,7 +23,7 @@ import { SuperAdminEntry } from "@/types/superadmin";
 // ─── Plan Config ─────────────────────────────────────────────
 const planConfig: Record<string, { label: string; color: string; bg: string }> =
   {
-    basico: { label: "Básico", color: "#6366F1", bg: "#EEF2FF" },
+    basico: { label: "Basico", color: "#6366F1", bg: "#EEF2FF" },
     pro: { label: "Pro", color: "#7C3AED", bg: "#F5F3FF" },
     proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
   };
@@ -184,7 +184,7 @@ const GymAdminCard = React.memo(
   },
 );
 
-// ─── StatCard (inline, lightweight) ──────────────────────────
+// ─── StatCard ────────────────────────────────────────────────
 const StatCard = ({
   icon,
   label,
@@ -317,11 +317,22 @@ export default function SuperAdminDashboard() {
 
   const summary = data?.summary;
 
+  // Contar activos/inactivos desde la lista real de admins (datos actualizados)
+  const activeCount = useMemo(() => {
+    if (!data?.admins) return 0;
+    return data.admins.filter((a) => a.gym?.active === true).length;
+  }, [data?.admins]);
+
+  const inactiveCount = useMemo(() => {
+    if (!data?.admins) return 0;
+    return data.admins.filter((a) => !a.gym?.active).length;
+  }, [data?.admins]);
+
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =
     [
       { key: "all", label: "Todos", count: data?.admins?.length },
-      { key: "active", label: "Activos", count: summary?.activeGyms },
-      { key: "inactive", label: "Inactivos", count: summary?.inactiveGyms },
+      { key: "active", label: "Activos", count: activeCount },
+      { key: "inactive", label: "Inactivos", count: inactiveCount },
     ];
 
   return (
@@ -352,77 +363,188 @@ export default function SuperAdminDashboard() {
             Panel Super Admin
           </Text>
 
-          {/* ─── Revenue Card ─── */}
-          <View
-            style={{
-              marginHorizontal: 4,
-              marginVertical: 8,
-              backgroundColor: colors.card,
-              borderRadius: 16,
-              padding: 16,
-              borderWidth: isDark ? 1 : 0,
-              borderColor: colors.border,
-              shadowColor: isDark ? "transparent" : "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.06,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
+          {/* ─── Expiring Gyms Alert ─── */}
+          {summary?.expiringGyms && summary.expiringGyms.length > 0 && (
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              style={{
+                marginHorizontal: 4,
+                marginVertical: 8,
+                backgroundColor: isDark ? "#F59E0B15" : "#FFFBEB",
+                borderRadius: 14,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: isDark ? "#F59E0B30" : "#FDE68A",
+              }}
             >
               <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <MaterialIcons name="warning" size={18} color="#F59E0B" />
+                <Text
+                  style={{
+                    color: "#F59E0B",
+                    fontSize: 13,
+                    fontWeight: "700",
+                  }}
+                >
+                  {summary.expiringGyms.length} gym
+                  {summary.expiringGyms.length > 1 ? "s" : ""} por vencer
+                </Text>
+              </View>
+              {summary.expiringGyms.map((g) => (
+                <TouchableOpacity
+                  key={g.gymId}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/screens/superadmin/gym-detail",
+                      params: { gymId: g.gymId },
+                    } as any)
+                  }
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: isDark ? "#FCD34D" : "#92400E",
+                      fontSize: 13,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {g.gymName}
+                  </Text>
+                  <Text
+                    style={{
+                      color: isDark ? "#FCD34D" : "#92400E",
+                      fontSize: 12,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {g.daysLeft} dias restantes
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* ─── Revenue Cards ─── */}
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              marginHorizontal: 4,
+              marginVertical: 8,
+            }}
+          >
+            {/* Platform Revenue */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                padding: 14,
+                borderWidth: isDark ? 1 : 0,
+                borderColor: colors.border,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
                   backgroundColor: "#10B98115",
                   justifyContent: "center",
                   alignItems: "center",
+                  marginBottom: 8,
                 }}
               >
-                <MaterialIcons name="attach-money" size={24} color="#10B981" />
+                <MaterialIcons
+                  name="account-balance"
+                  size={18}
+                  color="#10B981"
+                />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  INGRESOS TOTALES
-                </Text>
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontSize: 28,
-                    fontWeight: "800",
-                    letterSpacing: -0.5,
-                  }}
-                >
-                  {isLoading
-                    ? "..."
-                    : `$${(summary?.totalRevenue ?? 0).toLocaleString()}`}
-                </Text>
-              </View>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 20,
+                  fontWeight: "800",
+                  letterSpacing: -0.5,
+                }}
+              >
+                {isLoading
+                  ? "..."
+                  : `$${(summary?.totalPlatformRevenue ?? 0).toLocaleString()}`}
+              </Text>
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  marginTop: 2,
+                }}
+              >
+                Ingresos plataforma
+              </Text>
+            </View>
+
+            {/* Gym Revenue */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                padding: 14,
+                borderWidth: isDark ? 1 : 0,
+                borderColor: colors.border,
+              }}
+            >
               <View
                 style={{
-                  backgroundColor: "#10B98115",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 8,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: "#6366F115",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 8,
                 }}
               >
-                <Text
-                  style={{ color: "#10B981", fontSize: 11, fontWeight: "700" }}
-                >
-                  Todos los gyms
-                </Text>
+                <MaterialIcons name="storefront" size={18} color="#6366F1" />
               </View>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 20,
+                  fontWeight: "800",
+                  letterSpacing: -0.5,
+                }}
+              >
+                {isLoading
+                  ? "..."
+                  : `$${(summary?.totalGymRevenue ?? 0).toLocaleString()}`}
+              </Text>
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  marginTop: 2,
+                }}
+              >
+                Ingresos gyms
+              </Text>
             </View>
           </View>
 
@@ -443,6 +565,17 @@ export default function SuperAdminDashboard() {
               accentColor="#6366F1"
             />
           </View>
+
+          {/* ─── Check-ins Card (comentado - no necesario por ahora) ─── */}
+          {/* <View className="flex-row gap-3 px-1 mb-2">
+            <StatCard
+              icon="qr-code-scanner"
+              label="CHECK-INS HOY"
+              value={isLoading ? "..." : String(summary?.todayCheckIns ?? 0)}
+              subtitle="Todos los gyms"
+              accentColor="#F59E0B"
+            />
+          </View> */}
 
           {/* ─── Plan Distribution ─── */}
           <View className="flex-row gap-2 px-1 mb-4">
@@ -485,13 +618,40 @@ export default function SuperAdminDashboard() {
             })}
           </View>
 
-          {/* ─── Search ─── */}
-          <SearchInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Buscar gimnasio o admin..."
-            onClear={() => setSearchQuery("")}
-          />
+          {/* ─── Search + Create Button ─── */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 4,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <SearchInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Buscar gimnasio o admin..."
+                onClear={() => setSearchQuery("")}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                router.push("/screens/superadmin/new-gym" as any)
+              }
+              activeOpacity={0.8}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: primaryColor,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialIcons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
 
           {/* ─── Filter Chips ─── */}
           <View className="flex-row gap-2 mb-4">
@@ -618,7 +778,7 @@ export default function SuperAdminDashboard() {
               description={
                 searchQuery || filterStatus !== "all"
                   ? "No se encontraron gimnasios con los filtros aplicados"
-                  : "Aún no hay gimnasios registrados"
+                  : "Aun no hay gimnasios registrados"
               }
             />
           ) : (

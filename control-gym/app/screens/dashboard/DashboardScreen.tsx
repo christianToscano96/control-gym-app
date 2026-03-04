@@ -3,9 +3,11 @@ import ActivityRateChart from "@/components/ui/ActivityRateChart";
 import AttendanceChart from "@/components/ui/AttendanceChart";
 import ExpiringMembershipsAlert from "@/components/ui/ExpiringMembershipsAlert";
 import GymSubscriptionAlert from "@/components/ui/GymSubscriptionAlert";
+import InactiveClientsAlert from "@/components/ui/InactiveClientsAlert";
 import FAB from "@/components/ui/FAB";
 import Header from "@/components/ui/Header";
-import MembershipDistributionChart from "@/components/ui/MembershipDistributionChart";
+import ModalCustom from "@/components/ui/ModalCustom";
+//import MembershipDistributionChart from "@/components/ui/MembershipDistributionChart";
 import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
 import RecentCheckIns from "@/components/ui/RecentCheckIns";
@@ -21,12 +23,19 @@ import {
   useMembershipDistributionQuery,
   useWeeklyAttendanceQuery,
 } from "@/hooks/queries/useDashboard";
+import { useClientsQuery } from "@/hooks/queries/useClients";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { queryKeys } from "@/hooks/queries/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "../../../stores/store";
 
@@ -51,12 +60,14 @@ export default function DashboardScreen() {
     useWeeklyAttendanceQuery(!isStaff);
   const { data: activityData, refetch: refetchActivity } =
     useActivityRateQuery(!isStaff);
-  const { data: membershipData, refetch: refetchMembership } =
-    useMembershipDistributionQuery(!isStaff);
+  //const { data: membershipData, refetch: refetchMembership } =
+  //useMembershipDistributionQuery(!isStaff);
   const { data: expiringData, refetch: refetchExpiring } =
     useExpiringMembershipsQuery(!isStaff);
   const { data: gymSubscription, refetch: refetchSubscription } =
     useGymSubscriptionQuery(!isStaff);
+  const { data: clients = [], refetch: refetchClients } =
+    useClientsQuery(!isStaff);
 
   // Calculate days left for gym subscription
   const subscriptionDaysLeft = gymSubscription?.endDate
@@ -82,9 +93,10 @@ export default function DashboardScreen() {
       refetchStats(),
       refetchWeekly(),
       refetchActivity(),
-      refetchMembership(),
+      //refetchMembership(),
       refetchExpiring(),
       refetchSubscription(),
+      refetchClients(),
       queryClient.invalidateQueries({ queryKey: queryKeys.access.recent }),
     ]);
     setRefreshing(false);
@@ -92,9 +104,10 @@ export default function DashboardScreen() {
     refetchStats,
     refetchWeekly,
     refetchActivity,
-    refetchMembership,
+    //refetchMembership,
     refetchExpiring,
     refetchSubscription,
+    refetchClients,
     queryClient,
   ]);
 
@@ -264,8 +277,9 @@ export default function DashboardScreen() {
               {/* Alerta de membresías por vencer */}
               <ExpiringMembershipsAlert
                 count={expiringData?.count ?? 0}
-                onPress={() => router.push("/screens/clients" as any)}
+                expiringData={expiringData}
               />
+              <InactiveClientsAlert clients={clients} />
               {/* ─── Tendencias ─── */}
               <Text
                 style={{ color: colors.textSecondary }}
@@ -286,12 +300,14 @@ export default function DashboardScreen() {
                 inactiveCount={activityData?.inactiveCount ?? 0}
                 activityRate={activityData?.activityRate ?? 0}
               />
-              <MembershipDistributionChart
+              {/* Distribución de membresías 
+               <MembershipDistributionChart
                 basico={membershipData?.basico ?? 0}
                 pro={membershipData?.pro ?? 0}
                 proplus={membershipData?.proplus ?? 0}
                 total={membershipData?.total ?? 0}
               />
+              */}
             </>
           )}
 

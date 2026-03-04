@@ -7,7 +7,7 @@ import {
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "react-native-reanimated";
 import { ThemeProvider as CustomThemeProvider } from "../context/ThemeContext";
 import "../global.css";
@@ -23,6 +23,7 @@ function NavigationGuard() {
   const user = useUserStore((s) => s.user);
   const router = useRouter();
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
 
   const isAdmin = user?.role === "admin";
   const qc = useQueryClient();
@@ -30,8 +31,15 @@ function NavigationGuard() {
   // Poll gym status only for admin users who are logged in
   const { data: gymStatus } = useGymStatusQuery(!!user && isAdmin);
 
+  // Wait for component to mount before navigating
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Auth guard
   useEffect(() => {
+    if (!isMounted) return;
+    
     const publicRoutes = [
       "/login",
       "/login/register",
@@ -44,11 +52,13 @@ function NavigationGuard() {
     if (user && pathname === "/login") {
       router.replace("/(tabs)");
     }
-  }, [user, pathname, router]);
+  }, [user, pathname, router, isMounted]);
 
   // Gym active status guard (reactive)
   useEffect(() => {
+    if (!isMounted) return;
     if (!user || !isAdmin || gymStatus === undefined) return;
+    
     if (!gymStatus.active && pathname !== "/gym-suspended") {
       router.replace("/gym-suspended");
     }
@@ -56,7 +66,7 @@ function NavigationGuard() {
       qc.invalidateQueries();
       router.replace("/(tabs)");
     }
-  }, [gymStatus, user, isAdmin, pathname, router, qc]);
+  }, [gymStatus, user, isAdmin, pathname, router, qc, isMounted]);
 
   return null;
 }

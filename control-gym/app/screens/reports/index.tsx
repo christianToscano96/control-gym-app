@@ -14,7 +14,6 @@ import { useTheme } from "@/context/ThemeContext";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import SearchInput from "@/components/ui/SearchInput";
 import Select, { SelectOption } from "@/components/ui/Select";
-import DateSelect from "@/components/ui/DateSelect";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import ReportCard from "@/components/ui/ReportCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -28,21 +27,11 @@ import {
   ReportsSummary,
 } from "@/types/reports";
 
-// ─── Filter options ─────────────────────────────────────────────
-const reportTypeOptions: SelectOption[] = [
-  { label: "Todos los reportes", value: "" },
-  { label: "Clientes", value: "clients" },
-  { label: "Asistencias", value: "attendance" },
-  { label: "Membresías", value: "memberships" },
-  { label: "Ingresos", value: "revenue" },
-  { label: "Personal", value: "staff" },
-  { label: "Hora pico", value: "peak_hour" },
-];
-
 const statusOptions: SelectOption[] = [
   { label: "Todos los estados", value: "" },
   { label: "Completado", value: "completed" },
-  { label: "Pendiente", value: "pending" },
+  { label: "En curso", value: "processing" },
+  { label: "Error", value: "error" },
 ];
 
 // ─── Summary Pill Component ────────────────────────────────────
@@ -76,9 +65,7 @@ const ReportsScreen = () => {
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [reportType, setReportType] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [monthFilter, setMonthFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   // Export tracking
@@ -98,6 +85,21 @@ const ReportsScreen = () => {
 
   const exportMutation = useExportReport();
 
+  const monthOptions: SelectOption[] = useMemo(() => {
+    const options = reports
+      .map((r) => ({
+        label: String(r.metadata?.period || r.date),
+        value: String(r.metadata?.monthKey || ""),
+      }))
+      .filter((item) => item.value);
+
+    const unique = Array.from(
+      new Map(options.map((item) => [item.value, item])).values(),
+    );
+
+    return [{ label: "Todos los meses", value: "" }, ...unique];
+  }, [reports]);
+
   // Client-side filtering (all filters applied locally)
   const filteredReports = useMemo(() => {
     let filtered = [...reports];
@@ -112,26 +114,18 @@ const ReportsScreen = () => {
       );
     }
 
-    // Type filter
-    if (reportType) {
-      filtered = filtered.filter((r) => r.type === reportType);
-    }
-
     // Status filter
     if (statusFilter) {
       filtered = filtered.filter((r) => r.status === statusFilter);
     }
 
-    // Date range filter
-    if (startDate) {
-      filtered = filtered.filter((r) => new Date(r.date) >= startDate);
-    }
-    if (endDate) {
-      filtered = filtered.filter((r) => new Date(r.date) <= endDate);
+    // Month filter (monthly closure)
+    if (monthFilter) {
+      filtered = filtered.filter((r) => r.metadata?.monthKey === monthFilter);
     }
 
     return filtered;
-  }, [reports, searchQuery, reportType, statusFilter, startDate, endDate]);
+  }, [reports, searchQuery, statusFilter, monthFilter]);
 
   // Summary stats
   const summary: ReportsSummary = useMemo(
@@ -154,9 +148,7 @@ const ReportsScreen = () => {
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setReportType("");
-    setStartDate(null);
-    setEndDate(null);
+    setMonthFilter("");
     setStatusFilter("");
   };
 
@@ -184,13 +176,12 @@ const ReportsScreen = () => {
 
     Alert.alert(
       report.title,
-      `Tipo: ${report.type}\nFecha: ${report.date}\nEstado: ${report.status || "N/A"}\n${report.description || ""}`,
+      `Mes: ${report.metadata?.period || report.date}\nFecha: ${report.date}\nEstado: ${report.status || "N/A"}\n${report.description || ""}`,
       buttons,
     );
   };
 
-  const hasActiveFilters =
-    !!searchQuery || !!reportType || !!statusFilter || !!startDate || !!endDate;
+  const hasActiveFilters = !!searchQuery || !!statusFilter || !!monthFilter;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -224,12 +215,12 @@ const ReportsScreen = () => {
                 color="#10b981"
                 bgColor="#10b98115"
               />
-              {summary.pending > 0 && (
+              {summary.processing > 0 && (
                 <SummaryPill
-                  label="Pend."
-                  count={summary.pending}
-                  color="#f59e0b"
-                  bgColor="#f59e0b15"
+                  label="En curso"
+                  count={summary.processing}
+                  color="#3b82f6"
+                  bgColor="#3b82f615"
                 />
               )}
             </View>
@@ -248,10 +239,10 @@ const ReportsScreen = () => {
             <View className="flex-row gap-2 mb-2">
               <View className="flex-1">
                 <Select
-                  placeholder="Tipo de reporte"
-                  options={reportTypeOptions}
-                  value={reportType}
-                  onChange={setReportType}
+                  placeholder="Mes de cierre"
+                  options={monthOptions}
+                  value={monthFilter}
+                  onChange={setMonthFilter}
                 />
               </View>
               <View className="flex-1">
@@ -260,26 +251,6 @@ const ReportsScreen = () => {
                   options={statusOptions}
                   value={statusFilter}
                   onChange={setStatusFilter}
-                />
-              </View>
-            </View>
-
-            <View className="flex-row gap-2 mb-2">
-              <View className="flex-1">
-                <DateSelect
-                  placeholder="Fecha inicio"
-                  value={startDate}
-                  onChange={setStartDate}
-                  maximumDate={endDate || new Date()}
-                />
-              </View>
-              <View className="flex-1">
-                <DateSelect
-                  placeholder="Fecha fin"
-                  value={endDate}
-                  onChange={setEndDate}
-                  minimumDate={startDate || undefined}
-                  maximumDate={new Date()}
                 />
               </View>
             </View>

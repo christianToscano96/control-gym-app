@@ -1,225 +1,103 @@
 import { apiClient } from "./client";
-import {
-  getDashboardStats,
-  getWeeklyAttendance,
-  getActivityRate,
-  getMembershipDistribution,
-  getExpiringMemberships,
-  getRecentCheckIns,
-} from "./dashboard";
-import { fetchClients } from "./clients";
-import { fetchStaff } from "./staff";
 import { ReportData } from "@/types/reports";
 
-// ─── Build reports dynamically from existing API endpoints ──────
+interface MonthlyReportApiItem {
+  _id: string;
+  year: number;
+  month: number;
+  status: "completed" | "processing" | "error";
+  title: string;
+  generatedAt: string;
+  metrics: {
+    revenue: number;
+    totalClients: number;
+    totalCheckIns: number;
+    allowedCheckIns: number;
+    deniedCheckIns: number;
+    peakHour: {
+      hour: number | null;
+      label: string;
+      count: number;
+    };
+    dailyAttendancePct: Array<{
+      day: number;
+      label: string;
+      count: number;
+      percentage: number;
+    }>;
+    recommendations?: string[];
+    newClients: number;
+    renewedMemberships: number;
+    churnedClients: number;
+    averageRevenuePerClient: number;
+  };
+}
+
+interface MonthlyReportsResponse {
+  reports: MonthlyReportApiItem[];
+  range: { from: string; to: string };
+}
+
+function getMonthKey(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function getMonthLabel(year: number, month: number): string {
+  return new Date(year, month - 1, 1).toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+}
 
 export async function fetchReports(): Promise<ReportData[]> {
-  const today = new Date().toISOString().split("T")[0];
-  const reports: ReportData[] = [];
+  const response = await apiClient<MonthlyReportsResponse>("/api/reports/monthly");
 
-  // Fetch all data sources in parallel
-  const results = await Promise.allSettled([
-    getDashboardStats(),
-    fetchClients(),
-    getWeeklyAttendance(),
-    getActivityRate(),
-    getMembershipDistribution(),
-    getExpiringMemberships(),
-    getRecentCheckIns(),
-    fetchStaff(),
-  ]);
+  return response.reports.map((report) => {
+    const periodKey = getMonthKey(report.year, report.month);
+    const periodLabel = getMonthLabel(report.year, report.month);
 
-  const [
-    statsResult,
-    clientsResult,
-    attendanceResult,
-    activityResult,
-    membershipResult,
-    expiringResult,
-    checkInsResult,
-    staffResult,
-  ] = results;
-
-  // 1. Clients report
-  if (clientsResult.status === "fulfilled") {
-    const clients = clientsResult.value as any[];
-    reports.push({
-      id: "report-clients",
-      type: "clients",
-      title: "Reporte de Clientes",
-      date: today,
-      description: "Listado completo de clientes registrados",
-      status: "completed",
+    return {
+      id: report._id,
+      type: "general",
+      title: report.title || `Cierre mensual ${periodLabel}`,
+      date: report.generatedAt,
+      description: `Ingresos: $${report.metrics.revenue.toLocaleString()} · Check-ins: ${report.metrics.totalCheckIns.toLocaleString()}`,
+      status: report.status,
       metadata: {
-        totalRecords: clients.length,
-        period: "Actual",
-        _rawData: clients,
+        totalRecords: report.metrics.totalClients,
+        period: periodLabel,
+        monthKey: periodKey,
+        monthlyRevenue: report.metrics.revenue,
+        totalCheckIns: report.metrics.totalCheckIns,
+        allowedCheckIns: report.metrics.allowedCheckIns,
+        deniedCheckIns: report.metrics.deniedCheckIns,
+        peakHour: report.metrics.peakHour,
+        dailyAttendancePct: report.metrics.dailyAttendancePct,
+        recommendations: report.metrics.recommendations || [],
+        newClients: report.metrics.newClients,
+        renewedMemberships: report.metrics.renewedMemberships,
+        churnedClients: report.metrics.churnedClients,
+        averageRevenuePerClient: report.metrics.averageRevenuePerClient,
+        _rawData: {
+          year: report.year,
+          month: report.month,
+          period: periodLabel,
+          revenue: report.metrics.revenue,
+          totalClients: report.metrics.totalClients,
+          totalCheckIns: report.metrics.totalCheckIns,
+          allowedCheckIns: report.metrics.allowedCheckIns,
+          deniedCheckIns: report.metrics.deniedCheckIns,
+          peakHour: report.metrics.peakHour,
+          dailyAttendancePct: report.metrics.dailyAttendancePct,
+          recommendations: report.metrics.recommendations || [],
+          newClients: report.metrics.newClients,
+          renewedMemberships: report.metrics.renewedMemberships,
+          churnedClients: report.metrics.churnedClients,
+          averageRevenuePerClient: report.metrics.averageRevenuePerClient,
+        },
       },
-    });
-  }
-
-  // 2. Revenue report (from dashboard stats)
-  if (statsResult.status === "fulfilled") {
-    const stats = statsResult.value;
-    reports.push({
-      id: "report-revenue",
-      type: "revenue",
-      title: "Reporte de Ingresos",
-      date: today,
-      description: `Ingresos mensuales: $${stats.monthlyRevenue.toLocaleString()}`,
-      status: "completed",
-      metadata: {
-        totalRecords: stats.totalClients,
-        period: "Este mes",
-        monthlyRevenue: stats.monthlyRevenue,
-        revenuePercent: stats.revenuePercent,
-        todayCheckIns: stats.todayCheckIns,
-        todayDenied: stats.todayDenied,
-        _rawData: stats,
-      },
-    });
-  }
-
-  // 3. Attendance report
-  if (attendanceResult.status === "fulfilled") {
-    const attendance = attendanceResult.value;
-    reports.push({
-      id: "report-attendance",
-      type: "attendance",
-      title: "Reporte de Asistencias",
-      date: today,
-      description: `${attendance.totalWeekly} asistencias esta semana (${attendance.trendPercent})`,
-      status: "completed",
-      metadata: {
-        totalRecords: attendance.totalWeekly,
-        period: "Esta semana",
-        trendPercent: attendance.trendPercent,
-        highlightDay: attendance.highlightDay,
-        _rawData: attendance,
-      },
-    });
-  }
-
-  // 4. Check-ins report (recent access)
-  if (checkInsResult.status === "fulfilled") {
-    const checkIns = checkInsResult.value;
-    const allowed = checkIns.filter((c) => c.status === "allowed").length;
-    const denied = checkIns.filter((c) => c.status === "denied").length;
-    reports.push({
-      id: "report-checkins",
-      type: "attendance",
-      title: "Registro de Accesos",
-      date: today,
-      description: `${allowed} permitidos, ${denied} denegados`,
-      status: "completed",
-      metadata: {
-        totalRecords: checkIns.length,
-        period: "Recientes",
-        allowed,
-        denied,
-        _rawData: checkIns,
-      },
-    });
-  }
-
-  // 5. Memberships report
-  if (membershipResult.status === "fulfilled") {
-    const dist = membershipResult.value;
-    reports.push({
-      id: "report-memberships",
-      type: "memberships",
-      title: "Reporte de Membresías",
-      date: today,
-      description: `Basico: ${dist.basico}, Pro: ${dist.pro}, Pro+: ${dist.proplus}`,
-      status: "completed",
-      metadata: {
-        totalRecords: dist.total,
-        period: "Activas",
-        basico: dist.basico,
-        pro: dist.pro,
-        proplus: dist.proplus,
-        _rawData: dist,
-      },
-    });
-  }
-
-  // 6. Expiring memberships report
-  if (expiringResult.status === "fulfilled") {
-    const expiring = expiringResult.value;
-    reports.push({
-      id: "report-expiring",
-      type: "memberships",
-      title: "Membresías por Vencer",
-      date: today,
-      description: `${expiring.count} membresías proximas a vencer`,
-      status: expiring.count > 0 ? "completed" : "pending",
-      metadata: {
-        totalRecords: expiring.count,
-        period: "Proximas",
-        _rawData: expiring,
-      },
-    });
-  }
-
-  // 7. Activity rate report
-  if (activityResult.status === "fulfilled") {
-    const activity = activityResult.value;
-    reports.push({
-      id: "report-activity",
-      type: "clients",
-      title: "Tasa de Actividad",
-      date: today,
-      description: `${activity.activityRate}% activos (${activity.activeCount} activos, ${activity.inactiveCount} inactivos)`,
-      status: "completed",
-      metadata: {
-        totalRecords: activity.activeCount + activity.inactiveCount,
-        period: "Actual",
-        activityRate: activity.activityRate,
-        _rawData: activity,
-      },
-    });
-  }
-
-  // 8. Staff report
-  if (staffResult.status === "fulfilled") {
-    const staff = staffResult.value as any[];
-    reports.push({
-      id: "report-staff",
-      type: "staff",
-      title: "Reporte de Personal",
-      date: today,
-      description: "Listado de empleados del gimnasio",
-      status: "completed",
-      metadata: {
-        totalRecords: staff.length,
-        period: "Actual",
-        _rawData: staff,
-      },
-    });
-  }
-
-  // 9. Peak hours report (from dashboard stats)
-  if (statsResult.status === "fulfilled" && statsResult.value.peakHours?.length > 0) {
-    const stats = statsResult.value;
-    const topHour = stats.peakHours.reduce((max, h) =>
-      h.value > max.value ? h : max,
-    );
-    reports.push({
-      id: "report-peak-hours",
-      type: "peak_hour",
-      title: "Reporte Horas Pico",
-      date: today,
-      description: `Hora mas concurrida: ${topHour.label} (${topHour.value} visitas)`,
-      status: "completed",
-      metadata: {
-        totalRecords: stats.peakHours.length,
-        period: "Hoy",
-        _rawData: stats.peakHours,
-      },
-    });
-  }
-
-  return reports;
+    } as ReportData;
+  });
 }
 
 // ─── Generate CSV content from report data ──────────────────────

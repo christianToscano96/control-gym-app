@@ -36,6 +36,7 @@ const baseStyles = `
   }
   .badge-completed { background: #d1fae5; color: #065f46; }
   .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-error { background: #fee2e2; color: #991b1b; }
   .description {
     font-size: 13px;
     color: #6b7280;
@@ -418,6 +419,124 @@ function peakHoursTemplate(report: ReportData): string {
   `;
 }
 
+function monthlyClosureTemplate(report: ReportData): string {
+  const m = report.metadata || {};
+  const raw = (m._rawData || {}) as Record<string, any>;
+  const allowedCheckIns = Number(m.allowedCheckIns ?? raw.allowedCheckIns ?? 0);
+  const deniedCheckIns = Number(m.deniedCheckIns ?? raw.deniedCheckIns ?? 0);
+  const peakHour = (m.peakHour || raw.peakHour || {}) as {
+    hour?: number | null;
+    label?: string;
+    count?: number;
+  };
+  const dailyAttendancePct = (m.dailyAttendancePct ||
+    raw.dailyAttendancePct ||
+    []) as Array<{ label: string; count: number; percentage: number }>;
+  const recommendations = (m.recommendations || raw.recommendations || []) as string[];
+
+  const dailyBars = dailyAttendancePct.map((day) => ({
+    label: day.label.slice(0, 3),
+    value: Number(day.percentage || 0),
+  }));
+  const totalAccesses = allowedCheckIns + deniedCheckIns;
+  const deniedRate =
+    totalAccesses > 0 ? ((deniedCheckIns / totalAccesses) * 100).toFixed(1) : "0.0";
+
+  return `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value">$${Number(m.monthlyRevenue || raw.revenue || 0).toLocaleString()}</div>
+        <div class="label">Ingresos del Mes</div>
+      </div>
+      <div class="stat-card">
+        <div class="value">${Number(m.totalRecords || raw.totalClients || 0).toLocaleString()}</div>
+        <div class="label">Clientes Activos</div>
+      </div>
+      <div class="stat-card green">
+        <div class="value">${Number(m.newClients || raw.newClients || 0).toLocaleString()}</div>
+        <div class="label">Clientes Nuevos</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="value">${Number(m.renewedMemberships || raw.renewedMemberships || 0).toLocaleString()}</div>
+        <div class="label">Membresías Renovadas</div>
+      </div>
+      <div class="stat-card red">
+        <div class="value">${Number(m.churnedClients || raw.churnedClients || 0).toLocaleString()}</div>
+        <div class="label">Bajas del Mes</div>
+      </div>
+    </div>
+
+    <div class="section-title">Accesos del Mes</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value">${Number(m.totalCheckIns || raw.totalCheckIns || 0).toLocaleString()}</div>
+        <div class="label">Total de Accesos</div>
+      </div>
+      <div class="stat-card green">
+        <div class="value">${allowedCheckIns.toLocaleString()}</div>
+        <div class="label">Ingresos Permitidos</div>
+      </div>
+      <div class="stat-card red">
+        <div class="value">${deniedCheckIns.toLocaleString()}</div>
+        <div class="label">Rechazos de Acceso</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="value">${deniedRate}%</div>
+        <div class="label">Tasa de Rechazo</div>
+      </div>
+    </div>
+
+    <div class="section-title">Hora Pico del Mes</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value">${esc(peakHour.label || "-")}</div>
+        <div class="label">Franja Horaria</div>
+      </div>
+      <div class="stat-card green">
+        <div class="value">${Number(peakHour.count || 0).toLocaleString()}</div>
+        <div class="label">Ingresos en Hora Pico</div>
+      </div>
+      <div class="stat-card">
+        <div class="value">$${Number(m.averageRevenuePerClient || raw.averageRevenuePerClient || 0).toLocaleString()}</div>
+        <div class="label">Ingreso Promedio por Cliente</div>
+      </div>
+    </div>
+
+    <div class="section-title">Asistencia Diaria (%)</div>
+    ${buildBarChart(dailyBars)}
+
+    <table>
+      <thead>
+        <tr>
+          <th>Día</th>
+          <th>% del mes</th>
+          <th>Cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${dailyAttendancePct
+          .map((row) => {
+            return `
+              <tr>
+                <td>${esc(row.label)}</td>
+                <td>${Number(row.percentage || 0).toFixed(1)}%</td>
+                <td>${Number(row.count || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+
+    <div class="section-title">Recomendaciones</div>
+    <ul style="padding-left:18px; margin-bottom: 24px;">
+      ${recommendations.length > 0
+        ? recommendations.map((text) => `<li style="margin-bottom:8px; line-height:1.5;">${esc(text)}</li>`).join("")
+        : `<li style="line-height:1.5;">Sin recomendaciones para este período.</li>`}
+    </ul>
+  `;
+}
+
 // ─── Main: Generate PDF HTML ────────────────────────────────────
 
 export function generateReportHTML(report: ReportData): string {
@@ -452,13 +571,26 @@ export function generateReportHTML(report: ReportData): string {
       bodyContent = peakHoursTemplate(report);
       break;
     default:
-      bodyContent = genericTemplate(report);
+      bodyContent =
+        report.type === "general" ? monthlyClosureTemplate(report) : genericTemplate(report);
   }
 
   const statusClass =
-    report.status === "completed" ? "badge-completed" : "badge-pending";
+    report.status === "completed"
+      ? "badge-completed"
+      : report.status === "error"
+        ? "badge-error"
+      : report.status === "processing"
+        ? "badge-pending"
+        : "badge-pending";
   const statusText =
-    report.status === "completed" ? "Completado" : "Pendiente";
+    report.status === "completed"
+      ? "Completado"
+      : report.status === "processing"
+        ? "En curso"
+        : report.status === "error"
+          ? "Error"
+          : "Pendiente";
 
   return `
     <!DOCTYPE html>
@@ -500,5 +632,34 @@ function genericTemplate(report: ReportData): string {
     `;
   }
   if (Array.isArray(raw)) return buildTable(raw);
-  return `<pre style="font-size:12px;background:#f9fafb;padding:16px;border-radius:8px;overflow:auto;">${JSON.stringify(raw, null, 2)}</pre>`;
+  const entries = Object.entries(raw).filter(([k]) => !k.startsWith("_"));
+  if (entries.length === 0) return "<p>Sin datos disponibles</p>";
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries
+          .map(([key, value]) => {
+            const displayValue =
+              typeof value === "object" && value !== null
+                ? Object.entries(value)
+                    .map(([k, v]) => `${getLabel(k)}: ${esc(v)}`)
+                    .join(" | ")
+                : esc(value);
+            return `
+              <tr>
+                <td>${getLabel(key)}</td>
+                <td>${displayValue}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+  `;
 }

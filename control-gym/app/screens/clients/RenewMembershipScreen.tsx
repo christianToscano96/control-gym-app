@@ -16,7 +16,7 @@ import {
   hasExpired,
 } from "@/utils/membershipUtils";
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
@@ -51,6 +51,7 @@ interface ClientItem {
 export default function RenewMembershipScreen() {
   const { colors, primaryColor } = useTheme();
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  const { clientId } = useLocalSearchParams<{ clientId?: string }>();
 
   // Data queries
   const { data: clients = [] } = useClientsQuery();
@@ -84,18 +85,32 @@ export default function RenewMembershipScreen() {
     }
   }, [period, periodPricing]);
 
-  // Filter and sort clients: inactive/expired first
+  // If a clientId comes by route params, open renewal form directly.
+  useEffect(() => {
+    if (!clientId || selectedClient) return;
+    const matchedClient = (clients as ClientItem[]).find((c) => c._id === clientId);
+    if (!matchedClient) return;
+    setSelectedClient(matchedClient);
+    if (
+      matchedClient.paymentMethod === "efectivo" ||
+      matchedClient.paymentMethod === "transferencia"
+    ) {
+      setPaymentMethod(matchedClient.paymentMethod);
+    }
+  }, [clientId, clients, selectedClient]);
+
+  // Filter and sort clients: only inactive
   const filteredClients = useMemo(() => {
     const term = search.toLowerCase().trim();
     let filtered = (clients as ClientItem[]).filter((c) => {
+      if (c.isActive) return false;
       if (!term) return true;
       const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
       return fullName.includes(term) || c.email?.toLowerCase().includes(term);
     });
 
-    // Sort: inactive first, then by name
+    // Sort by name
     filtered.sort((a, b) => {
-      if (a.isActive !== b.isActive) return a.isActive ? 1 : -1;
       return `${a.firstName} ${a.lastName}`.localeCompare(
         `${b.firstName} ${b.lastName}`,
       );
@@ -268,8 +283,8 @@ export default function RenewMembershipScreen() {
                   style={{ color: colors.textSecondary }}
                 >
                   {search
-                    ? "No se encontraron clientes"
-                    : "Busca un cliente para renovar"}
+                    ? "No se encontraron clientes inactivos"
+                    : "No hay clientes inactivos para renovar"}
                 </Text>
               </View>
             }

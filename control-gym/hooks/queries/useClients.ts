@@ -5,10 +5,11 @@ import { queryKeys } from "./queryKeys";
 
 // ─── Queries ─────────────────────────────────────────────────────
 
-export function useClientsQuery() {
+export function useClientsQuery(enabled: boolean = true) {
   return useQuery({
     queryKey: queryKeys.clients.all,
     queryFn: fetchClients,
+    enabled,
   });
 }
 

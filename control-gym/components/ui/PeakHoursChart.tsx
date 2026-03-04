@@ -1,6 +1,6 @@
 import { useTheme } from "@/context/ThemeContext";
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
 export interface PeakHoursChartData {

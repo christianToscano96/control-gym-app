@@ -156,18 +156,40 @@ router.get(
           : 0;
 
       // Horas pico del día (accesos agrupados por hora)
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const ARG_TIMEZONE = "America/Argentina/Buenos_Aires";
+      const argentinaToday = new Intl.DateTimeFormat("en-CA", {
+        timeZone: ARG_TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
+
       const peakHoursRaw = await AccessLog.aggregate([
         {
           $match: {
             gymId,
-            date: { $gte: today, $lt: tomorrow },
+            $expr: {
+              $eq: [
+                {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$date",
+                    timezone: ARG_TIMEZONE,
+                  },
+                },
+                argentinaToday,
+              ],
+            },
           },
         },
         {
           $group: {
-            _id: { $hour: "$date" },
+            _id: {
+              $hour: {
+                date: "$date",
+                timezone: ARG_TIMEZONE,
+              },
+            },
             count: { $sum: 1 },
           },
         },

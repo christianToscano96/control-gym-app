@@ -204,6 +204,56 @@ router.get("/summary", async (req, res) => {
   }
 });
 
+// ─── Admins List ─────────────────────────────────────────────
+router.get("/admins", async (req, res) => {
+  try {
+    const admins = await User.find({ role: "admin" })
+      .select("name email avatar active gymId")
+      .populate(
+        "gymId",
+        "name address plan active onboardingStatus paymentReference paymentProofUrl",
+      )
+      .lean();
+
+    const clientCounts = await Client.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: "$gymId", count: { $sum: 1 } } },
+    ]);
+    const clientCountMap = new Map(
+      clientCounts.map((c: any) => [c._id.toString(), c.count]),
+    );
+
+    const formattedAdmins = admins.map((admin: any) => {
+      const gym = admin.gymId;
+      return {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar,
+        active: admin.active,
+        gym: gym
+          ? {
+              _id: gym._id,
+              name: gym.name,
+              address: gym.address,
+              plan: gym.plan,
+              active: gym.active,
+              onboardingStatus: gym.onboardingStatus || "approved",
+              paymentReference: gym.paymentReference || null,
+              hasPaymentProof: Boolean(gym.paymentProofUrl),
+              clientsCount: clientCountMap.get(gym._id.toString()) || 0,
+            }
+          : null,
+      };
+    });
+
+    res.json({ admins: formattedAdmins });
+  } catch (error) {
+    console.error("Error fetching superadmin admins:", error);
+    res.status(500).json({ message: "Error al obtener admins" });
+  }
+});
+
 // ─── Gym Detail ──────────────────────────────────────────────
 router.get("/gyms/:gymId/detail", async (req, res) => {
   try {

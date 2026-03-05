@@ -19,6 +19,13 @@ export async function fetchSuperAdminSummary(): Promise<SuperAdminSummary> {
   return apiClient<SuperAdminSummary>("/api/superadmin/summary");
 }
 
+export async function fetchSuperAdminAdmins(): Promise<SuperAdminEntry[]> {
+  const data = await apiClient<{ admins: SuperAdminEntry[] }>(
+    "/api/superadmin/admins",
+  );
+  return data.admins || [];
+}
+
 export async function fetchPendingRegistrations(): Promise<SuperAdminEntry[]> {
   const data = await apiClient<{ pendingAdmins: SuperAdminEntry[] }>(
     "/api/superadmin/pending-registrations",

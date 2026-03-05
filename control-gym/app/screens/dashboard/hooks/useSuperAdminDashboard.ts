@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
+  useSuperAdminAdminsQuery,
   usePendingRegistrationsQuery,
   useSuperAdminSummaryQuery,
   useSuperAdminOverviewQuery,
@@ -38,6 +39,15 @@ export function useSuperAdminDashboard() {
       refetchInterval: isAutoRefreshEnabled ? 15000 : false,
     });
   const {
+    data: adminsData,
+    refetch: refetchAdmins,
+    isFetching: isFetchingAdmins,
+    dataUpdatedAt: adminsUpdatedAt,
+  } = useSuperAdminAdminsQuery({
+    enabled: isFocused,
+    refetchInterval: isAutoRefreshEnabled ? 10000 : false,
+  });
+  const {
     data: summaryData,
     refetch: refetchSummary,
     isFetching: isFetchingSummary,
@@ -54,13 +64,14 @@ export function useSuperAdminDashboard() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), refetchPending(), refetchSummary()]);
+    await Promise.all([refetch(), refetchSummary(), refetchAdmins(), refetchPending()]);
     setRefreshing(false);
-  }, [refetch, refetchPending, refetchSummary]);
+  }, [refetch, refetchPending, refetchSummary, refetchAdmins]);
 
   const filteredAdmins = useMemo(() => {
-    if (!data?.admins) return [];
-    let filtered = [...data.admins];
+    const baseAdmins = adminsData || data?.admins || [];
+    if (!baseAdmins.length) return [];
+    let filtered = [...baseAdmins];
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -85,19 +96,19 @@ export function useSuperAdminDashboard() {
     }
 
     return filtered;
-  }, [data?.admins, searchQuery, filterStatus]);
+  }, [adminsData, data?.admins, searchQuery, filterStatus]);
 
   const pendingAdmins = useMemo(() => {
     if (pendingData) return pendingData;
-    if (!data?.admins) return [];
-    return data.admins.filter((a) => a.gym?.onboardingStatus === "pending");
-  }, [pendingData, data?.admins]);
+    const baseAdmins = adminsData || data?.admins || [];
+    return baseAdmins.filter((a) => a.gym?.onboardingStatus === "pending");
+  }, [pendingData, adminsData, data?.admins]);
 
   const summary = summaryData || data?.summary;
 
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =
     [
-      { key: "all", label: "Todos", count: data?.admins?.length },
+      { key: "all", label: "Todos", count: (adminsData || data?.admins || []).length },
       { key: "active", label: "Activos", count: summary?.activeGyms },
       { key: "inactive", label: "Inactivos", count: summary?.inactiveGyms },
       {
@@ -113,13 +124,17 @@ export function useSuperAdminDashboard() {
     setSearchQuery,
     filterStatus,
     setFilterStatus,
-    isLoading,
+    isLoading: isLoading && !adminsData && !summaryData,
     isError,
     error,
     refetch,
-    isFetching: isFetching || isFetchingSummary,
+    isFetching: isFetching || isFetchingSummary || isFetchingAdmins,
     isAutoRefreshEnabled,
-    lastUpdatedAt: Math.max(dataUpdatedAt || 0, summaryUpdatedAt || 0),
+    lastUpdatedAt: Math.max(
+      dataUpdatedAt || 0,
+      summaryUpdatedAt || 0,
+      adminsUpdatedAt || 0,
+    ),
     onRefresh,
     filteredAdmins,
     pendingAdmins,

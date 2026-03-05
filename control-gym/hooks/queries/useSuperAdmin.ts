@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchSuperAdminOverview,
   fetchSuperAdminSummary,
+  fetchSuperAdminAdmins,
   fetchPendingRegistrations,
   fetchGymDetail,
   fetchGymClients,
@@ -46,22 +47,6 @@ export function useSuperAdminOverviewQuery(options?: {
   });
 }
 
-export function usePendingRegistrationsQuery(options?: {
-  enabled?: boolean;
-  refetchInterval?: number | false;
-}) {
-  return useQuery<SuperAdminEntry[]>({
-    queryKey: queryKeys.superadmin.pendingRegistrations,
-    queryFn: fetchPendingRegistrations,
-    staleTime: 10000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    enabled: options?.enabled ?? true,
-    refetchInterval: options?.refetchInterval ?? false,
-  });
-}
-
 export function useSuperAdminSummaryQuery(options?: {
   enabled?: boolean;
   refetchInterval?: number | false;
@@ -70,6 +55,38 @@ export function useSuperAdminSummaryQuery(options?: {
     queryKey: queryKeys.superadmin.summary,
     queryFn: fetchSuperAdminSummary,
     staleTime: 15000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function useSuperAdminAdminsQuery(options?: {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}) {
+  return useQuery<SuperAdminEntry[]>({
+    queryKey: queryKeys.superadmin.admins,
+    queryFn: fetchSuperAdminAdmins,
+    staleTime: 15000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function usePendingRegistrationsQuery(options?: {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}) {
+  return useQuery<SuperAdminEntry[]>({
+    queryKey: queryKeys.superadmin.pendingRegistrations,
+    queryFn: fetchPendingRegistrations,
+    staleTime: 10000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
@@ -134,11 +151,11 @@ export function useCreateGym() {
   return useMutation({
     mutationFn: (data: CreateGymData) => createGym(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.overview,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.summary,
+        queryKey: queryKeys.superadmin.pendingRegistrations,
       });
     },
   });
@@ -156,11 +173,11 @@ export function useToggleGymActive() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.membershipHistory(variables.gymId),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.overview,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.summary,
+        queryKey: queryKeys.superadmin.pendingRegistrations,
       });
     },
   });
@@ -181,6 +198,7 @@ export function useReviewGymRegistration() {
     onMutate: async ({ gymId, action, rejectionReason }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.superadmin.overview });
       await queryClient.cancelQueries({ queryKey: queryKeys.superadmin.summary });
+      await queryClient.cancelQueries({ queryKey: queryKeys.superadmin.admins });
       await queryClient.cancelQueries({
         queryKey: queryKeys.superadmin.pendingRegistrations,
       });
@@ -194,43 +212,41 @@ export function useReviewGymRegistration() {
       const previousSummary = queryClient.getQueryData<SuperAdminSummary>(
         queryKeys.superadmin.summary,
       );
-      const previousGymDetail = queryClient.getQueryData<GymDetailResponse>(
-        queryKeys.superadmin.gymDetail(gymId),
+      const previousAdmins = queryClient.getQueryData<SuperAdminEntry[]>(
+        queryKeys.superadmin.admins,
       );
       const previousPendingRegistrations = queryClient.getQueryData<
         SuperAdminEntry[]
       >(queryKeys.superadmin.pendingRegistrations);
+      const previousGymDetail = queryClient.getQueryData<GymDetailResponse>(
+        queryKeys.superadmin.gymDetail(gymId),
+      );
 
-      const getCategory = (
-        status: "pending" | "approved" | "rejected",
-        active: boolean,
-      ): "pending" | "active" | "inactive" => {
-        if (status === "pending") return "pending";
-        if (status === "approved" && active) return "active";
-        return "inactive";
-      };
+      const nextStatus: "approved" | "rejected" =
+        action === "approve" ? "approved" : "rejected";
+      const nextActive = action === "approve";
 
       if (previousOverview) {
         queryClient.setQueryData<SuperAdminOverview>(
           queryKeys.superadmin.overview,
           (old) => {
             if (!old) return old;
-            const nextStatus: "approved" | "rejected" =
-              action === "approve" ? "approved" : "rejected";
-            const nextActive = action === "approve";
-
             let oldCategory: "pending" | "active" | "inactive" | null = null;
             let newCategory: "pending" | "active" | "inactive" | null = null;
 
-            const updatedAdmins = old.admins.map((admin) => {
+            const getCategory = (
+              status: "pending" | "approved" | "rejected",
+              active: boolean,
+            ): "pending" | "active" | "inactive" => {
+              if (status === "pending") return "pending";
+              if (status === "approved" && active) return "active";
+              return "inactive";
+            };
+
+            const admins = old.admins.map((admin) => {
               if (!admin.gym || admin.gym._id !== gymId) return admin;
-
-              oldCategory = getCategory(
-                admin.gym.onboardingStatus,
-                admin.gym.active,
-              );
+              oldCategory = getCategory(admin.gym.onboardingStatus, admin.gym.active);
               newCategory = getCategory(nextStatus, nextActive);
-
               return {
                 ...admin,
                 gym: {
@@ -243,27 +259,58 @@ export function useReviewGymRegistration() {
 
             const summary = { ...old.summary };
             if (oldCategory && newCategory && oldCategory !== newCategory) {
-              if (oldCategory === "pending") {
-                summary.pendingGyms = Math.max(0, summary.pendingGyms - 1);
-              }
-              if (oldCategory === "active") {
-                summary.activeGyms = Math.max(0, summary.activeGyms - 1);
-              }
-              if (oldCategory === "inactive") {
-                summary.inactiveGyms = Math.max(0, summary.inactiveGyms - 1);
-              }
-
+              if (oldCategory === "pending") summary.pendingGyms = Math.max(0, summary.pendingGyms - 1);
+              if (oldCategory === "active") summary.activeGyms = Math.max(0, summary.activeGyms - 1);
+              if (oldCategory === "inactive") summary.inactiveGyms = Math.max(0, summary.inactiveGyms - 1);
               if (newCategory === "pending") summary.pendingGyms += 1;
               if (newCategory === "active") summary.activeGyms += 1;
               if (newCategory === "inactive") summary.inactiveGyms += 1;
             }
 
+            return { ...old, admins, summary };
+          },
+        );
+      }
+
+      if (previousSummary) {
+        queryClient.setQueryData<SuperAdminSummary>(
+          queryKeys.superadmin.summary,
+          (old) => {
+            if (!old) return old;
             return {
               ...old,
-              admins: updatedAdmins,
-              summary,
+              pendingGyms: Math.max(0, old.pendingGyms - 1),
+              activeGyms: nextActive ? old.activeGyms + 1 : old.activeGyms,
+              inactiveGyms: nextActive
+                ? Math.max(0, old.inactiveGyms - 1)
+                : old.inactiveGyms + 1,
             };
           },
+        );
+      }
+
+      if (previousAdmins) {
+        queryClient.setQueryData<SuperAdminEntry[]>(queryKeys.superadmin.admins, (old) => {
+          if (!old) return old;
+          return old.map((admin) =>
+            admin.gym?._id === gymId
+              ? {
+                  ...admin,
+                  gym: {
+                    ...admin.gym,
+                    onboardingStatus: nextStatus,
+                    active: nextActive,
+                  },
+                }
+              : admin,
+          );
+        });
+      }
+
+      if (previousPendingRegistrations) {
+        queryClient.setQueryData<SuperAdminEntry[]>(
+          queryKeys.superadmin.pendingRegistrations,
+          (old) => (old ? old.filter((item) => item.gym?._id !== gymId) : old),
         );
       }
 
@@ -272,14 +319,13 @@ export function useReviewGymRegistration() {
           queryKeys.superadmin.gymDetail(gymId),
           (old) => {
             if (!old) return old;
-            const isApprove = action === "approve";
             return {
               ...old,
               gym: {
                 ...old.gym,
-                onboardingStatus: isApprove ? "approved" : "rejected",
-                active: isApprove,
-                paymentRejectionReason: isApprove
+                onboardingStatus: nextStatus,
+                active: nextActive,
+                paymentRejectionReason: nextActive
                   ? null
                   : rejectionReason ||
                     old.gym.paymentRejectionReason ||
@@ -290,64 +336,35 @@ export function useReviewGymRegistration() {
         );
       }
 
-      if (previousSummary) {
-        queryClient.setQueryData<SuperAdminSummary>(
-          queryKeys.superadmin.summary,
-          (old) => {
-            if (!old) return old;
-            const isApprove = action === "approve";
-            return {
-              ...old,
-              pendingGyms: Math.max(0, old.pendingGyms - 1),
-              activeGyms: isApprove ? old.activeGyms + 1 : old.activeGyms,
-              inactiveGyms: isApprove
-                ? Math.max(0, old.inactiveGyms - 1)
-                : old.inactiveGyms + 1,
-            };
-          },
-        );
-      }
-
-      if (previousPendingRegistrations) {
-        if (action === "approve" || action === "reject") {
-          queryClient.setQueryData<SuperAdminEntry[]>(
-            queryKeys.superadmin.pendingRegistrations,
-            (old) => (old ? old.filter((item) => item.gym?._id !== gymId) : old),
-          );
-        }
-      }
-
       return {
         previousOverview,
         previousSummary,
-        previousGymDetail,
+        previousAdmins,
         previousPendingRegistrations,
+        previousGymDetail,
         gymId,
       };
     },
     onError: (_error, _variables, context) => {
       if (context?.previousOverview) {
+        queryClient.setQueryData(queryKeys.superadmin.overview, context.previousOverview);
+      }
+      if (context?.previousSummary) {
+        queryClient.setQueryData(queryKeys.superadmin.summary, context.previousSummary);
+      }
+      if (context?.previousAdmins) {
+        queryClient.setQueryData(queryKeys.superadmin.admins, context.previousAdmins);
+      }
+      if (context?.previousPendingRegistrations) {
         queryClient.setQueryData(
-          queryKeys.superadmin.overview,
-          context.previousOverview,
+          queryKeys.superadmin.pendingRegistrations,
+          context.previousPendingRegistrations,
         );
       }
       if (context?.previousGymDetail && context?.gymId) {
         queryClient.setQueryData(
           queryKeys.superadmin.gymDetail(context.gymId),
           context.previousGymDetail,
-        );
-      }
-      if (context?.previousSummary) {
-        queryClient.setQueryData(
-          queryKeys.superadmin.summary,
-          context.previousSummary,
-        );
-      }
-      if (context?.previousPendingRegistrations) {
-        queryClient.setQueryData(
-          queryKeys.superadmin.pendingRegistrations,
-          context.previousPendingRegistrations,
         );
       }
     },
@@ -358,12 +375,9 @@ export function useReviewGymRegistration() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.membershipHistory(variables.gymId),
       });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.overview,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.summary,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.pendingRegistrations,
       });
@@ -388,11 +402,11 @@ export function useUpdateGym() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.membershipHistory(variables.gymId),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.overview,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.summary,
+        queryKey: queryKeys.superadmin.pendingRegistrations,
       });
     },
   });
@@ -403,11 +417,11 @@ export function useDeleteGym() {
   return useMutation({
     mutationFn: (gymId: string) => deleteGym(gymId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.overview,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.superadmin.summary,
+        queryKey: queryKeys.superadmin.pendingRegistrations,
       });
     },
   });

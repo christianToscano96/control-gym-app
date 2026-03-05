@@ -50,21 +50,65 @@ router.post("/login", async (req, res) => {
   if (!user) return res.status(401).json({ message: "Usuario no encontrado" });
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(401).json({ message: "Contraseña incorrecta" });
+
+  // Check gym active status for admin users
+  let gymActive = true;
+  let onboardingStatus: "pending" | "approved" | "rejected" | undefined;
+  if (user.role === "admin" && user.gymId) {
+    const gym = await Gym.findById(user.gymId)
+      .select("active onboardingStatus paymentReference paymentProofUrl paymentRejectionReason")
+      .lean();
+
+    onboardingStatus = gym?.onboardingStatus as
+      | "pending"
+      | "approved"
+      | "rejected"
+      | undefined;
+
+    if (onboardingStatus === "pending") {
+      return res.status(403).json({
+        code: "ACCOUNT_PENDING",
+        message:
+          "Tu cuenta está pendiente de confirmación. Subí el comprobante y espera aprobación.",
+        onboardingStatus,
+        gymId: user.gymId,
+        paymentReference: gym?.paymentReference || null,
+        paymentProofUrl: gym?.paymentProofUrl || null,
+      });
+    }
+
+    if (onboardingStatus === "rejected") {
+      return res.status(403).json({
+        code: "ACCOUNT_REJECTED",
+        message:
+          gym?.paymentRejectionReason ||
+          "Tu comprobante fue rechazado. Subí uno nuevo para continuar.",
+        onboardingStatus,
+        gymId: user.gymId,
+        paymentReference: gym?.paymentReference || null,
+        paymentProofUrl: gym?.paymentProofUrl || null,
+      });
+    }
+
+    gymActive = gym?.active ?? false;
+  }
+
   const token = jwt.sign(
     { id: user._id, role: user.role, gymId: user.gymId },
     process.env.JWT_SECRET || "secret",
     { expiresIn: "1d" },
   );
-  // Check gym active status for admin users
-  let gymActive = true;
-  if (user.role === "admin" && user.gymId) {
-    const gym = await Gym.findById(user.gymId).select("active").lean();
-    gymActive = gym?.active ?? false;
-  }
 
   res.json({
     token,
-    user: { id: user._id, name: user.name, role: user.role, gymId: user.gymId, gymActive },
+    user: {
+      id: user._id,
+      name: user.name,
+      role: user.role,
+      gymId: user.gymId,
+      gymActive,
+      onboardingStatus: onboardingStatus || "approved",
+    },
   });
 });
 

@@ -31,7 +31,7 @@ router.get("/overview", async (req, res) => {
   try {
     const admins = await User.find({ role: "admin" })
       .select("name email avatar active gymId")
-      .populate("gymId", "name address plan active")
+      .populate("gymId", "name address plan active onboardingStatus paymentReference paymentProofUrl")
       .lean();
 
     const clientCounts = await Client.aggregate([
@@ -44,6 +44,7 @@ router.get("/overview", async (req, res) => {
 
     const allGyms = await Gym.find().lean();
     const activeGyms = allGyms.filter((g) => g.active).length;
+    const pendingGyms = allGyms.filter((g) => g.onboardingStatus === "pending").length;
     const totalClients = clientCounts.reduce(
       (sum: number, c: any) => sum + c.count,
       0,
@@ -107,6 +108,9 @@ router.get("/overview", async (req, res) => {
               address: gym.address,
               plan: gym.plan,
               active: gym.active,
+              onboardingStatus: gym.onboardingStatus || "approved",
+              paymentReference: gym.paymentReference || null,
+              hasPaymentProof: Boolean(gym.paymentProofUrl),
               clientsCount: clientCountMap.get(gym._id.toString()) || 0,
             }
           : null,
@@ -118,6 +122,7 @@ router.get("/overview", async (req, res) => {
         totalGyms: allGyms.length,
         activeGyms,
         inactiveGyms: allGyms.length - activeGyms,
+        pendingGyms,
         totalClients,
         totalPlatformRevenue,
         totalGymRevenue,
@@ -152,7 +157,9 @@ router.get("/gyms/:gymId/detail", async (req, res) => {
       gymId: gym._id,
       active: true,
     })
-      .select("plan startDate endDate active amount")
+      .select(
+        "plan startDate endDate active amount paymentReference paymentProofUrl reviewStatus reviewedAt reviewNotes",
+      )
       .lean();
 
     const clientsCount = await Client.countDocuments({ gymId: gym._id });
@@ -211,6 +218,11 @@ router.get("/gyms/:gymId/detail", async (req, res) => {
         address: gym.address,
         plan: gym.plan,
         active: gym.active,
+        onboardingStatus: gym.onboardingStatus || "approved",
+        paymentReference: gym.paymentReference || null,
+        paymentProofUrl: gym.paymentProofUrl || null,
+        paymentProofUploadedAt: gym.paymentProofUploadedAt || null,
+        paymentRejectionReason: gym.paymentRejectionReason || null,
         createdAt: (gym as any).createdAt,
       },
       admin: admin || null,
@@ -411,6 +423,7 @@ router.post("/gyms", async (req, res) => {
       address: gymAddress || "",
       plan,
       active: true,
+      onboardingStatus: "approved",
       clientsCount: 0,
     });
 
@@ -450,6 +463,129 @@ router.post("/gyms", async (req, res) => {
   }
 });
 
+// ─── Registration Review ────────────────────────────────────
+router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => {
+  try {
+    const { action, rejectionReason } = req.body as {
+      action: "approve" | "reject";
+      rejectionReason?: string;
+    };
+
+    if (!action || !["approve", "reject"].includes(action)) {
+      return res.status(400).json({ message: "Acción inválida" });
+    }
+
+    const gym = await Gym.findById(req.params.gymId);
+    if (!gym) {
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
+    }
+
+    gym.paymentReviewedAt = new Date();
+    gym.paymentReviewedBy = req.user.id as any;
+
+    if (action === "approve") {
+      gym.onboardingStatus = "approved";
+      gym.active = true;
+      gym.paymentRejectionReason = undefined;
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setMonth(now.getMonth() + 1);
+
+      const activeMembership = await Membership.findOne({
+        gymId: gym._id,
+        active: true,
+      });
+
+      if (activeMembership) {
+        activeMembership.startDate = now;
+        activeMembership.endDate = endDate;
+        activeMembership.reviewStatus = "approved";
+        activeMembership.reviewedAt = now;
+        activeMembership.reviewNotes = undefined;
+        activeMembership.paymentReference = gym.paymentReference;
+        activeMembership.paymentProofUrl = gym.paymentProofUrl;
+        await activeMembership.save();
+      } else {
+        const latestMembership = await Membership.findOne({ gymId: gym._id })
+          .sort({ createdAt: -1 })
+          .lean();
+        if (latestMembership) {
+          await Membership.findByIdAndUpdate(latestMembership._id, {
+            active: true,
+            startDate: now,
+            endDate,
+            reviewStatus: "approved",
+            reviewedAt: now,
+            reviewNotes: undefined,
+            paymentReference: gym.paymentReference,
+            paymentProofUrl: gym.paymentProofUrl,
+          });
+        } else {
+          await Membership.create({
+            gymId: gym._id,
+            plan: gym.plan,
+            amount: planPrices[gym.plan] || 0,
+            startDate: now,
+            endDate,
+            active: true,
+            paymentReference: gym.paymentReference,
+            paymentProofUrl: gym.paymentProofUrl,
+            reviewStatus: "approved",
+            reviewedAt: now,
+          });
+        }
+      }
+    } else {
+      gym.onboardingStatus = "rejected";
+      gym.active = false;
+      gym.paymentRejectionReason = rejectionReason?.trim() || "Comprobante rechazado";
+
+      await Membership.updateMany(
+        { gymId: gym._id, active: true },
+        {
+          active: false,
+          endDate: new Date(),
+          reviewStatus: "rejected",
+          reviewedAt: new Date(),
+          reviewNotes: rejectionReason?.trim() || "Comprobante rechazado",
+          paymentReference: gym.paymentReference,
+          paymentProofUrl: gym.paymentProofUrl,
+        },
+      );
+
+      await Membership.findOneAndUpdate(
+        { gymId: gym._id },
+        {
+          reviewStatus: "rejected",
+          reviewedAt: new Date(),
+          reviewNotes: rejectionReason?.trim() || "Comprobante rechazado",
+          paymentReference: gym.paymentReference,
+          paymentProofUrl: gym.paymentProofUrl,
+        },
+        { sort: { createdAt: -1 } },
+      );
+    }
+
+    await gym.save();
+
+    res.json({
+      message:
+        action === "approve"
+          ? "Registro aprobado. Dashboard habilitado."
+          : "Registro rechazado. Se requiere un nuevo comprobante.",
+      gym: {
+        _id: gym._id,
+        onboardingStatus: gym.onboardingStatus,
+        active: gym.active,
+      },
+    });
+  } catch (error) {
+    console.error("Error reviewing registration:", error);
+    res.status(500).json({ message: "Error al revisar el registro" });
+  }
+});
+
 // ─── Reports ─────────────────────────────────────────────────
 router.get("/report/gyms-status", async (req, res) => {
   const activos = await Gym.countDocuments({ active: true });
@@ -483,6 +619,16 @@ router.get("/report/clients", async (req, res) => {
 router.put("/gyms/:gymId/active", async (req, res) => {
   try {
     const { active } = req.body;
+    const existingGym = await Gym.findById(req.params.gymId).select("onboardingStatus");
+    if (!existingGym) {
+      return res.status(404).json({ message: "Gimnasio no encontrado" });
+    }
+    if (active && existingGym.onboardingStatus !== "approved") {
+      return res.status(400).json({
+        message: "Solo se puede habilitar un gimnasio con registro aprobado",
+      });
+    }
+
     const gym = await Gym.findByIdAndUpdate(
       req.params.gymId,
       { active },
@@ -576,8 +722,24 @@ router.put("/gyms/:gymId", async (req, res) => {
     if (plan && planPrices[plan] !== undefined) {
       await Membership.updateMany(
         { gymId: gym._id, active: true },
-        { plan, amount: planPrices[plan] },
+        { active: false, endDate: new Date() },
       );
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setMonth(now.getMonth() + 1);
+
+      await Membership.create({
+        gymId: gym._id,
+        plan,
+        amount: planPrices[plan],
+        startDate: now,
+        endDate,
+        active: gym.active,
+        reviewStatus: "manual",
+        reviewedAt: now,
+        reviewNotes: "Actualización manual de plan por superadmin",
+      });
     }
 
     res.json(gym);
@@ -613,7 +775,12 @@ router.delete("/gyms/:gymId", async (req, res) => {
 
 // ─── Gym Memberships (SaaS history) ─────────────────────────
 router.get("/gyms/:gymId/memberships", async (req, res) => {
-  const memberships = await Membership.find({ gymId: req.params.gymId });
+  const memberships = await Membership.find({ gymId: req.params.gymId })
+    .select(
+      "plan amount startDate endDate active paymentReference paymentProofUrl reviewStatus reviewedAt reviewNotes createdAt",
+    )
+    .sort({ createdAt: -1 })
+    .lean();
   res.json(memberships);
 });
 

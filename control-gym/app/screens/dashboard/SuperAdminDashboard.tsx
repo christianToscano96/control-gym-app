@@ -1,5 +1,14 @@
 import React from "react";
-import { View, ScrollView, RefreshControl, Text, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -36,6 +45,12 @@ export default function SuperAdminDashboard() {
     message: string;
     type: ToastType;
   }>({ visible: false, message: "", type: "success" });
+  const [rejectModalVisible, setRejectModalVisible] = React.useState(false);
+  const [rejectReason, setRejectReason] = React.useState("");
+  const [rejectTarget, setRejectTarget] = React.useState<{
+    gymId: string;
+    gymName: string;
+  } | null>(null);
 
   const {
     refreshing,
@@ -56,6 +71,9 @@ export default function SuperAdminDashboard() {
     isAutoRefreshEnabled,
     lastUpdatedAt,
     counts,
+    loadMoreAdmins,
+    hasMoreAdmins,
+    isLoadingMoreAdmins,
   } = useSuperAdminDashboard();
   const { data: profile } = useProfileQuery();
 
@@ -85,14 +103,21 @@ export default function SuperAdminDashboard() {
     gymName: string,
     action: "approve" | "reject",
   ) => {
+    if (action === "reject") {
+      setRejectTarget({ gymId, gymName });
+      setRejectReason("");
+      setRejectModalVisible(true);
+      return;
+    }
+
     Alert.alert(
-      action === "approve" ? "Aprobar registro" : "Rechazar registro",
-      `${action === "approve" ? "Aprobar" : "Rechazar"} "${gymName}"?`,
+      "Aprobar registro",
+      `Aprobar "${gymName}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: action === "approve" ? "Aprobar" : "Rechazar",
-          style: action === "approve" ? "default" : "destructive",
+          text: "Aprobar",
+          style: "default",
           onPress: () => {
             setProcessingGymId(gymId);
             setProcessingAction(action);
@@ -127,6 +152,38 @@ export default function SuperAdminDashboard() {
           },
         },
       ],
+    );
+  };
+
+  const submitQuickReject = () => {
+    if (!rejectTarget?.gymId) return;
+    setProcessingGymId(rejectTarget.gymId);
+    setProcessingAction("reject");
+    reviewMutation.mutate(
+      {
+        gymId: rejectTarget.gymId,
+        action: "reject",
+        rejectionReason: rejectReason.trim() || undefined,
+      },
+      {
+        onSuccess: async () => {
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Warning,
+          );
+          showToast("Registro rechazado", "warning");
+          setRejectModalVisible(false);
+          setRejectReason("");
+          setRejectTarget(null);
+        },
+        onError: async () => {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          showToast("No se pudo actualizar el registro", "error");
+        },
+        onSettled: () => {
+          setProcessingGymId(null);
+          setProcessingAction(null);
+        },
+      },
     );
   };
 
@@ -382,6 +439,9 @@ export default function SuperAdminDashboard() {
             searchQuery={searchQuery}
             filterStatus={filterStatus}
             onRetry={() => refetch()}
+            onLoadMore={loadMoreAdmins}
+            hasMore={hasMoreAdmins}
+            isLoadingMore={isLoadingMoreAdmins}
             onAdminPress={(admin) => {
               if (admin.gym) {
                 router.push({
@@ -393,6 +453,92 @@ export default function SuperAdminDashboard() {
           />
         </ScrollView>
       </View>
+      <Modal
+        visible={rejectModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRejectModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#00000070",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 17 }}>
+              Rechazar registro
+            </Text>
+            <Text style={{ color: colors.textSecondary, marginTop: 6, fontSize: 12 }}>
+              {rejectTarget?.gymName || "Gimnasio"}
+            </Text>
+            <TextInput
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Motivo (opcional)"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              style={{
+                marginTop: 10,
+                minHeight: 84,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                color: colors.text,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                textAlignVertical: "top",
+              }}
+            />
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+              <TouchableOpacity
+                onPress={() => setRejectModalVisible(false)}
+                style={{
+                  flex: 1,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingVertical: 11,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitQuickReject}
+                disabled={reviewMutation.isPending && processingAction === "reject"}
+                style={{
+                  flex: 1,
+                  borderRadius: 10,
+                  paddingVertical: 11,
+                  alignItems: "center",
+                  backgroundColor: "#DC2626",
+                  opacity:
+                    reviewMutation.isPending && processingAction === "reject"
+                      ? 0.6
+                      : 1,
+                }}
+              >
+                <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>
+                  {reviewMutation.isPending && processingAction === "reject"
+                    ? "Procesando..."
+                    : "Rechazar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <Toast
         visible={toast.visible}
         message={toast.message}

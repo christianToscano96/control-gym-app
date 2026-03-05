@@ -17,6 +17,19 @@ export interface PlanPrices {
   proplus: number;
 }
 
+export interface SuperAdminAdminsPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface SuperAdminAdminsPageResponse {
+  admins: SuperAdminEntry[];
+  pagination: SuperAdminAdminsPagination;
+}
+
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
   return apiClient<SuperAdminOverview>("/api/superadmin/overview");
 }
@@ -25,11 +38,21 @@ export async function fetchSuperAdminSummary(): Promise<SuperAdminSummary> {
   return apiClient<SuperAdminSummary>("/api/superadmin/summary");
 }
 
-export async function fetchSuperAdminAdmins(): Promise<SuperAdminEntry[]> {
-  const data = await apiClient<{ admins: SuperAdminEntry[] }>(
-    "/api/superadmin/admins",
+export async function fetchSuperAdminAdmins(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "active" | "inactive" | "pending";
+}): Promise<SuperAdminAdminsPageResponse> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search?.trim()) query.set("search", params.search.trim());
+  if (params?.status) query.set("status", params.status);
+  const qs = query.toString();
+  return apiClient<SuperAdminAdminsPageResponse>(
+    `/api/superadmin/admins${qs ? `?${qs}` : ""}`,
   );
-  return data.admins || [];
 }
 
 export async function fetchSuperAdminPlanPrices(): Promise<PlanPrices> {

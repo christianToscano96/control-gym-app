@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import {
   fetchSuperAdminOverview,
   fetchSuperAdminSummary,
@@ -20,6 +25,7 @@ import {
   fetchMembershipHistory,
   MembershipHistory,
   PlanPrices,
+  SuperAdminAdminsPageResponse,
 } from "@/api/superadmin";
 import {
   SuperAdminOverview,
@@ -66,13 +72,34 @@ export function useSuperAdminSummaryQuery(options?: {
   });
 }
 
-export function useSuperAdminAdminsQuery(options?: {
+export function useSuperAdminAdminsInfiniteQuery(options?: {
   enabled?: boolean;
   refetchInterval?: number | false;
+  limit?: number;
+  search?: string;
+  status?: "active" | "inactive" | "pending";
 }) {
-  return useQuery<SuperAdminEntry[]>({
-    queryKey: queryKeys.superadmin.admins,
-    queryFn: fetchSuperAdminAdmins,
+  const limit = options?.limit ?? 20;
+  const search = options?.search || "";
+  const status = options?.status;
+
+  return useInfiniteQuery<SuperAdminAdminsPageResponse>({
+    queryKey: [
+      ...queryKeys.superadmin.admins,
+      { limit, search, status },
+    ],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchSuperAdminAdmins({
+        page: Number(pageParam) || 1,
+        limit,
+        search,
+        status,
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination?.hasMore
+        ? lastPage.pagination.page + 1
+        : undefined,
     staleTime: 15000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,

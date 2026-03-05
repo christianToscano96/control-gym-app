@@ -262,6 +262,15 @@ router.get("/summary", async (req, res) => {
 // ─── Admins List ─────────────────────────────────────────────
 router.get("/admins", async (req, res) => {
   try {
+    const { page: pageStr, limit: limitStr, search, status } = req.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      status?: "active" | "inactive" | "pending";
+    };
+    const page = Math.max(Number(pageStr) || 1, 1);
+    const limit = Math.min(Math.max(Number(limitStr) || 20, 1), 100);
+
     const admins = await User.find({ role: "admin" })
       .select("name email avatar active gymId")
       .populate(
@@ -302,7 +311,44 @@ router.get("/admins", async (req, res) => {
       };
     });
 
-    res.json({ admins: formattedAdmins });
+    let filtered = [...formattedAdmins];
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q) ||
+          a.gym?.name?.toLowerCase().includes(q),
+      );
+    }
+
+    if (status === "active") {
+      filtered = filtered.filter(
+        (a) => a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      );
+    } else if (status === "inactive") {
+      filtered = filtered.filter(
+        (a) => a.gym?.onboardingStatus === "approved" && a.gym?.active === false,
+      );
+    } else if (status === "pending") {
+      filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const paginated = filtered.slice(start, start + limit);
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    res.json({
+      admins: paginated,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+    });
   } catch (error) {
     console.error("Error fetching superadmin admins:", error);
     res.status(500).json({ message: "Error al obtener admins" });

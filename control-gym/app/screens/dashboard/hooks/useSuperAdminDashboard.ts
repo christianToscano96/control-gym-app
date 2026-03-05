@@ -1,12 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  useSuperAdminAdminsQuery,
+  useSuperAdminAdminsInfiniteQuery,
   usePendingRegistrationsQuery,
   useSuperAdminSummaryQuery,
   useSuperAdminOverviewQuery,
 } from "@/hooks/queries/useSuperAdmin";
 import { AppState, AppStateStatus } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 
 export const planConfig: Record<
   string,
@@ -24,6 +26,7 @@ export function useSuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("active");
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const queryClient = useQueryClient();
   const isFocused = useIsFocused();
   const isAppActive = appState === "active";
   const isAutoRefreshEnabled = isFocused && isAppActive;
@@ -39,13 +42,19 @@ export function useSuperAdminDashboard() {
       refetchInterval: isAutoRefreshEnabled ? 15000 : false,
     });
   const {
-    data: adminsData,
+    data: adminsPages,
     refetch: refetchAdmins,
     isFetching: isFetchingAdmins,
     dataUpdatedAt: adminsUpdatedAt,
-  } = useSuperAdminAdminsQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSuperAdminAdminsInfiniteQuery({
     enabled: isFocused,
     refetchInterval: isAutoRefreshEnabled ? 10000 : false,
+    limit: 20,
+    search: searchQuery,
+    status: filterStatus,
   });
   const {
     data: summaryData,
@@ -68,9 +77,24 @@ export function useSuperAdminDashboard() {
     setRefreshing(false);
   }, [refetch, refetchPending, refetchSummary, refetchAdmins]);
 
+  useEffect(() => {
+    if (!isFocused) return;
+    if (appState === "active") {
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.pendingRegistrations,
+      });
+      refetchSummary();
+      refetchAdmins();
+      refetchPending();
+    }
+  }, [appState, isFocused, queryClient, refetchAdmins, refetchPending, refetchSummary]);
+
   const baseAdmins = useMemo(
-    () => adminsData || data?.admins || [],
-    [adminsData, data?.admins],
+    () =>
+      adminsPages?.pages?.flatMap((p) => p.admins || []) || data?.admins || [],
+    [adminsPages?.pages, data?.admins],
   );
 
   const activeCount = useMemo(
@@ -92,34 +116,7 @@ export function useSuperAdminDashboard() {
     [baseAdmins],
   );
 
-  const filteredAdmins = useMemo(() => {
-    if (!baseAdmins.length) return [];
-    let filtered = [...baseAdmins];
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (a) =>
-          a.name.toLowerCase().includes(q) ||
-          a.email.toLowerCase().includes(q) ||
-          a.gym?.name.toLowerCase().includes(q),
-      );
-    }
-
-    if (filterStatus === "active") {
-      filtered = filtered.filter(
-        (a) => a.gym?.active === true && a.gym?.onboardingStatus === "approved",
-      );
-    } else if (filterStatus === "inactive") {
-      filtered = filtered.filter(
-        (a) => a.gym?.onboardingStatus === "approved" && !a.gym?.active,
-      );
-    } else {
-      filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
-    }
-
-    return filtered;
-  }, [baseAdmins, searchQuery, filterStatus]);
+  const filteredAdmins = useMemo(() => baseAdmins, [baseAdmins]);
 
   const pendingAdmins = useMemo(() => {
     if (pendingData) return pendingData;
@@ -127,15 +124,20 @@ export function useSuperAdminDashboard() {
   }, [pendingData, baseAdmins]);
 
   const summary = summaryData || data?.summary;
+  const resolvedCounts = {
+    active: summary?.activeGyms ?? activeCount,
+    inactive: summary?.inactiveGyms ?? inactiveCount,
+    pending: summary?.pendingGyms ?? pendingCount,
+  };
 
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =
     [
-      { key: "active", label: "Activos", count: activeCount },
-      { key: "inactive", label: "Inactivos", count: inactiveCount },
+      { key: "active", label: "Activos", count: resolvedCounts.active },
+      { key: "inactive", label: "Inactivos", count: resolvedCounts.inactive },
       {
         key: "pending",
         label: "Pendientes",
-        count: pendingCount,
+        count: resolvedCounts.pending,
       },
     ];
 
@@ -145,7 +147,7 @@ export function useSuperAdminDashboard() {
     setSearchQuery,
     filterStatus,
     setFilterStatus,
-    isLoading: isLoading && !adminsData && !summaryData,
+    isLoading: isLoading && !adminsPages && !summaryData,
     isError,
     error,
     refetch,
@@ -161,10 +163,12 @@ export function useSuperAdminDashboard() {
     pendingAdmins,
     summary,
     filterOptions,
-    counts: {
-      active: activeCount,
-      inactive: inactiveCount,
-      pending: pendingCount,
+    loadMoreAdmins: () => {
+      if (!hasNextPage || isFetchingNextPage) return;
+      fetchNextPage();
     },
+    hasMoreAdmins: Boolean(hasNextPage),
+    isLoadingMoreAdmins: isFetchingNextPage,
+    counts: resolvedCounts,
   };
 }

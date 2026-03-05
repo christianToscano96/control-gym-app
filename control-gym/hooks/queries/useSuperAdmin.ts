@@ -251,10 +251,11 @@ export function useReviewGymRegistration() {
             const getCategory = (
               status: "pending" | "approved" | "rejected",
               active: boolean,
-            ): "pending" | "active" | "inactive" => {
+            ): "pending" | "active" | "inactive" | null => {
               if (status === "pending") return "pending";
               if (status === "approved" && active) return "active";
-              return "inactive";
+              if (status === "approved" && !active) return "inactive";
+              return null;
             };
 
             const admins = old.admins.map((admin) => {
@@ -279,6 +280,14 @@ export function useReviewGymRegistration() {
               if (newCategory === "pending") summary.pendingGyms += 1;
               if (newCategory === "active") summary.activeGyms += 1;
               if (newCategory === "inactive") summary.inactiveGyms += 1;
+            } else if (oldCategory && !newCategory) {
+              if (oldCategory === "pending") summary.pendingGyms = Math.max(0, summary.pendingGyms - 1);
+              if (oldCategory === "active") summary.activeGyms = Math.max(0, summary.activeGyms - 1);
+              if (oldCategory === "inactive") summary.inactiveGyms = Math.max(0, summary.inactiveGyms - 1);
+            } else if (!oldCategory && newCategory) {
+              if (newCategory === "pending") summary.pendingGyms += 1;
+              if (newCategory === "active") summary.activeGyms += 1;
+              if (newCategory === "inactive") summary.inactiveGyms += 1;
             }
 
             return { ...old, admins, summary };
@@ -291,13 +300,20 @@ export function useReviewGymRegistration() {
           queryKeys.superadmin.summary,
           (old) => {
             if (!old) return old;
+            const oldCategory: "pending" | "active" | "inactive" =
+              "pending";
+            let newCategory: "pending" | "active" | "inactive" | null = null;
+            if (nextStatus === "approved" && nextActive) newCategory = "active";
+            if (nextStatus === "approved" && !nextActive) newCategory = "inactive";
+
+            const next = { ...old };
+            if (oldCategory === "pending") {
+              next.pendingGyms = Math.max(0, next.pendingGyms - 1);
+            }
+            if (newCategory === "active") next.activeGyms += 1;
+            if (newCategory === "inactive") next.inactiveGyms += 1;
             return {
-              ...old,
-              pendingGyms: Math.max(0, old.pendingGyms - 1),
-              activeGyms: nextActive ? old.activeGyms + 1 : old.activeGyms,
-              inactiveGyms: nextActive
-                ? Math.max(0, old.inactiveGyms - 1)
-                : old.inactiveGyms + 1,
+              ...next,
             };
           },
         );

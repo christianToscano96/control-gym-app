@@ -39,9 +39,14 @@ const buildSuperAdminSummary = async () => {
   ]);
 
   const allGyms = await Gym.find().lean();
-  const activeGyms = allGyms.filter((g) => g.active).length;
+  const activeGyms = allGyms.filter(
+    (g) => g.onboardingStatus === "approved" && g.active,
+  ).length;
   const pendingGyms = allGyms.filter(
     (g) => g.onboardingStatus === "pending",
+  ).length;
+  const inactiveGyms = allGyms.filter(
+    (g) => g.onboardingStatus === "approved" && !g.active,
   ).length;
   const totalClients = clientCounts.reduce(
     (sum: number, c: any) => sum + c.count,
@@ -123,7 +128,7 @@ const buildSuperAdminSummary = async () => {
   return {
     totalGyms: allGyms.length,
     activeGyms,
-    inactiveGyms: allGyms.length - activeGyms,
+    inactiveGyms,
     pendingGyms,
     totalClients,
     totalPlatformRevenue,

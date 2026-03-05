@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import {
   SuperAdminOverview,
+  SuperAdminSummary,
   SuperAdminEntry,
   GymDetailResponse,
   GymClientsResponse,
@@ -12,6 +13,10 @@ import {
 
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
   return apiClient<SuperAdminOverview>("/api/superadmin/overview");
+}
+
+export async function fetchSuperAdminSummary(): Promise<SuperAdminSummary> {
+  return apiClient<SuperAdminSummary>("/api/superadmin/summary");
 }
 
 export async function fetchPendingRegistrations(): Promise<SuperAdminEntry[]> {

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   usePendingRegistrationsQuery,
+  useSuperAdminSummaryQuery,
   useSuperAdminOverviewQuery,
 } from "@/hooks/queries/useSuperAdmin";
 import { AppState, AppStateStatus } from "react-native";
@@ -36,6 +37,15 @@ export function useSuperAdminDashboard() {
       enabled: isFocused,
       refetchInterval: isAutoRefreshEnabled ? 15000 : false,
     });
+  const {
+    data: summaryData,
+    refetch: refetchSummary,
+    isFetching: isFetchingSummary,
+    dataUpdatedAt: summaryUpdatedAt,
+  } = useSuperAdminSummaryQuery({
+    enabled: isFocused,
+    refetchInterval: isAutoRefreshEnabled ? 10000 : false,
+  });
   const { data: pendingData, refetch: refetchPending } =
     usePendingRegistrationsQuery({
       enabled: isFocused,
@@ -44,9 +54,9 @@ export function useSuperAdminDashboard() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), refetchPending()]);
+    await Promise.all([refetch(), refetchPending(), refetchSummary()]);
     setRefreshing(false);
-  }, [refetch, refetchPending]);
+  }, [refetch, refetchPending, refetchSummary]);
 
   const filteredAdmins = useMemo(() => {
     if (!data?.admins) return [];
@@ -83,7 +93,7 @@ export function useSuperAdminDashboard() {
     return data.admins.filter((a) => a.gym?.onboardingStatus === "pending");
   }, [pendingData, data?.admins]);
 
-  const summary = data?.summary;
+  const summary = summaryData || data?.summary;
 
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =
     [
@@ -107,9 +117,9 @@ export function useSuperAdminDashboard() {
     isError,
     error,
     refetch,
-    isFetching,
+    isFetching: isFetching || isFetchingSummary,
     isAutoRefreshEnabled,
-    lastUpdatedAt: dataUpdatedAt || 0,
+    lastUpdatedAt: Math.max(dataUpdatedAt || 0, summaryUpdatedAt || 0),
     onRefresh,
     filteredAdmins,
     pendingAdmins,

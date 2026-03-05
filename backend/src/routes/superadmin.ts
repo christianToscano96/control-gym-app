@@ -26,6 +26,79 @@ const planPrices: Record<string, number> = {
   proplus: 40000,
 };
 
+const buildSuperAdminSummary = async () => {
+  const clientCounts = await Client.aggregate([
+    { $match: { isActive: true } },
+    { $group: { _id: "$gymId", count: { $sum: 1 } } },
+  ]);
+
+  const allGyms = await Gym.find().lean();
+  const activeGyms = allGyms.filter((g) => g.active).length;
+  const pendingGyms = allGyms.filter(
+    (g) => g.onboardingStatus === "pending",
+  ).length;
+  const totalClients = clientCounts.reduce(
+    (sum: number, c: any) => sum + c.count,
+    0,
+  );
+
+  const platformRevenueAgg = await Membership.aggregate([
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const totalPlatformRevenue = platformRevenueAgg[0]?.total || 0;
+
+  const gymRevenueAgg = await Payment.aggregate([
+    { $match: { status: "completed" } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
+
+  const now = new Date();
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(now.getDate() + 7);
+
+  const expiringGymMemberships = await Membership.find({
+    active: true,
+    endDate: { $gte: now, $lte: sevenDaysFromNow },
+  })
+    .populate("gymId", "name plan")
+    .lean();
+
+  const expiringGyms = expiringGymMemberships.map((m: any) => ({
+    gymId: m.gymId?._id,
+    gymName: m.gymId?.name || "Sin nombre",
+    plan: m.plan,
+    endDate: m.endDate,
+    daysLeft: Math.ceil(
+      (new Date(m.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    ),
+  }));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayCheckIns = await AccessLog.countDocuments({
+    date: { $gte: today },
+    $or: [{ status: "allowed" }, { status: { $exists: false } }],
+  });
+
+  return {
+    totalGyms: allGyms.length,
+    activeGyms,
+    inactiveGyms: allGyms.length - activeGyms,
+    pendingGyms,
+    totalClients,
+    totalPlatformRevenue,
+    totalGymRevenue,
+    todayCheckIns,
+    planDistribution: {
+      basico: allGyms.filter((g) => g.plan === "basico").length,
+      pro: allGyms.filter((g) => g.plan === "pro").length,
+      proplus: allGyms.filter((g) => g.plan === "proplus").length,
+    },
+    expiringGyms,
+  };
+};
+
 // ─── Pending Registrations ───────────────────────────────────
 router.get("/pending-registrations", async (req, res) => {
   try {
@@ -84,57 +157,7 @@ router.get("/overview", async (req, res) => {
     const clientCountMap = new Map(
       clientCounts.map((c: any) => [c._id.toString(), c.count]),
     );
-
-    const allGyms = await Gym.find().lean();
-    const activeGyms = allGyms.filter((g) => g.active).length;
-    const pendingGyms = allGyms.filter((g) => g.onboardingStatus === "pending").length;
-    const totalClients = clientCounts.reduce(
-      (sum: number, c: any) => sum + c.count,
-      0,
-    );
-
-    // Ingresos plataforma (lo que los gyms pagan - Membership SaaS)
-    const platformRevenueAgg = await Membership.aggregate([
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
-    const totalPlatformRevenue = platformRevenueAgg[0]?.total || 0;
-
-    // Ingresos de clientes (lo que los gyms facturan - Payment)
-    const gymRevenueAgg = await Payment.aggregate([
-      { $match: { status: "completed" } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
-    const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
-
-    // Gyms con membresía SaaS por vencer (menos de 7 días)
-    const now = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(now.getDate() + 7);
-
-    const expiringGymMemberships = await Membership.find({
-      active: true,
-      endDate: { $gte: now, $lte: sevenDaysFromNow },
-    })
-      .populate("gymId", "name plan")
-      .lean();
-
-    const expiringGyms = expiringGymMemberships.map((m: any) => ({
-      gymId: m.gymId?._id,
-      gymName: m.gymId?.name || "Sin nombre",
-      plan: m.plan,
-      endDate: m.endDate,
-      daysLeft: Math.ceil(
-        (new Date(m.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    }));
-
-    // Check-ins globales hoy
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayCheckIns = await AccessLog.countDocuments({
-      date: { $gte: today },
-      $or: [{ status: "allowed" }, { status: { $exists: false } }],
-    });
+    const summary = await buildSuperAdminSummary();
 
     const formattedAdmins = admins.map((admin: any) => {
       const gym = admin.gymId;
@@ -161,27 +184,23 @@ router.get("/overview", async (req, res) => {
     });
 
     res.json({
-      summary: {
-        totalGyms: allGyms.length,
-        activeGyms,
-        inactiveGyms: allGyms.length - activeGyms,
-        pendingGyms,
-        totalClients,
-        totalPlatformRevenue,
-        totalGymRevenue,
-        todayCheckIns,
-        planDistribution: {
-          basico: allGyms.filter((g) => g.plan === "basico").length,
-          pro: allGyms.filter((g) => g.plan === "pro").length,
-          proplus: allGyms.filter((g) => g.plan === "proplus").length,
-        },
-        expiringGyms,
-      },
+      summary,
       admins: formattedAdmins,
     });
   } catch (error) {
     console.error("Error in superadmin overview:", error);
     res.status(500).json({ message: "Error al obtener el resumen" });
+  }
+});
+
+// ─── Summary ─────────────────────────────────────────────────
+router.get("/summary", async (req, res) => {
+  try {
+    const summary = await buildSuperAdminSummary();
+    res.json(summary);
+  } catch (error) {
+    console.error("Error in superadmin summary:", error);
+    res.status(500).json({ message: "Error al obtener el summary" });
   }
 });
 

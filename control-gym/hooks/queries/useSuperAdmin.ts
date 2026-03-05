@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchSuperAdminOverview,
+  fetchSuperAdminSummary,
   fetchPendingRegistrations,
   fetchGymDetail,
   fetchGymClients,
@@ -18,6 +19,7 @@ import {
 } from "@/api/superadmin";
 import {
   SuperAdminOverview,
+  SuperAdminSummary,
   SuperAdminEntry,
   GymDetailResponse,
   GymClientsResponse,
@@ -52,6 +54,22 @@ export function usePendingRegistrationsQuery(options?: {
     queryKey: queryKeys.superadmin.pendingRegistrations,
     queryFn: fetchPendingRegistrations,
     staleTime: 10000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function useSuperAdminSummaryQuery(options?: {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}) {
+  return useQuery<SuperAdminSummary>({
+    queryKey: queryKeys.superadmin.summary,
+    queryFn: fetchSuperAdminSummary,
+    staleTime: 15000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
@@ -119,6 +137,9 @@ export function useCreateGym() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.summary,
+      });
     },
   });
 }
@@ -138,6 +159,9 @@ export function useToggleGymActive() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.summary,
+      });
     },
   });
 }
@@ -156,6 +180,7 @@ export function useReviewGymRegistration() {
     }) => reviewGymRegistration(gymId, action, rejectionReason),
     onMutate: async ({ gymId, action, rejectionReason }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.superadmin.overview });
+      await queryClient.cancelQueries({ queryKey: queryKeys.superadmin.summary });
       await queryClient.cancelQueries({
         queryKey: queryKeys.superadmin.pendingRegistrations,
       });
@@ -165,6 +190,9 @@ export function useReviewGymRegistration() {
 
       const previousOverview = queryClient.getQueryData<SuperAdminOverview>(
         queryKeys.superadmin.overview,
+      );
+      const previousSummary = queryClient.getQueryData<SuperAdminSummary>(
+        queryKeys.superadmin.summary,
       );
       const previousGymDetail = queryClient.getQueryData<GymDetailResponse>(
         queryKeys.superadmin.gymDetail(gymId),
@@ -262,6 +290,24 @@ export function useReviewGymRegistration() {
         );
       }
 
+      if (previousSummary) {
+        queryClient.setQueryData<SuperAdminSummary>(
+          queryKeys.superadmin.summary,
+          (old) => {
+            if (!old) return old;
+            const isApprove = action === "approve";
+            return {
+              ...old,
+              pendingGyms: Math.max(0, old.pendingGyms - 1),
+              activeGyms: isApprove ? old.activeGyms + 1 : old.activeGyms,
+              inactiveGyms: isApprove
+                ? Math.max(0, old.inactiveGyms - 1)
+                : old.inactiveGyms + 1,
+            };
+          },
+        );
+      }
+
       if (previousPendingRegistrations) {
         if (action === "approve" || action === "reject") {
           queryClient.setQueryData<SuperAdminEntry[]>(
@@ -273,6 +319,7 @@ export function useReviewGymRegistration() {
 
       return {
         previousOverview,
+        previousSummary,
         previousGymDetail,
         previousPendingRegistrations,
         gymId,
@@ -291,6 +338,12 @@ export function useReviewGymRegistration() {
           context.previousGymDetail,
         );
       }
+      if (context?.previousSummary) {
+        queryClient.setQueryData(
+          queryKeys.superadmin.summary,
+          context.previousSummary,
+        );
+      }
       if (context?.previousPendingRegistrations) {
         queryClient.setQueryData(
           queryKeys.superadmin.pendingRegistrations,
@@ -307,6 +360,9 @@ export function useReviewGymRegistration() {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.summary,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.pendingRegistrations,
@@ -335,6 +391,9 @@ export function useUpdateGym() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.summary,
+      });
     },
   });
 }
@@ -346,6 +405,9 @@ export function useDeleteGym() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.overview,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.summary,
       });
     },
   });

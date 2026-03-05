@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import {
   SuperAdminOverview,
+  SuperAdminEntry,
   GymDetailResponse,
   GymClientsResponse,
   GymPaymentsResponse,
@@ -11,6 +12,13 @@ import {
 
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
   return apiClient<SuperAdminOverview>("/api/superadmin/overview");
+}
+
+export async function fetchPendingRegistrations(): Promise<SuperAdminEntry[]> {
+  const data = await apiClient<{ pendingAdmins: SuperAdminEntry[] }>(
+    "/api/superadmin/pending-registrations",
+  );
+  return data.pendingAdmins || [];
 }
 
 export async function fetchGymDetail(

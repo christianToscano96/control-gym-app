@@ -1,23 +1,38 @@
 import React from "react";
-import { View, ScrollView, RefreshControl, Text, TouchableOpacity } from "react-native";
+import { View, ScrollView, RefreshControl, Text, TouchableOpacity, Alert } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { useUserStore } from "@/stores/store";
+import * as Haptics from "expo-haptics";
 import Header from "@/components/ui/Header";
 import SearchInput from "@/components/ui/SearchInput";
 import { useSuperAdminDashboard } from "./hooks/useSuperAdminDashboard";
+import { useReviewGymRegistration } from "@/hooks/queries/useSuperAdmin";
 import { RevenueCard } from "./components/RevenueCard";
 import { StatCard } from "./components/StatCard";
 import { PlanDistribution } from "./components/PlanDistribution";
 import { FilterChips } from "./components/FilterChips";
 import { GymAdminList } from "./components/GymAdminList";
+import Toast, { ToastType } from "@/components/ui/Toast";
 
 export default function SuperAdminDashboard() {
   const user = useUserStore((s) => s.user);
   const router = useRouter();
   const { colors, primaryColor } = useTheme();
+  const reviewMutation = useReviewGymRegistration();
+  const [processingGymId, setProcessingGymId] = React.useState<string | null>(
+    null,
+  );
+  const [processingAction, setProcessingAction] = React.useState<
+    "approve" | "reject" | null
+  >(null);
+  const [toast, setToast] = React.useState<{
+    visible: boolean;
+    message: string;
+    type: ToastType;
+  }>({ visible: false, message: "", type: "success" });
 
   const {
     refreshing,
@@ -47,6 +62,60 @@ export default function SuperAdminDashboard() {
           second: "2-digit",
         })
       : "--:--:--";
+
+  const showToast = (message: string, type: ToastType = "success") => {
+    setToast({ visible: true, message, type });
+  };
+
+  const handleQuickReview = (
+    gymId: string,
+    gymName: string,
+    action: "approve" | "reject",
+  ) => {
+    Alert.alert(
+      action === "approve" ? "Aprobar registro" : "Rechazar registro",
+      `${action === "approve" ? "Aprobar" : "Rechazar"} "${gymName}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: action === "approve" ? "Aprobar" : "Rechazar",
+          style: action === "approve" ? "default" : "destructive",
+          onPress: () => {
+            setProcessingGymId(gymId);
+            setProcessingAction(action);
+            reviewMutation.mutate(
+              { gymId, action },
+              {
+                onSuccess: async () => {
+                  await Haptics.notificationAsync(
+                    action === "approve"
+                      ? Haptics.NotificationFeedbackType.Success
+                      : Haptics.NotificationFeedbackType.Warning,
+                  );
+                  showToast(
+                    action === "approve"
+                      ? "Registro aprobado"
+                      : "Registro rechazado",
+                    action === "approve" ? "success" : "warning",
+                  );
+                },
+                onError: async () => {
+                  await Haptics.notificationAsync(
+                    Haptics.NotificationFeedbackType.Error,
+                  );
+                  showToast("No se pudo actualizar el registro", "error");
+                },
+                onSettled: () => {
+                  setProcessingGymId(null);
+                  setProcessingAction(null);
+                },
+              },
+            );
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView
@@ -140,9 +209,16 @@ export default function SuperAdminDashboard() {
               </TouchableOpacity>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>
-              {summary?.pendingGyms ?? 0} gimnasios esperando revisión
+              {pendingAdmins.length || summary?.pendingGyms || 0} gimnasios esperando revisión
             </Text>
             {pendingAdmins.slice(0, 3).map((admin) => (
+              (() => {
+                const isProcessing = processingGymId === admin.gym?._id;
+                const isProcessingApprove =
+                  isProcessing && processingAction === "approve";
+                const isProcessingReject =
+                  isProcessing && processingAction === "reject";
+                return (
               <TouchableOpacity
                 key={admin._id}
                 onPress={() => {
@@ -176,12 +252,49 @@ export default function SuperAdminDashboard() {
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={{ color: "#F59E0B", fontSize: 11, fontWeight: "700" }}>
-                    Revisar
-                  </Text>
-                  <MaterialIcons name="chevron-right" size={18} color="#F59E0B" />
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (!admin.gym?._id) return;
+                      handleQuickReview(admin.gym._id, admin.gym.name, "approve");
+                    }}
+                    disabled={isProcessing}
+                    style={{
+                      backgroundColor: "#10B98120",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 5,
+                      opacity: isProcessing ? 0.5 : 1,
+                    }}
+                  >
+                    <Text style={{ color: "#10B981", fontSize: 11, fontWeight: "700" }}>
+                      {isProcessingApprove ? "Procesando..." : "Aprobar"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (!admin.gym?._id) return;
+                      handleQuickReview(admin.gym._id, admin.gym.name, "reject");
+                    }}
+                    disabled={isProcessing}
+                    style={{
+                      backgroundColor: "#DC262620",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 5,
+                      opacity: isProcessing ? 0.5 : 1,
+                    }}
+                  >
+                    <Text style={{ color: "#DC2626", fontSize: 11, fontWeight: "700" }}>
+                      {isProcessingReject ? "Procesando..." : "Rechazar"}
+                    </Text>
+                  </TouchableOpacity>
+                  <MaterialIcons name="chevron-right" size={17} color="#F59E0B" />
                 </View>
               </TouchableOpacity>
+                );
+              })()
             ))}
             {pendingAdmins.length === 0 && (
               <View
@@ -261,6 +374,12 @@ export default function SuperAdminDashboard() {
           />
         </ScrollView>
       </View>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 }

@@ -26,6 +26,49 @@ const planPrices: Record<string, number> = {
   proplus: 40000,
 };
 
+// ─── Pending Registrations ───────────────────────────────────
+router.get("/pending-registrations", async (req, res) => {
+  try {
+    const admins = await User.find({ role: "admin" })
+      .select("name email avatar active gymId")
+      .populate("gymId", "name address plan active onboardingStatus paymentReference paymentProofUrl paymentProofUploadedAt")
+      .lean();
+
+    const pendingAdmins = admins
+      .filter((admin: any) => admin.gymId?.onboardingStatus === "pending")
+      .sort((a: any, b: any) => {
+        const aDate = new Date(a.gymId?.paymentProofUploadedAt || a.gymId?.createdAt || 0).getTime();
+        const bDate = new Date(b.gymId?.paymentProofUploadedAt || b.gymId?.createdAt || 0).getTime();
+        return bDate - aDate;
+      })
+      .map((admin: any) => ({
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar,
+        active: admin.active,
+        gym: admin.gymId
+          ? {
+              _id: admin.gymId._id,
+              name: admin.gymId.name,
+              address: admin.gymId.address,
+              plan: admin.gymId.plan,
+              active: admin.gymId.active,
+              onboardingStatus: admin.gymId.onboardingStatus || "pending",
+              paymentReference: admin.gymId.paymentReference || null,
+              hasPaymentProof: Boolean(admin.gymId.paymentProofUrl),
+              clientsCount: 0,
+            }
+          : null,
+      }));
+
+    res.json({ pendingAdmins });
+  } catch (error) {
+    console.error("Error fetching pending registrations:", error);
+    res.status(500).json({ message: "Error al obtener pendientes" });
+  }
+});
+
 // ─── Overview ────────────────────────────────────────────────
 router.get("/overview", async (req, res) => {
   try {

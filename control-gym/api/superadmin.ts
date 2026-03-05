@@ -78,6 +78,17 @@ export async function toggleGymActive(
   });
 }
 
+export async function reviewGymRegistration(
+  gymId: string,
+  action: "approve" | "reject",
+  rejectionReason?: string,
+): Promise<void> {
+  await apiClient(`/api/superadmin/gyms/${gymId}/registration-review`, {
+    method: "PUT",
+    body: { action, rejectionReason },
+  });
+}
+
 export async function updateGym(
   gymId: string,
   data: { name?: string; address?: string; plan?: string },
@@ -111,6 +122,12 @@ export interface MembershipHistory {
   startDate: string;
   endDate: string;
   active: boolean;
+  paymentReference?: string;
+  paymentProofUrl?: string;
+  reviewStatus?: "pending" | "approved" | "rejected" | "manual";
+  reviewedAt?: string;
+  reviewNotes?: string;
+  createdAt?: string;
 }
 
 export async function fetchMembershipHistory(

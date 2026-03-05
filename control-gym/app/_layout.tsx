@@ -45,6 +45,7 @@ function NavigationGuard() {
       "/login/register",
       "/login/forgot-password",
       "/gym-suspended",
+      "/pending-approval",
     ];
     if (!user && !publicRoutes.includes(pathname)) {
       router.replace("/login");
@@ -134,6 +135,10 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="gym-suspended"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="pending-approval"
               options={{ headerShown: false }}
             />
             <Stack.Screen

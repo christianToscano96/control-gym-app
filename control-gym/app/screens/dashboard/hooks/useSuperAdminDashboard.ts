@@ -10,7 +10,7 @@ export const planConfig: Record<
   proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
 };
 
-export type FilterStatus = "all" | "active" | "inactive";
+export type FilterStatus = "all" | "active" | "inactive" | "pending";
 
 export function useSuperAdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
@@ -41,13 +41,24 @@ export function useSuperAdminDashboard() {
     }
 
     if (filterStatus === "active") {
-      filtered = filtered.filter((a) => a.gym?.active === true);
+      filtered = filtered.filter(
+        (a) => a.gym?.active === true && a.gym?.onboardingStatus === "approved",
+      );
     } else if (filterStatus === "inactive") {
-      filtered = filtered.filter((a) => !a.gym?.active);
+      filtered = filtered.filter(
+        (a) => a.gym?.onboardingStatus === "approved" && !a.gym?.active,
+      );
+    } else if (filterStatus === "pending") {
+      filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
     }
 
     return filtered;
   }, [data?.admins, searchQuery, filterStatus]);
+
+  const pendingAdmins = useMemo(() => {
+    if (!data?.admins) return [];
+    return data.admins.filter((a) => a.gym?.onboardingStatus === "pending");
+  }, [data?.admins]);
 
   const summary = data?.summary;
 
@@ -56,6 +67,7 @@ export function useSuperAdminDashboard() {
       { key: "all", label: "Todos", count: data?.admins?.length },
       { key: "active", label: "Activos", count: summary?.activeGyms },
       { key: "inactive", label: "Inactivos", count: summary?.inactiveGyms },
+      { key: "pending", label: "Pendientes", count: summary?.pendingGyms },
     ];
 
   return {
@@ -70,6 +82,7 @@ export function useSuperAdminDashboard() {
     refetch,
     onRefresh,
     filteredAdmins,
+    pendingAdmins,
     summary,
     filterOptions,
   };

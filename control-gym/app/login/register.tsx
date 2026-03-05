@@ -24,7 +24,10 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      await apiClient("/api/register", {
+      const data = await apiClient<{
+        gymId: string;
+        paymentReference: string;
+      }>("/api/register", {
         method: "POST",
         body: {
           adminName,
@@ -36,8 +39,13 @@ export default function RegisterScreen() {
         },
         skipAuth: true,
       });
-      Alert.alert("Éxito", "Cuenta y gimnasio creados correctamente");
-      router.push("/login");
+      router.replace({
+        pathname: "/pending-approval",
+        params: {
+          gymId: data.gymId,
+          paymentReference: data.paymentReference,
+        },
+      });
     } catch (err) {
       let message = "No se pudo registrar";
       if (err instanceof Error) message = err.message;

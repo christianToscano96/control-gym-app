@@ -1,5 +1,6 @@
 import React from "react";
-import { View, ScrollView, RefreshControl, Text } from "react-native";
+import { View, ScrollView, RefreshControl, Text, TouchableOpacity } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
@@ -30,6 +31,7 @@ export default function SuperAdminDashboard() {
     refetch,
     onRefresh,
     filteredAdmins,
+    pendingAdmins,
     summary,
     filterOptions,
   } = useSuperAdminDashboard();
@@ -60,6 +62,101 @@ export default function SuperAdminDashboard() {
           >
             Panel Super Admin
           </Text>
+
+          <View
+            style={{
+              backgroundColor: "#F59E0B15",
+              borderColor: "#F59E0B50",
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 14,
+              marginBottom: 12,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <MaterialIcons name="pending-actions" size={20} color="#F59E0B" />
+                <Text style={{ color: colors.text, fontWeight: "800", fontSize: 15 }}>
+                  Pendientes de aprobación
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setFilterStatus("pending")}
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: "#F59E0B", fontWeight: "700", fontSize: 12 }}>
+                  Ver todos
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>
+              {summary?.pendingGyms ?? 0} gimnasios esperando revisión
+            </Text>
+            {pendingAdmins.slice(0, 3).map((admin) => (
+              <TouchableOpacity
+                key={admin._id}
+                onPress={() => {
+                  if (admin.gym) {
+                    router.push({
+                      pathname: "/screens/superadmin/gym-detail",
+                      params: { gymId: admin.gym._id },
+                    } as any);
+                  }
+                }}
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  marginTop: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+                activeOpacity={0.8}
+              >
+                <View>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "700" }}>
+                    {admin.gym?.name || "Sin gimnasio"}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                    Admin: {admin.name}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={{ color: "#F59E0B", fontSize: 11, fontWeight: "700" }}>
+                    Revisar
+                  </Text>
+                  <MaterialIcons name="chevron-right" size={18} color="#F59E0B" />
+                </View>
+              </TouchableOpacity>
+            ))}
+            {pendingAdmins.length === 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: 10,
+                  marginTop: 4,
+                }}
+              >
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  No hay solicitudes pendientes por ahora.
+                </Text>
+              </View>
+            )}
+          </View>
 
           <RevenueCard
             isLoading={isLoading}

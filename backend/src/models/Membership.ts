@@ -7,6 +7,11 @@ export interface IMembership extends Document {
   startDate: Date;
   endDate: Date;
   active: boolean;
+  paymentReference?: string;
+  paymentProofUrl?: string;
+  reviewStatus?: "pending" | "approved" | "rejected" | "manual";
+  reviewedAt?: Date;
+  reviewNotes?: string;
 }
 
 const MembershipSchema = new Schema<IMembership>(
@@ -17,6 +22,15 @@ const MembershipSchema = new Schema<IMembership>(
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     active: { type: Boolean, default: true },
+    paymentReference: { type: String, trim: true },
+    paymentProofUrl: { type: String },
+    reviewStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "manual"],
+      default: "manual",
+    },
+    reviewedAt: { type: Date },
+    reviewNotes: { type: String },
   },
   { timestamps: true },
 );

@@ -11,8 +11,14 @@ export const GymAdminCard = React.memo(
   ({ admin, onPress }: { admin: SuperAdminEntry; onPress?: () => void }) => {
     const { colors, isDark } = useTheme();
     const gym = admin.gym;
+    const isPending = gym?.onboardingStatus === "pending";
     const isActive = gym?.active ?? false;
-    const statusColor = isActive ? colors.success : colors.error;
+    const statusColor = isPending
+      ? "#F59E0B"
+      : isActive
+        ? colors.success
+        : colors.error;
+    const statusLabel = isPending ? "Pendiente" : isActive ? "Activo" : "Inactivo";
     const plan = gym ? planConfig[gym.plan] : null;
 
     return (
@@ -148,7 +154,7 @@ export const GymAdminCard = React.memo(
         </View>
 
         {/* Right side: Status badge + chevron */}
-        <Badge label={isActive ? "Activo" : "Inactivo"} />
+        <Badge label={statusLabel} />
         <MaterialIcons
           name="chevron-right"
           size={20}
@@ -159,3 +165,5 @@ export const GymAdminCard = React.memo(
     );
   },
 );
+
+GymAdminCard.displayName = "GymAdminCard";

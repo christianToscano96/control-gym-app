@@ -8,6 +8,7 @@ import {
   fetchGymStaff,
   createGym,
   toggleGymActive,
+  reviewGymRegistration,
   updateGym,
   deleteGym,
   resetAdminPassword,
@@ -103,6 +104,32 @@ export function useToggleGymActive() {
   return useMutation({
     mutationFn: ({ gymId, active }: { gymId: string; active: boolean }) =>
       toggleGymActive(gymId, active),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.gymDetail(variables.gymId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.membershipHistory(variables.gymId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.overview,
+      });
+    },
+  });
+}
+
+export function useReviewGymRegistration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      gymId,
+      action,
+      rejectionReason,
+    }: {
+      gymId: string;
+      action: "approve" | "reject";
+      rejectionReason?: string;
+    }) => reviewGymRegistration(gymId, action, rejectionReason),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.gymDetail(variables.gymId),

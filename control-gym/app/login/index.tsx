@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../../components/ui/ButtonCustom";
 import TextField from "../../components/ui/TextField";
-import { apiClient } from "../../api/client";
+import { apiClient, ApiError } from "../../api/client";
 import { useMembershipStore, useUserStore } from "../../stores/store";
 
 export const options = { headerShown: false };
@@ -93,6 +93,18 @@ export default function LoginScreen() {
         router.replace("/(tabs)");
       }
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        if (err.data?.code === "ACCOUNT_PENDING" || err.data?.code === "ACCOUNT_REJECTED") {
+          router.replace({
+            pathname: "/pending-approval",
+            params: {
+              gymId: err.data?.gymId,
+              paymentReference: err.data?.paymentReference,
+            },
+          });
+          return;
+        }
+      }
       let message = "No se pudo iniciar sesión";
       if (err instanceof Error) message = err.message;
       setGeneralError(message);

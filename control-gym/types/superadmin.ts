@@ -4,6 +4,9 @@ export interface SuperAdminGym {
   address: string;
   plan: "basico" | "pro" | "proplus";
   active: boolean;
+  onboardingStatus: "pending" | "approved" | "rejected";
+  paymentReference?: string | null;
+  hasPaymentProof?: boolean;
   clientsCount: number;
 }
 
@@ -28,6 +31,7 @@ export interface SuperAdminSummary {
   totalGyms: number;
   activeGyms: number;
   inactiveGyms: number;
+  pendingGyms: number;
   totalClients: number;
   totalPlatformRevenue: number;
   totalGymRevenue: number;
@@ -51,6 +55,11 @@ export interface GymDetailMembership {
   startDate: string;
   endDate: string;
   active: boolean;
+  paymentReference?: string;
+  paymentProofUrl?: string;
+  reviewStatus?: "pending" | "approved" | "rejected" | "manual";
+  reviewedAt?: string;
+  reviewNotes?: string;
 }
 
 export interface GymDetailAdmin {
@@ -67,6 +76,11 @@ export interface GymDetailResponse {
     address: string;
     plan: "basico" | "pro" | "proplus";
     active: boolean;
+    onboardingStatus: "pending" | "approved" | "rejected";
+    paymentReference?: string | null;
+    paymentProofUrl?: string | null;
+    paymentProofUploadedAt?: string | null;
+    paymentRejectionReason?: string | null;
     createdAt: string;
   };
   admin: GymDetailAdmin | null;

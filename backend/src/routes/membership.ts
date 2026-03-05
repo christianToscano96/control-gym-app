@@ -40,6 +40,9 @@ router.post(
         startDate: now,
         endDate,
         active: true,
+        reviewStatus: "manual",
+        reviewedAt: now,
+        reviewNotes: "Cambio de plan solicitado por admin",
       });
       // Actualizar plan en el gimnasio
       gym.plan = newPlan;

@@ -34,11 +34,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const planConfig: Record<string, { label: string; color: string; bg: string }> = {
-  basico: { label: "Basico", color: "#6366F1", bg: "#EEF2FF" },
-  pro: { label: "Pro", color: "#7C3AED", bg: "#F5F3FF" },
-  proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
-};
+const planConfig: Record<string, { label: string; color: string; bg: string }> =
+  {
+    basico: { label: "Basico", color: "#6366F1", bg: "#EEF2FF" },
+    pro: { label: "Pro", color: "#7C3AED", bg: "#F5F3FF" },
+    proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
+  };
 
 const planOptions = [
   { key: "basico", label: "Basico" },
@@ -141,7 +142,13 @@ const InfoRow = ({
       >
         {label}
       </Text>
-      <Text style={{ color: valueColor || colors.text, fontWeight: "700", fontSize: 13 }}>
+      <Text
+        style={{
+          color: valueColor || colors.text,
+          fontWeight: "700",
+          fontSize: 13,
+        }}
+      >
         {value}
       </Text>
     </View>
@@ -157,7 +164,9 @@ export default function GymDetailScreen() {
     gymId as string,
   );
   const { data: memberships = [] } = useMembershipHistoryQuery(gymId as string);
-  const { data: clientsData } = useGymClientsQuery(gymId as string, { limit: 5 });
+  const { data: clientsData } = useGymClientsQuery(gymId as string, {
+    limit: 5,
+  });
   const { data: paymentsData } = useGymPaymentsQuery(gymId as string, 5);
   const { data: staffData } = useGymStaffQuery(gymId as string);
 
@@ -174,7 +183,9 @@ export default function GymDetailScreen() {
   const [resetVisible, setResetVisible] = useState(false);
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
-  const [editPlan, setEditPlan] = useState<"basico" | "pro" | "proplus">("basico");
+  const [editPlan, setEditPlan] = useState<"basico" | "pro" | "proplus">(
+    "basico",
+  );
   const [newPassword, setNewPassword] = useState("");
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -212,7 +223,9 @@ export default function GymDetailScreen() {
         <View style={{ paddingHorizontal: 16 }}>
           <HeaderTopScrenn title="Detalle Gimnasio" isBackButton />
         </View>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={primaryColor} />
         </View>
       </SafeAreaView>
@@ -225,9 +238,18 @@ export default function GymDetailScreen() {
         <View style={{ paddingHorizontal: 16 }}>
           <HeaderTopScrenn title="Detalle" isBackButton />
         </View>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
           <MaterialIcons name="error-outline" size={50} color={colors.error} />
-          <Text style={{ color: colors.error, marginTop: 12, textAlign: "center" }}>
+          <Text
+            style={{ color: colors.error, marginTop: 12, textAlign: "center" }}
+          >
             {error?.message || "No se pudo cargar el gimnasio"}
           </Text>
         </View>
@@ -249,17 +271,27 @@ export default function GymDetailScreen() {
   const onboardingStatus = gym.onboardingStatus || "approved";
   const isApproved = onboardingStatus === "approved";
   const isPending = onboardingStatus === "pending";
-  const statusColor = isPending ? "#F59E0B" : isApproved ? colors.success : colors.error;
-  const statusLabel = isPending ? "Pendiente" : isApproved ? "Aprobado" : "Rechazado";
+  const statusColor = isPending
+    ? "#F59E0B"
+    : isApproved
+      ? colors.success
+      : colors.error;
+  const statusLabel = isPending
+    ? "Pendiente"
+    : isApproved
+      ? "Aprobado"
+      : "Rechazado";
   const plan = planConfig[gym.plan];
 
   const currentStatus = (() => {
     if (!membership) return { label: "Sin plan", color: colors.error };
     const daysLeft = Math.ceil(
-      (new Date(membership.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      (new Date(membership.endDate).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24),
     );
     if (daysLeft < 0) return { label: "Expirado", color: colors.error };
-    if (daysLeft <= 7) return { label: `${daysLeft} dias restantes`, color: colors.warning };
+    if (daysLeft <= 7)
+      return { label: `${daysLeft} dias restantes`, color: colors.warning };
     return { label: `${daysLeft} dias restantes`, color: colors.success };
   })();
 
@@ -271,9 +303,17 @@ export default function GymDetailScreen() {
   };
 
   const saveEdit = () => {
-    if (!editName.trim()) return Alert.alert("Error", "El nombre es obligatorio");
+    if (!editName.trim())
+      return Alert.alert("Error", "El nombre es obligatorio");
     updateMutation.mutate(
-      { gymId: gym._id, data: { name: editName.trim(), address: editAddress.trim(), plan: editPlan } },
+      {
+        gymId: gym._id,
+        data: {
+          name: editName.trim(),
+          address: editAddress.trim(),
+          plan: editPlan,
+        },
+      },
       {
         onSuccess: () => {
           setEditVisible(false);
@@ -290,32 +330,30 @@ export default function GymDetailScreen() {
 
   const toggleGym = () => {
     const action = gym.active ? "Deshabilitar" : "Habilitar";
-    Alert.alert(
-      `${action} gimnasio`,
-      `${action} "${gym.name}"?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: action,
-          style: gym.active ? "destructive" : "default",
-          onPress: () => {
-            toggleMutation.mutate(
-              { gymId: gym._id, active: !gym.active },
-              {
-                onSuccess: () => {
-                  hapticSuccess();
-                  showToast(gym.active ? "Gimnasio deshabilitado" : "Gimnasio habilitado");
-                },
-                onError: () => {
-                  hapticError();
-                  showToast("No se pudo actualizar estado", "error");
-                },
+    Alert.alert(`${action} gimnasio`, `${action} "${gym.name}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: action,
+        style: gym.active ? "destructive" : "default",
+        onPress: () => {
+          toggleMutation.mutate(
+            { gymId: gym._id, active: !gym.active },
+            {
+              onSuccess: () => {
+                hapticSuccess();
+                showToast(
+                  gym.active ? "Gimnasio deshabilitado" : "Gimnasio habilitado",
+                );
               },
-            );
-          },
+              onError: () => {
+                hapticError();
+                showToast("No se pudo actualizar estado", "error");
+              },
+            },
+          );
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const approveRegistration = () => {
@@ -379,7 +417,10 @@ export default function GymDetailScreen() {
   const resetAdminPassword = () => {
     if (!admin?._id) return;
     if (newPassword.length < 6) {
-      return Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return Alert.alert(
+        "Error",
+        "La contraseña debe tener al menos 6 caracteres",
+      );
     }
     resetMutation.mutate(
       { adminId: admin._id, newPassword },
@@ -425,25 +466,13 @@ export default function GymDetailScreen() {
             alignItems: "center",
           }}
         >
-          <View style={{ marginBottom: 10 }}>
-            <Avatar size="lg" name={admin?.name || gym.name} uri={admin?.avatar} />
-            <View
-              style={{
-                position: "absolute",
-                right: 1,
-                bottom: 1,
-                width: 16,
-                height: 16,
-                borderRadius: 8,
-                borderWidth: 2,
-                borderColor: colors.card,
-                backgroundColor: statusColor,
-              }}
-            />
-          </View>
-          <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800" }}>{gym.name}</Text>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800" }}>
+            {gym.name}
+          </Text>
           {admin?.name ? (
-            <Text style={{ color: colors.textSecondary, marginTop: 2 }}>{admin.name}</Text>
+            <Text style={{ color: colors.textSecondary, marginTop: 2 }}>
+              {admin.name}
+            </Text>
           ) : null}
           <View style={{ flexDirection: "row", marginTop: 10, gap: 8 }}>
             <View
@@ -454,7 +483,9 @@ export default function GymDetailScreen() {
                 paddingVertical: 4,
               }}
             >
-              <Text style={{ color: plan.color, fontWeight: "700", fontSize: 12 }}>
+              <Text
+                style={{ color: plan.color, fontWeight: "700", fontSize: 12 }}
+              >
                 {plan.label}
               </Text>
             </View>
@@ -500,12 +531,23 @@ export default function GymDetailScreen() {
               ) : null}
               {gym.paymentProofUrl ? (
                 <View style={{ marginTop: 12 }}>
-                  <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12 }}>
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      marginBottom: 8,
+                      fontSize: 12,
+                    }}
+                  >
                     Imagen de comprobante
                   </Text>
                   <Image
                     source={{ uri: `${API_BASE_URL}${gym.paymentProofUrl}` }}
-                    style={{ width: "100%", height: 220, borderRadius: 12, backgroundColor: colors.background }}
+                    style={{
+                      width: "100%",
+                      height: 220,
+                      borderRadius: 12,
+                      backgroundColor: colors.background,
+                    }}
                     resizeMode="cover"
                   />
                 </View>
@@ -528,7 +570,9 @@ export default function GymDetailScreen() {
                     opacity: reviewMutation.isPending ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ color: "#10B981", fontWeight: "800" }}>Aprobar</Text>
+                  <Text style={{ color: "#10B981", fontWeight: "800" }}>
+                    Aprobar
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={rejectRegistration}
@@ -543,7 +587,9 @@ export default function GymDetailScreen() {
                     opacity: reviewMutation.isPending ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ color: "#DC2626", fontWeight: "800" }}>Rechazar</Text>
+                  <Text style={{ color: "#DC2626", fontWeight: "800" }}>
+                    Rechazar
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -553,8 +599,18 @@ export default function GymDetailScreen() {
         {isApproved && (
           <>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 16 }}>
-              <MiniStat icon="people" label="Clientes activos" value={activeClientsCount} color={primaryColor} />
-              <MiniStat icon="groups" label="Clientes totales" value={clientsCount} color="#6366F1" />
+              <MiniStat
+                icon="people"
+                label="Clientes activos"
+                value={activeClientsCount}
+                color={primaryColor}
+              />
+              <MiniStat
+                icon="groups"
+                label="Clientes totales"
+                value={clientsCount}
+                color="#6366F1"
+              />
             </View>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
               <MiniStat
@@ -584,17 +640,38 @@ export default function GymDetailScreen() {
               paddingHorizontal: 14,
             }}
           >
-            <InfoRow icon="card-membership" label="Plan actual" value={plan.label} valueColor={plan.color} />
-            <InfoRow icon="event" label="Inicio del plan" value={formatDate(membership?.startDate)} />
-            <InfoRow icon="event-busy" label="Expiracion" value={formatDate(membership?.endDate)} />
+            <InfoRow
+              icon="card-membership"
+              label="Plan actual"
+              value={plan.label}
+              valueColor={plan.color}
+            />
+            <InfoRow
+              icon="event"
+              label="Inicio del plan"
+              value={formatDate(membership?.startDate)}
+            />
+            <InfoRow
+              icon="event-busy"
+              label="Expiracion"
+              value={formatDate(membership?.endDate)}
+            />
             <InfoRow
               icon="schedule"
               label="Estado membresia"
-              value={isApproved ? currentStatus.label : "Pendiente de aprobacion"}
+              value={
+                isApproved ? currentStatus.label : "Pendiente de aprobacion"
+              }
               valueColor={isApproved ? currentStatus.color : "#F59E0B"}
             />
-            {admin?.email ? <InfoRow icon="email" label="Email admin" value={admin.email} /> : null}
-            <InfoRow icon="location-on" label="Direccion" value={gym.address || "--"} />
+            {admin?.email ? (
+              <InfoRow icon="email" label="Email admin" value={admin.email} />
+            ) : null}
+            <InfoRow
+              icon="location-on"
+              label="Direccion"
+              value={gym.address || "--"}
+            />
             <View style={{ borderBottomWidth: 0 }}>
               <InfoRow icon="badge" label="Staff" value={String(staffCount)} />
             </View>
@@ -604,7 +681,11 @@ export default function GymDetailScreen() {
         <View style={{ marginTop: 16 }}>
           <TouchableOpacity
             onPress={() => setHistoryExpanded((prev) => !prev)}
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
             <SectionTitle label="Historial de Actualizaciones de Membresia" />
             <MaterialIcons
@@ -625,12 +706,17 @@ export default function GymDetailScreen() {
                     padding: 14,
                   }}
                 >
-                  <Text style={{ color: colors.textSecondary }}>Sin historial de membresias.</Text>
+                  <Text style={{ color: colors.textSecondary }}>
+                    Sin historial de membresias.
+                  </Text>
                 </View>
               ) : (
                 memberships.map((m) => {
                   const cfg = planConfig[m.plan] || planConfig.basico;
-                  const reviewMap: Record<string, { label: string; color: string }> = {
+                  const reviewMap: Record<
+                    string,
+                    { label: string; color: string }
+                  > = {
                     pending: { label: "Pendiente", color: "#F59E0B" },
                     approved: { label: "Aprobado", color: colors.success },
                     rejected: { label: "Rechazado", color: colors.error },
@@ -648,7 +734,13 @@ export default function GymDetailScreen() {
                         padding: 12,
                       }}
                     >
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
                         <View
                           style={{
                             backgroundColor: isDark ? `${cfg.color}20` : cfg.bg,
@@ -657,29 +749,69 @@ export default function GymDetailScreen() {
                             borderRadius: 6,
                           }}
                         >
-                          <Text style={{ color: cfg.color, fontWeight: "700", fontSize: 11 }}>{cfg.label}</Text>
+                          <Text
+                            style={{
+                              color: cfg.color,
+                              fontWeight: "700",
+                              fontSize: 11,
+                            }}
+                          >
+                            {cfg.label}
+                          </Text>
                         </View>
-                        <Text style={{ color: review.color, fontWeight: "700", fontSize: 12 }}>
+                        <Text
+                          style={{
+                            color: review.color,
+                            fontWeight: "700",
+                            fontSize: 12,
+                          }}
+                        >
                           {review.label}
                         </Text>
                       </View>
-                      <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
-                        {formatDate(m.startDate)} - {formatDate(m.endDate)} | ${m.amount?.toLocaleString() || 0}
+                      <Text
+                        style={{
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                          marginTop: 8,
+                        }}
+                      >
+                        {formatDate(m.startDate)} - {formatDate(m.endDate)} | $
+                        {m.amount?.toLocaleString() || 0}
                       </Text>
                       {m.paymentReference ? (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                        <Text
+                          style={{
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
                           Ref pago: {m.paymentReference}
                         </Text>
                       ) : null}
                       {m.reviewNotes ? (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                        <Text
+                          style={{
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
                           Nota: {m.reviewNotes}
                         </Text>
                       ) : null}
                       {m.paymentProofUrl ? (
                         <Image
-                          source={{ uri: `${API_BASE_URL}${m.paymentProofUrl}` }}
-                          style={{ marginTop: 10, width: "100%", height: 160, borderRadius: 10 }}
+                          source={{
+                            uri: `${API_BASE_URL}${m.paymentProofUrl}`,
+                          }}
+                          style={{
+                            marginTop: 10,
+                            width: "100%",
+                            height: 160,
+                            borderRadius: 10,
+                          }}
                           resizeMode="cover"
                         />
                       ) : null}
@@ -696,7 +828,11 @@ export default function GymDetailScreen() {
             <View style={{ marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setClientsExpanded((prev) => !prev)}
-                style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
                 <SectionTitle label="Clientes recientes" />
                 <MaterialIcons
@@ -717,14 +853,24 @@ export default function GymDetailScreen() {
                   }}
                 >
                   {(clientsData?.clients || []).length === 0 ? (
-                    <Text style={{ color: colors.textSecondary }}>Sin clientes registrados</Text>
+                    <Text style={{ color: colors.textSecondary }}>
+                      Sin clientes registrados
+                    </Text>
                   ) : (
                     clientsData?.clients?.map((c) => (
-                      <View key={c._id} style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <View
+                        key={c._id}
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                        }}
+                      >
                         <Text style={{ color: colors.text, fontSize: 13 }}>
                           {c.firstName} {c.lastName}
                         </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                        <Text
+                          style={{ color: colors.textSecondary, fontSize: 12 }}
+                        >
                           {c.isActive ? "Activo" : "Inactivo"}
                         </Text>
                       </View>
@@ -737,7 +883,11 @@ export default function GymDetailScreen() {
             <View style={{ marginTop: 16 }}>
               <TouchableOpacity
                 onPress={() => setPaymentsExpanded((prev) => !prev)}
-                style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
                 <SectionTitle label="Pagos recientes" />
                 <MaterialIcons
@@ -758,12 +908,28 @@ export default function GymDetailScreen() {
                   }}
                 >
                   {(paymentsData?.payments || []).length === 0 ? (
-                    <Text style={{ color: colors.textSecondary }}>Sin pagos registrados</Text>
+                    <Text style={{ color: colors.textSecondary }}>
+                      Sin pagos registrados
+                    </Text>
                   ) : (
                     paymentsData?.payments?.map((p) => (
-                      <View key={p._id} style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                        <Text style={{ color: colors.text, fontSize: 13 }}>{p.clientName}</Text>
-                        <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 13 }}>
+                      <View
+                        key={p._id}
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Text style={{ color: colors.text, fontSize: 13 }}>
+                          {p.clientName}
+                        </Text>
+                        <Text
+                          style={{
+                            color: "#10B981",
+                            fontWeight: "700",
+                            fontSize: 13,
+                          }}
+                        >
                           ${p.amount.toLocaleString()}
                         </Text>
                       </View>
@@ -787,11 +953,26 @@ export default function GymDetailScreen() {
                   }}
                 >
                   {staffData.map((s) => (
-                    <View key={s._id} style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      key={s._id}
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
                       <Avatar size="sm" name={s.name} uri={s.avatar} />
                       <View style={{ marginLeft: 10, flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 13, fontWeight: "600" }}>{s.name}</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{s.email}</Text>
+                        <Text
+                          style={{
+                            color: colors.text,
+                            fontSize: 13,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {s.name}
+                        </Text>
+                        <Text
+                          style={{ color: colors.textSecondary, fontSize: 11 }}
+                        >
+                          {s.email}
+                        </Text>
                       </View>
                       <Badge label={s.active ? "Activo" : "Inactivo"} />
                     </View>
@@ -843,7 +1024,9 @@ export default function GymDetailScreen() {
                       backgroundColor: isDark ? `${primaryColor}25` : "#F0FDF4",
                     }}
                   >
-                    <Text style={{ color: primaryColor, fontWeight: "800" }}>Editar</Text>
+                    <Text style={{ color: primaryColor, fontWeight: "800" }}>
+                      Editar
+                    </Text>
                   </TouchableOpacity>
                   {admin ? (
                     <TouchableOpacity
@@ -871,7 +1054,9 @@ export default function GymDetailScreen() {
                     backgroundColor: isDark ? "#7F1D1D70" : "#FECACA",
                   }}
                 >
-                  <Text style={{ color: colors.error, fontWeight: "800" }}>Eliminar gimnasio</Text>
+                  <Text style={{ color: colors.error, fontWeight: "800" }}>
+                    Eliminar gimnasio
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -879,10 +1064,35 @@ export default function GymDetailScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={editVisible} transparent animationType="fade" onRequestClose={() => setEditVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: "#00000070", justifyContent: "center", padding: 16 }}>
-          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16 }}>
-            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 18, marginBottom: 12 }}>
+      <Modal
+        visible={editVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#00000070",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontWeight: "800",
+                fontSize: 18,
+                marginBottom: 12,
+              }}
+            >
               Editar gimnasio
             </Text>
             <TextInput
@@ -919,18 +1129,27 @@ export default function GymDetailScreen() {
               {planOptions.map((p) => (
                 <TouchableOpacity
                   key={p.key}
-                  onPress={() => setEditPlan(p.key as "basico" | "pro" | "proplus")}
+                  onPress={() =>
+                    setEditPlan(p.key as "basico" | "pro" | "proplus")
+                  }
                   style={{
                     flex: 1,
                     borderRadius: 10,
                     paddingVertical: 10,
                     alignItems: "center",
-                    backgroundColor: editPlan === p.key ? primaryColor : colors.background,
+                    backgroundColor:
+                      editPlan === p.key ? primaryColor : colors.background,
                     borderWidth: 1,
-                    borderColor: editPlan === p.key ? primaryColor : colors.border,
+                    borderColor:
+                      editPlan === p.key ? primaryColor : colors.border,
                   }}
                 >
-                  <Text style={{ color: editPlan === p.key ? "#0D1C3D" : colors.text, fontWeight: "700" }}>
+                  <Text
+                    style={{
+                      color: editPlan === p.key ? "#0D1C3D" : colors.text,
+                      fontWeight: "700",
+                    }}
+                  >
                     {p.label}
                   </Text>
                 </TouchableOpacity>
@@ -948,7 +1167,11 @@ export default function GymDetailScreen() {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Cancelar</Text>
+                <Text
+                  style={{ color: colors.textSecondary, fontWeight: "700" }}
+                >
+                  Cancelar
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={saveEdit}
@@ -971,10 +1194,35 @@ export default function GymDetailScreen() {
         </View>
       </Modal>
 
-      <Modal visible={resetVisible} transparent animationType="fade" onRequestClose={() => setResetVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: "#00000070", justifyContent: "center", padding: 16 }}>
-          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16 }}>
-            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 18, marginBottom: 12 }}>
+      <Modal
+        visible={resetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setResetVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#00000070",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontWeight: "800",
+                fontSize: 18,
+                marginBottom: 12,
+              }}
+            >
               Resetear contraseña admin
             </Text>
             <TextInput
@@ -1005,7 +1253,11 @@ export default function GymDetailScreen() {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Cancelar</Text>
+                <Text
+                  style={{ color: colors.textSecondary, fontWeight: "700" }}
+                >
+                  Cancelar
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={resetAdminPassword}

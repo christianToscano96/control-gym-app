@@ -17,12 +17,12 @@ export const planConfig: Record<
   proplus: { label: "Pro+", color: "#DB2777", bg: "#FDF2F8" },
 };
 
-export type FilterStatus = "all" | "active" | "inactive" | "pending";
+export type FilterStatus = "active" | "inactive" | "pending";
 
 export function useSuperAdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("active");
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
   const isFocused = useIsFocused();
   const isAppActive = appState === "active";
@@ -68,8 +68,31 @@ export function useSuperAdminDashboard() {
     setRefreshing(false);
   }, [refetch, refetchPending, refetchSummary, refetchAdmins]);
 
+  const baseAdmins = useMemo(
+    () => adminsData || data?.admins || [],
+    [adminsData, data?.admins],
+  );
+
+  const activeCount = useMemo(
+    () =>
+      baseAdmins.filter(
+        (a) => a.gym?.active === true && a.gym?.onboardingStatus === "approved",
+      ).length,
+    [baseAdmins],
+  );
+  const inactiveCount = useMemo(
+    () =>
+      baseAdmins.filter(
+        (a) => a.gym?.onboardingStatus === "approved" && !a.gym?.active,
+      ).length,
+    [baseAdmins],
+  );
+  const pendingCount = useMemo(
+    () => baseAdmins.filter((a) => a.gym?.onboardingStatus === "pending").length,
+    [baseAdmins],
+  );
+
   const filteredAdmins = useMemo(() => {
-    const baseAdmins = adminsData || data?.admins || [];
     if (!baseAdmins.length) return [];
     let filtered = [...baseAdmins];
 
@@ -91,30 +114,28 @@ export function useSuperAdminDashboard() {
       filtered = filtered.filter(
         (a) => a.gym?.onboardingStatus === "approved" && !a.gym?.active,
       );
-    } else if (filterStatus === "pending") {
+    } else {
       filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
     }
 
     return filtered;
-  }, [adminsData, data?.admins, searchQuery, filterStatus]);
+  }, [baseAdmins, searchQuery, filterStatus]);
 
   const pendingAdmins = useMemo(() => {
     if (pendingData) return pendingData;
-    const baseAdmins = adminsData || data?.admins || [];
     return baseAdmins.filter((a) => a.gym?.onboardingStatus === "pending");
-  }, [pendingData, adminsData, data?.admins]);
+  }, [pendingData, baseAdmins]);
 
   const summary = summaryData || data?.summary;
 
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =
     [
-      { key: "all", label: "Todos", count: (adminsData || data?.admins || []).length },
-      { key: "active", label: "Activos", count: summary?.activeGyms },
-      { key: "inactive", label: "Inactivos", count: summary?.inactiveGyms },
+      { key: "active", label: "Activos", count: activeCount },
+      { key: "inactive", label: "Inactivos", count: inactiveCount },
       {
         key: "pending",
         label: "Pendientes",
-        count: pendingAdmins.length || summary?.pendingGyms,
+        count: pendingCount,
       },
     ];
 
@@ -140,5 +161,10 @@ export function useSuperAdminDashboard() {
     pendingAdmins,
     summary,
     filterOptions,
+    counts: {
+      active: activeCount,
+      inactive: inactiveCount,
+      pending: pendingCount,
+    },
   };
 }

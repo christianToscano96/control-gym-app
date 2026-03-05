@@ -41,6 +41,14 @@ export interface SuperAdminSummary {
     pro: number;
     proplus: number;
   };
+  kpis?: {
+    platformRevenueThisMonth: number;
+    platformRevenueLastMonth: number;
+    platformRevenueDeltaPct: number;
+    newGymsThisMonth: number;
+    newGymsLastMonth: number;
+    newGymsDelta: number;
+  };
   expiringGyms: ExpiringGym[];
 }
 

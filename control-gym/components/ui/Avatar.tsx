@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Image, ViewProps } from "react-native";
+import { API_BASE_URL } from "@/constants/api";
 
 interface AvatarProps extends ViewProps {
   uri?: string;
@@ -39,11 +40,15 @@ const Avatar: React.FC<AvatarProps> = ({
   ]
     .filter(Boolean)
     .join(" ");
+  const resolvedUri =
+    uri && !/^https?:\/\//i.test(uri)
+      ? `${API_BASE_URL}${uri.startsWith("/") ? uri : `/${uri}`}`
+      : uri;
 
   return (
     <View className={containerClass} {...props}>
-      {uri ? (
-        <Image source={{ uri }} className="w-full h-full object-cover" />
+      {resolvedUri ? (
+        <Image source={{ uri: resolvedUri }} className="w-full h-full object-cover" />
       ) : (
         <Text className="text-gray-700 font-bold">{getInitials(name)}</Text>
       )}

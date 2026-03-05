@@ -16,9 +16,12 @@ import { PlanDistribution } from "./components/PlanDistribution";
 import { FilterChips } from "./components/FilterChips";
 import { GymAdminList } from "./components/GymAdminList";
 import Toast, { ToastType } from "@/components/ui/Toast";
+import { useProfileQuery } from "@/hooks/queries/useProfile";
+import { API_BASE_URL } from "@/constants/api";
 
 export default function SuperAdminDashboard() {
   const user = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
   const router = useRouter();
   const { colors, primaryColor } = useTheme();
   const reviewMutation = useReviewGymRegistration();
@@ -52,7 +55,17 @@ export default function SuperAdminDashboard() {
     isFetching,
     isAutoRefreshEnabled,
     lastUpdatedAt,
+    counts,
   } = useSuperAdminDashboard();
+  const { data: profile } = useProfileQuery();
+
+  React.useEffect(() => {
+    if (!profile?.avatar || !user?.token) return;
+    const avatarUrl = `${API_BASE_URL}${profile.avatar}`;
+    if (user.avatar !== avatarUrl) {
+      setUser({ ...user, avatar: avatarUrl }, user.token);
+    }
+  }, [profile?.avatar, setUser, user]);
 
   const formattedLastUpdated =
     lastUpdatedAt > 0
@@ -209,7 +222,7 @@ export default function SuperAdminDashboard() {
               </TouchableOpacity>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>
-              {pendingAdmins.length || summary?.pendingGyms || 0} gimnasios esperando revisión
+              {counts.pending} gimnasios esperando revisión
             </Text>
             {pendingAdmins.slice(0, 3).map((admin) => (
               (() => {
@@ -318,6 +331,12 @@ export default function SuperAdminDashboard() {
             isLoading={isLoading}
             totalRevenue={summary?.totalGymRevenue ?? 0}
             platformRevenue={summary?.totalPlatformRevenue ?? 0}
+            platformRevenueThisMonth={summary?.kpis?.platformRevenueThisMonth ?? 0}
+            platformRevenueLastMonth={summary?.kpis?.platformRevenueLastMonth ?? 0}
+            platformRevenueDeltaPct={summary?.kpis?.platformRevenueDeltaPct ?? 0}
+            newGymsThisMonth={summary?.kpis?.newGymsThisMonth ?? 0}
+            newGymsLastMonth={summary?.kpis?.newGymsLastMonth ?? 0}
+            newGymsDelta={summary?.kpis?.newGymsDelta ?? 0}
           />
 
           <View className="flex-row gap-3 px-1 my-2">
@@ -325,7 +344,7 @@ export default function SuperAdminDashboard() {
               icon="store"
               label="GIMNASIOS"
               value={isLoading ? "..." : String(summary?.totalGyms ?? 0)}
-              subtitle={`${summary?.activeGyms ?? 0} activos`}
+              subtitle={`${counts.active} activos`}
               accentColor={primaryColor}
             />
             <StatCard

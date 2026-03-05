@@ -13,6 +13,7 @@ import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
 import { AuditLog } from "../models/AuditLog";
 import { MonthlySnapshot } from "../models/MonthlySnapshot";
+import { DeletedGymArchive } from "../models/DeletedGymArchive";
 import {
   getPlatformEmailConfig,
   getPlatformPlanPrices,
@@ -25,6 +26,11 @@ const router = Router();
 
 // Todas las rutas requieren superadmin
 router.use(authenticateJWT, requireSuperAdmin);
+
+const pctDelta = (current: number, previous: number): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Number((((current - previous) / previous) * 100).toFixed(1));
+};
 
 const buildSuperAdminSummary = async () => {
   const clientCounts = await Client.aggregate([
@@ -54,6 +60,39 @@ const buildSuperAdminSummary = async () => {
   const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
 
   const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const [platformRevenueThisMonthAgg, platformRevenueLastMonthAgg] = await Promise.all([
+    Membership.aggregate([
+      { $match: { startDate: { $gte: currentMonthStart, $lt: nextMonthStart } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+    Membership.aggregate([
+      { $match: { startDate: { $gte: previousMonthStart, $lt: currentMonthStart } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+  ]);
+
+  const platformRevenueThisMonth = platformRevenueThisMonthAgg[0]?.total || 0;
+  const platformRevenueLastMonth = platformRevenueLastMonthAgg[0]?.total || 0;
+
+  const gymCreatedThisMonthLive = await Gym.countDocuments({
+    createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
+  });
+  const gymCreatedLastMonthLive = await Gym.countDocuments({
+    createdAt: { $gte: previousMonthStart, $lt: currentMonthStart },
+  });
+  const gymCreatedThisMonthArchived = await DeletedGymArchive.countDocuments({
+    gymCreatedAt: { $gte: currentMonthStart, $lt: nextMonthStart },
+  });
+  const gymCreatedLastMonthArchived = await DeletedGymArchive.countDocuments({
+    gymCreatedAt: { $gte: previousMonthStart, $lt: currentMonthStart },
+  });
+
+  const newGymsThisMonth = gymCreatedThisMonthLive + gymCreatedThisMonthArchived;
+  const newGymsLastMonth = gymCreatedLastMonthLive + gymCreatedLastMonthArchived;
   const sevenDaysFromNow = new Date();
   sevenDaysFromNow.setDate(now.getDate() + 7);
 
@@ -94,6 +133,17 @@ const buildSuperAdminSummary = async () => {
       basico: allGyms.filter((g) => g.plan === "basico").length,
       pro: allGyms.filter((g) => g.plan === "pro").length,
       proplus: allGyms.filter((g) => g.plan === "proplus").length,
+    },
+    kpis: {
+      platformRevenueThisMonth,
+      platformRevenueLastMonth,
+      platformRevenueDeltaPct: pctDelta(
+        platformRevenueThisMonth,
+        platformRevenueLastMonth,
+      ),
+      newGymsThisMonth,
+      newGymsLastMonth,
+      newGymsDelta: newGymsThisMonth - newGymsLastMonth,
     },
     expiringGyms,
   };
@@ -975,24 +1025,32 @@ router.put("/gyms/:gymId", async (req, res) => {
   }
 });
 
-// ─── Delete Gym (full cascade) ───────────────────────────────
+// ─── Delete Gym (preserve financial history) ─────────────────
 router.delete("/gyms/:gymId", async (req, res) => {
   try {
     const gym = await Gym.findById(req.params.gymId);
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
+    await DeletedGymArchive.create({
+      originalGymId: String(gym._id),
+      gymName: gym.name,
+      plan: gym.plan,
+      gymCreatedAt: (gym as any).createdAt || new Date(),
+      deletedAt: new Date(),
+    });
+
     await Promise.all([
       User.deleteMany({ gymId: gym._id }),
-      Membership.deleteMany({ gymId: gym._id }),
       Client.deleteMany({ gymId: gym._id }),
       AccessLog.deleteMany({ gymId: gym._id }),
-      Payment.deleteMany({ gymId: gym._id }),
-      MonthlySnapshot.deleteMany({ gymId: gym._id }),
       Gym.findByIdAndDelete(gym._id),
     ]);
 
-    res.json({ message: "Gimnasio eliminado correctamente" });
+    res.json({
+      message:
+        "Gimnasio eliminado correctamente. Historial de ingresos conservado para reportes.",
+    });
   } catch (error) {
     console.error("Error deleting gym:", error);
     res.status(500).json({ message: "Error al eliminar gimnasio" });

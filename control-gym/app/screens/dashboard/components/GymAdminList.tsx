@@ -87,7 +87,7 @@ export const GymAdminList = ({
         icon="store"
         title="No hay gimnasios"
         description={
-          searchQuery || filterStatus !== "all"
+          searchQuery
             ? "No se encontraron gimnasios con los filtros aplicados"
             : "Aún no hay gimnasios registrados"
         }

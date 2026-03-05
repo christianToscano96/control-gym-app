@@ -105,6 +105,7 @@ router.post("/login", async (req, res) => {
       id: user._id,
       name: user.name,
       role: user.role,
+      avatar: user.avatar,
       gymId: user.gymId,
       gymActive,
       onboardingStatus: onboardingStatus || "approved",

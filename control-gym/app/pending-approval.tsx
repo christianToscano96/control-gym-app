@@ -3,6 +3,7 @@ import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import { useTheme } from "@/context/ThemeContext";
 import { API_BASE_URL } from "@/constants/api";
+import { useMembershipStore, useUserStore } from "@/stores/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -41,15 +42,25 @@ export default function PendingApprovalScreen() {
   const params = useLocalSearchParams<{
     gymId?: string;
     paymentReference?: string;
+    adminEmail?: string;
+    adminPassword?: string;
   }>();
+  const setUser = useUserStore((s) => s.setUser);
+  const setHasActiveMembership = useMembershipStore(
+    (s) => s.setHasActiveMembership,
+  );
 
   const gymId = params.gymId || "";
   const initialPaymentReference = params.paymentReference || "";
+  const adminEmail = (params.adminEmail || "").trim().toLowerCase();
+  const adminPassword = params.adminPassword || "";
 
   const [statusData, setStatusData] =
     useState<RegistrationStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [autoLoggingIn, setAutoLoggingIn] = useState(false);
+  const [autoLoginTried, setAutoLoginTried] = useState(false);
   const [proofUri, setProofUri] = useState("");
   const [copyFeedback, setCopyFeedback] = useState("");
 
@@ -80,6 +91,58 @@ export default function PendingApprovalScreen() {
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  const signInAndRedirect = useCallback(async () => {
+    if (!adminEmail || !adminPassword) return false;
+
+    setAutoLoggingIn(true);
+    try {
+      const data = await apiClient("/api/auth/login", {
+        method: "POST",
+        body: { email: adminEmail, password: adminPassword },
+        skipAuth: true,
+      });
+      setUser(data.user, data.token);
+
+      if (data.user.role === "empleado" || data.user.role === "superadmin") {
+        setHasActiveMembership(true);
+        router.replace("/(tabs)");
+        return true;
+      }
+
+      if (data.user.gymActive === false) {
+        router.replace("/gym-suspended");
+        return true;
+      }
+
+      const memberships = await apiClient("/api/membership");
+      const hasMembership =
+        Array.isArray(memberships) && memberships.some((m: any) => m.active);
+      setHasActiveMembership(hasMembership);
+      if (!hasMembership) {
+        router.replace("/choose-membership");
+      } else {
+        router.replace("/(tabs)");
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setAutoLoggingIn(false);
+    }
+  }, [
+    adminEmail,
+    adminPassword,
+    router,
+    setHasActiveMembership,
+    setUser,
+  ]);
+
+  useEffect(() => {
+    if (statusData?.onboardingStatus !== "approved" || autoLoginTried) return;
+    setAutoLoginTried(true);
+    signInAndRedirect();
+  }, [autoLoginTried, signInAndRedirect, statusData?.onboardingStatus]);
 
   const pickProof = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -521,10 +584,36 @@ export default function PendingApprovalScreen() {
               </ButtonCustom>
             </>
           ) : isApproved ? (
-            <ButtonCustom
-              title="Ir a iniciar sesion"
-              onPress={() => router.replace("/login")}
-            />
+            autoLoggingIn ? (
+              <View
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 8,
+                }}
+              >
+                <ActivityIndicator size="small" color={primaryColor} />
+                <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
+                  Ingresando al dashboard...
+                </Text>
+              </View>
+            ) : (
+              <ButtonCustom
+                title="Entrar al dashboard"
+                onPress={async () => {
+                  const logged = await signInAndRedirect();
+                  if (!logged) {
+                    router.replace("/login");
+                  }
+                }}
+              />
+            )
           ) : null}
 
           {showPendingOnly && (

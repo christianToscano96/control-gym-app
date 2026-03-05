@@ -100,6 +100,8 @@ export default function LoginScreen() {
             params: {
               gymId: err.data?.gymId,
               paymentReference: err.data?.paymentReference,
+              adminEmail: email.trim().toLowerCase(),
+              adminPassword: password,
             },
           });
           return;

@@ -56,6 +56,8 @@ export default function RegisterScreen() {
         params: {
           gymId: data.gymId,
           paymentReference: data.paymentReference,
+          adminEmail: adminEmail.trim().toLowerCase(),
+          adminPassword,
         },
       });
     } catch (err) {

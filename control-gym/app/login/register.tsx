@@ -10,6 +10,7 @@ import ModalCustom from "../../components/ui/ModalCustom";
 import TextField from "../../components/ui/TextField";
 import { apiClient } from "../../api/client";
 import { useTheme } from "@/context/ThemeContext";
+import { fetchPublicPlanPrices } from "@/api/register";
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -19,8 +20,19 @@ export default function RegisterScreen() {
   const [gymName, setGymName] = useState("");
   const [gymAddress, setGymAddress] = useState("");
   const [plan, setPlan] = useState("basico");
+  const [planPrices, setPlanPrices] = useState({
+    basico: 15000,
+    pro: 25000,
+    proplus: 40000,
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
+
+  React.useEffect(() => {
+    fetchPublicPlanPrices()
+      .then((data) => setPlanPrices(data))
+      .catch(() => {});
+  }, []);
 
   const handleRegister = async () => {
     try {
@@ -135,7 +147,7 @@ export default function RegisterScreen() {
               {[
                 {
                   nivel: "NIVEL 1",
-                  price: "$15/mes",
+                  price: `$${planPrices.basico.toLocaleString("es-AR")}/mes`,
                   title: "Plan Básico",
                   planKey: "basico",
                   features: [
@@ -154,7 +166,7 @@ export default function RegisterScreen() {
                 },
                 {
                   nivel: "NIVEL 2",
-                  price: "$25/mes",
+                  price: `$${planPrices.pro.toLocaleString("es-AR")}/mes`,
                   title: "Plan Pro",
                   planKey: "pro",
                   features: [
@@ -173,7 +185,7 @@ export default function RegisterScreen() {
                 },
                 {
                   nivel: "NIVEL 3",
-                  price: "$50/mes",
+                  price: `$${planPrices.proplus.toLocaleString("es-AR")}/mes`,
                   title: "Plan Pro+",
                   planKey: "proplus",
                   features: [

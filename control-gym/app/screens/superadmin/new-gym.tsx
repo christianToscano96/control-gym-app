@@ -14,29 +14,29 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/context/ThemeContext";
-import { useCreateGym } from "@/hooks/queries/useSuperAdmin";
+import {
+  useCreateGym,
+  useSuperAdminPlanPricesQuery,
+} from "@/hooks/queries/useSuperAdmin";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast, { ToastType } from "@/components/ui/Toast";
 
-const planOptions = [
+const basePlanOptions = [
   {
     key: "basico" as const,
     label: "Basico",
-    price: "$15,000",
     color: "#6366F1",
     bg: "#EEF2FF",
   },
   {
     key: "pro" as const,
     label: "Pro",
-    price: "$25,000",
     color: "#7C3AED",
     bg: "#F5F3FF",
   },
   {
     key: "proplus" as const,
     label: "Pro+",
-    price: "$40,000",
     color: "#DB2777",
     bg: "#FDF2F8",
   },
@@ -46,6 +46,7 @@ export default function NewGymScreen() {
   const router = useRouter();
   const { colors, primaryColor, isDark } = useTheme();
   const createMutation = useCreateGym();
+  const { data: planPrices } = useSuperAdminPlanPricesQuery();
 
   const [gymName, setGymName] = useState("");
   const [gymAddress, setGymAddress] = useState("");
@@ -118,6 +119,11 @@ export default function NewGymScreen() {
     marginBottom: 6,
     marginTop: 14,
   };
+
+  const planOptions = basePlanOptions.map((p) => ({
+    ...p,
+    price: `$${Number(planPrices?.[p.key] ?? 0).toLocaleString("es-AR")}`,
+  }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>

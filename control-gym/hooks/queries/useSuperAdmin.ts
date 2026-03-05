@@ -3,6 +3,8 @@ import {
   fetchSuperAdminOverview,
   fetchSuperAdminSummary,
   fetchSuperAdminAdmins,
+  fetchSuperAdminPlanPrices,
+  updateSuperAdminPlanPrices,
   fetchPendingRegistrations,
   fetchGymDetail,
   fetchGymClients,
@@ -17,6 +19,7 @@ import {
   resetAdminPassword,
   fetchMembershipHistory,
   MembershipHistory,
+  PlanPrices,
 } from "@/api/superadmin";
 import {
   SuperAdminOverview,
@@ -92,6 +95,17 @@ export function usePendingRegistrationsQuery(options?: {
     refetchOnReconnect: true,
     enabled: options?.enabled ?? true,
     refetchInterval: options?.refetchInterval ?? false,
+  });
+}
+
+export function useSuperAdminPlanPricesQuery() {
+  return useQuery<PlanPrices>({
+    queryKey: queryKeys.superadmin.planPrices,
+    queryFn: fetchSuperAdminPlanPrices,
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -419,6 +433,22 @@ export function useDeleteGym() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
       queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.superadmin.pendingRegistrations,
+      });
+    },
+  });
+}
+
+export function useUpdateSuperAdminPlanPrices() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (planPrices: PlanPrices) => updateSuperAdminPlanPrices(planPrices),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.planPrices });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.summary });
+      queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.overview });
       queryClient.invalidateQueries({ queryKey: queryKeys.superadmin.admins });
       queryClient.invalidateQueries({
         queryKey: queryKeys.superadmin.pendingRegistrations,

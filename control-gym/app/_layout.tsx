@@ -130,6 +130,10 @@ export default function RootLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="screens/config/SuperAdminPlanPricingScreen"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="screens/superadmin/gym-detail"
               options={{ headerShown: false }}
             />

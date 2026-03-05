@@ -11,6 +11,12 @@ import {
   CreateGymData,
 } from "@/types/superadmin";
 
+export interface PlanPrices {
+  basico: number;
+  pro: number;
+  proplus: number;
+}
+
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {
   return apiClient<SuperAdminOverview>("/api/superadmin/overview");
 }
@@ -24,6 +30,26 @@ export async function fetchSuperAdminAdmins(): Promise<SuperAdminEntry[]> {
     "/api/superadmin/admins",
   );
   return data.admins || [];
+}
+
+export async function fetchSuperAdminPlanPrices(): Promise<PlanPrices> {
+  const data = await apiClient<{ planPrices: PlanPrices }>(
+    "/api/superadmin/plan-prices",
+  );
+  return data.planPrices;
+}
+
+export async function updateSuperAdminPlanPrices(
+  planPrices: PlanPrices,
+): Promise<PlanPrices> {
+  const data = await apiClient<{ message: string; planPrices: PlanPrices }>(
+    "/api/superadmin/plan-prices",
+    {
+      method: "PUT",
+      body: { planPrices },
+    },
+  );
+  return data.planPrices;
 }
 
 export async function fetchPendingRegistrations(): Promise<SuperAdminEntry[]> {

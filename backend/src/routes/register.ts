@@ -6,6 +6,7 @@ import fs from "fs";
 import { User } from "../models/User";
 import { Gym } from "../models/Gym";
 import { Membership } from "../models/Membership";
+import { getPlatformPlanPrices } from "../utils/planPricing";
 
 const router = Router();
 
@@ -61,16 +62,18 @@ const generateUniquePaymentReference = async () => {
 // Registro de gimnasio + admin + plan
 router.post("/", async (req, res) => {
   try {
-    const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan, planAmount } =
+    const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan } =
       req.body;
     if (!["basico", "pro", "proplus"].includes(plan)) {
       return res.status(400).json({ message: "Plan inválido" });
     }
+    const planKey = plan as keyof Awaited<ReturnType<typeof getPlatformPlanPrices>>;
     // Validar email único
     const exists = await User.findOne({ email: adminEmail });
     if (exists)
       return res.status(400).json({ message: "El email ya está registrado" });
 
+    const planPrices = await getPlatformPlanPrices();
     const paymentReference = await generateUniquePaymentReference();
     // Crear gimnasio
     const gym = await Gym.create({
@@ -101,7 +104,7 @@ router.post("/", async (req, res) => {
     await Membership.create({
       gymId: gym._id,
       plan,
-      amount: planAmount || 0,
+      amount: planPrices[planKey] || 0,
       startDate: now,
       endDate,
       active: false,
@@ -121,6 +124,15 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.get("/plan-prices", async (req, res) => {
+  try {
+    const planPrices = await getPlatformPlanPrices();
+    res.json({ planPrices });
+  } catch (err) {
+    res.status(500).json({ message: "Error al obtener precios de planes", error: err });
+  }
+});
+
 router.get("/:gymId/status", async (req, res) => {
   try {
     const gym = await Gym.findById(req.params.gymId)
@@ -128,10 +140,7 @@ router.get("/:gymId/status", async (req, res) => {
         "name plan onboardingStatus paymentReference paymentProofUrl paymentProofUploadedAt paymentRejectionReason",
       )
       .lean();
-    const latestMembership = await Membership.findOne({ gymId: req.params.gymId })
-      .sort({ createdAt: -1 })
-      .select("amount")
-      .lean();
+    const planPrices = await getPlatformPlanPrices();
     if (!gym) {
       return res.status(404).json({ message: "Gimnasio no encontrado" });
     }
@@ -141,7 +150,7 @@ router.get("/:gymId/status", async (req, res) => {
       plan: gym.plan,
       onboardingStatus: gym.onboardingStatus,
       paymentReference: gym.paymentReference,
-      transferAmount: latestMembership?.amount ?? 0,
+      transferAmount: planPrices[gym.plan] || 0,
       paymentProofUrl: gym.paymentProofUrl || null,
       paymentProofUploadedAt: gym.paymentProofUploadedAt || null,
       paymentRejectionReason: gym.paymentRejectionReason || null,

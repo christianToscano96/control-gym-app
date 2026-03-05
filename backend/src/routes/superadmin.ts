@@ -13,18 +13,15 @@ import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
 import { AuditLog } from "../models/AuditLog";
 import { MonthlySnapshot } from "../models/MonthlySnapshot";
+import {
+  getPlatformPlanPrices,
+  upsertPlatformPlanPrices,
+} from "../utils/planPricing";
 
 const router = Router();
 
 // Todas las rutas requieren superadmin
 router.use(authenticateJWT, requireSuperAdmin);
-
-// ─── Plan Prices ─────────────────────────────────────────────
-const planPrices: Record<string, number> = {
-  basico: 15000,
-  pro: 25000,
-  proplus: 40000,
-};
 
 const buildSuperAdminSummary = async () => {
   const clientCounts = await Client.aggregate([
@@ -251,6 +248,42 @@ router.get("/admins", async (req, res) => {
   } catch (error) {
     console.error("Error fetching superadmin admins:", error);
     res.status(500).json({ message: "Error al obtener admins" });
+  }
+});
+
+// ─── Plan Prices Config ─────────────────────────────────────
+router.get("/plan-prices", async (req, res) => {
+  try {
+    const planPrices = await getPlatformPlanPrices();
+    res.json({ planPrices });
+  } catch (error) {
+    console.error("Error fetching plan prices:", error);
+    res.status(500).json({ message: "Error al obtener precios de planes" });
+  }
+});
+
+router.put("/plan-prices", async (req, res) => {
+  try {
+    const { planPrices } = req.body as {
+      planPrices?: { basico?: number; pro?: number; proplus?: number };
+    };
+
+    if (!planPrices) {
+      return res.status(400).json({ message: "planPrices es requerido" });
+    }
+    if (
+      [planPrices.basico, planPrices.pro, planPrices.proplus].some(
+        (n) => typeof n !== "number" || Number.isNaN(n) || n < 0,
+      )
+    ) {
+      return res.status(400).json({ message: "Todos los precios deben ser números >= 0" });
+    }
+
+    const updated = await upsertPlatformPlanPrices(planPrices);
+    res.json({ message: "Precios actualizados", planPrices: updated });
+  } catch (error) {
+    console.error("Error updating plan prices:", error);
+    res.status(500).json({ message: "Error al actualizar precios de planes" });
   }
 });
 
@@ -512,6 +545,7 @@ router.post("/gyms", async (req, res) => {
   try {
     const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan } =
       req.body;
+    const planPrices = await getPlatformPlanPrices();
 
     if (!gymName || !adminName || !adminEmail || !adminPassword || !plan) {
       return res.status(400).json({ message: "Todos los campos son requeridos" });
@@ -519,6 +553,7 @@ router.post("/gyms", async (req, res) => {
     if (!["basico", "pro", "proplus"].includes(plan)) {
       return res.status(400).json({ message: "Plan inválido" });
     }
+    const planKey = plan as keyof Awaited<ReturnType<typeof getPlatformPlanPrices>>;
     if (adminPassword.length < 6) {
       return res
         .status(400)
@@ -559,7 +594,7 @@ router.post("/gyms", async (req, res) => {
     await Membership.create({
       gymId: gym._id,
       plan,
-      amount: planPrices[plan] || 0,
+      amount: planPrices[planKey] || 0,
       startDate: now,
       endDate,
       active: true,
@@ -582,6 +617,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
       action: "approve" | "reject";
       rejectionReason?: string;
     };
+    const planPrices = await getPlatformPlanPrices();
 
     if (!action || !["approve", "reject"].includes(action)) {
       return res.status(400).json({ message: "Acción inválida" });
@@ -612,6 +648,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
       if (activeMembership) {
         activeMembership.startDate = now;
         activeMembership.endDate = endDate;
+        activeMembership.amount = planPrices[gym.plan] || 0;
         activeMembership.reviewStatus = "approved";
         activeMembership.reviewedAt = now;
         activeMembership.reviewNotes = undefined;
@@ -632,6 +669,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
             reviewNotes: undefined,
             paymentReference: gym.paymentReference,
             paymentProofUrl: gym.paymentProofUrl,
+            amount: planPrices[gym.plan] || 0,
           });
         } else {
           await Membership.create({
@@ -819,6 +857,7 @@ router.put("/admins/:id", async (req, res) => {
 router.put("/gyms/:gymId", async (req, res) => {
   try {
     const { name, address, plan } = req.body;
+    const planPrices = await getPlatformPlanPrices();
     const updateData: any = {};
     if (name) updateData.name = name;
     if (address) updateData.address = address;
@@ -831,7 +870,8 @@ router.put("/gyms/:gymId", async (req, res) => {
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
-    if (plan && planPrices[plan] !== undefined) {
+    if (plan && ["basico", "pro", "proplus"].includes(plan)) {
+      const planKey = plan as keyof Awaited<ReturnType<typeof getPlatformPlanPrices>>;
       await Membership.updateMany(
         { gymId: gym._id, active: true },
         { active: false, endDate: new Date() },
@@ -844,7 +884,7 @@ router.put("/gyms/:gymId", async (req, res) => {
       await Membership.create({
         gymId: gym._id,
         plan,
-        amount: planPrices[plan],
+        amount: planPrices[planKey],
         startDate: now,
         endDate,
         active: gym.active,

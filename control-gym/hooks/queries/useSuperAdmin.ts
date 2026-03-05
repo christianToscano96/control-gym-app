@@ -26,13 +26,19 @@ import {
 } from "@/types/superadmin";
 import { queryKeys } from "./queryKeys";
 
-export function useSuperAdminOverviewQuery() {
+export function useSuperAdminOverviewQuery(options?: {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}) {
   return useQuery<SuperAdminOverview>({
     queryKey: queryKeys.superadmin.overview,
     queryFn: fetchSuperAdminOverview,
     staleTime: 30000,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
+    refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
   });
 }
 

@@ -34,7 +34,19 @@ export default function SuperAdminDashboard() {
     pendingAdmins,
     summary,
     filterOptions,
+    isFetching,
+    isAutoRefreshEnabled,
+    lastUpdatedAt,
   } = useSuperAdminDashboard();
+
+  const formattedLastUpdated =
+    lastUpdatedAt > 0
+      ? new Date(lastUpdatedAt).toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      : "--:--:--";
 
   return (
     <SafeAreaView
@@ -62,6 +74,37 @@ export default function SuperAdminDashboard() {
           >
             Panel Super Admin
           </Text>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 8,
+              marginBottom: 8,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: isAutoRefreshEnabled ? "#10B981" : "#F59E0B",
+                }}
+              />
+              <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: "600" }}>
+                {isAutoRefreshEnabled
+                  ? "Actualización automática activa"
+                  : "Actualización automática pausada"}
+              </Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+              {isFetching
+                ? "Sincronizando..."
+                : `Actualizado ${formattedLastUpdated}`}
+            </Text>
+          </View>
 
           <View
             style={{

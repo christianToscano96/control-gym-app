@@ -1,5 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSuperAdminOverviewQuery } from "@/hooks/queries/useSuperAdmin";
+import { AppState, AppStateStatus } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
 export const planConfig: Record<
   string,
@@ -16,9 +18,21 @@ export function useSuperAdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const isFocused = useIsFocused();
+  const isAppActive = appState === "active";
+  const isAutoRefreshEnabled = isFocused && isAppActive;
 
-  const { data, isLoading, isError, error, refetch } =
-    useSuperAdminOverviewQuery();
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", setAppState);
+    return () => subscription.remove();
+  }, []);
+
+  const { data, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } =
+    useSuperAdminOverviewQuery({
+      enabled: isFocused,
+      refetchInterval: isAutoRefreshEnabled ? 15000 : false,
+    });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -80,6 +94,9 @@ export function useSuperAdminDashboard() {
     isError,
     error,
     refetch,
+    isFetching,
+    isAutoRefreshEnabled,
+    lastUpdatedAt: dataUpdatedAt || 0,
     onRefresh,
     filteredAdmins,
     pendingAdmins,

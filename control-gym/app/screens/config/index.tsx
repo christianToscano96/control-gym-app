@@ -213,7 +213,11 @@ export default function ConfigScreen() {
               />
               <SettingItem
                 icon="email"
-                title="Configuración de Email"
+                title={
+                  isSuperAdmin
+                    ? "Email de Plataforma"
+                    : "Configuración de Email"
+                }
                 onPress={() => router.push("/screens/config/EmailConfigScreen")}
               />
               <SettingItem

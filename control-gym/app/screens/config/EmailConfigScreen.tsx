@@ -3,6 +3,7 @@ import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import TextField from "@/components/ui/TextField";
 import Toast from "@/components/ui/Toast";
 import { useTheme } from "@/context/ThemeContext";
+import { useUserStore } from "@/stores/store";
 import {
   useEmailConfigQuery,
   useUpdateEmailConfig,
@@ -15,14 +16,17 @@ import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EmailConfigScreen() {
-  const { primaryColor, colors } = useTheme();
+  const { colors } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
+  const user = useUserStore((s) => s.user);
+  const isSuperAdmin = user?.role === "superadmin";
+  const scope = isSuperAdmin ? "superadmin" : "admin";
 
   const [gmailUser, setGmailUser] = useState("");
   const [gmailAppPassword, setGmailAppPassword] = useState("");
 
-  const { data: emailConfig, isLoading } = useEmailConfigQuery();
-  const updateMutation = useUpdateEmailConfig();
+  const { data: emailConfig, isLoading } = useEmailConfigQuery(scope);
+  const updateMutation = useUpdateEmailConfig(scope);
 
   useEffect(() => {
     if (emailConfig) {
@@ -61,7 +65,14 @@ export default function EmailConfigScreen() {
       className="flex-1 px-5"
     >
       <View style={{ backgroundColor: colors.background }}>
-        <HeaderTopScrenn title="Configuración de Email" isBackButton />
+        <HeaderTopScrenn
+          title={
+            isSuperAdmin
+              ? "Email de Plataforma"
+              : "Configuración de Email"
+          }
+          isBackButton
+        />
       </View>
 
       {isLoading ? (
@@ -108,8 +119,12 @@ export default function EmailConfigScreen() {
                 }}
               >
                 {emailConfig?.isConfigured
-                  ? "Los emails de bienvenida se enviarán automáticamente"
-                  : "Configurá tu Gmail para enviar emails a tus clientes"}
+                  ? isSuperAdmin
+                    ? "Los emails de aprobación de gimnasios se enviarán automáticamente"
+                    : "Los emails de bienvenida se enviarán automáticamente"
+                  : isSuperAdmin
+                    ? "Configurá tu Gmail para notificar habilitaciones a gimnasios"
+                    : "Configurá tu Gmail para enviar emails a tus clientes"}
               </Text>
             </View>
           </View>
@@ -150,6 +165,14 @@ export default function EmailConfigScreen() {
               style={{ backgroundColor: colors.card }}
             >
               <Text
+                className="text-xs mb-2"
+                style={{ color: colors.textSecondary }}
+              >
+                {isSuperAdmin
+                  ? "Uso: notificaciones cuando un gimnasio pendiente es habilitado."
+                  : "Uso: emails de bienvenida y recuperación para clientes/usuarios del gimnasio."}
+              </Text>
+              <Text
                 className="text-xs font-bold mb-2"
                 style={{ color: colors.text }}
               >
@@ -161,8 +184,9 @@ export default function EmailConfigScreen() {
               >
                 1. Activá la verificación en 2 pasos en tu cuenta de Google
                 {"\n"}2. Andá a myaccount.google.com → Seguridad{"\n"}3. Buscá
-                "Contraseñas de aplicaciones"{"\n"}4. Creá una nueva con nombre
-                "Gym App"{"\n"}5. Copiá la contraseña de 16 caracteres
+                &quot;Contraseñas de aplicaciones&quot;
+                {"\n"}4. Creá una nueva con nombre &quot;Gym App&quot;
+                {"\n"}5. Copiá la contraseña de 16 caracteres
               </Text>
             </View>
           </View>

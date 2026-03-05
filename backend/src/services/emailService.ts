@@ -263,3 +263,86 @@ export async function sendWelcomeEmail(
     console.error("Error enviando email de bienvenida:", err);
   }
 }
+
+interface GymEnabledEmailParams {
+  toEmail: string;
+  adminName: string;
+  gymName: string;
+  plan: string;
+  gmailUser: string;
+  gmailAppPassword: string;
+}
+
+function buildGymEnabledHtml(params: GymEnabledEmailParams): string {
+  const { adminName, gymName, plan } = params;
+  const planLabel = getMembershipLabel(plan);
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f7; font-family:Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background-color:#111827; padding:30px 40px; text-align:center;">
+              <h1 style="color:#ffffff; margin:0; font-size:24px; letter-spacing:1px;">Control Gym</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="color:#111827; margin:0 0 16px 0; font-size:20px;">
+                Hola ${adminName},
+              </h2>
+              <p style="color:#4b5563; font-size:16px; line-height:1.6; margin:0 0 16px 0;">
+                Tu gimnasio <strong>${gymName}</strong> fue habilitado correctamente.
+              </p>
+              <p style="color:#4b5563; font-size:16px; line-height:1.6; margin:0 0 16px 0;">
+                Plan activo: <strong>${planLabel}</strong>.
+              </p>
+              <p style="color:#4b5563; font-size:14px; line-height:1.6; margin:24px 0 0 0;">
+                Ya podés ingresar a tu dashboard y comenzar a usar la plataforma.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f9fafb; padding:20px 40px; text-align:center; border-top:1px solid #e5e7eb;">
+              <p style="color:#9ca3af; font-size:12px; margin:0;">
+                Control Gym &mdash; Notificación automática de habilitación.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendGymEnabledEmail(
+  params: GymEnabledEmailParams,
+): Promise<void> {
+  try {
+    const transporter = createTransporter(
+      params.gmailUser,
+      params.gmailAppPassword,
+    );
+
+    const info = await transporter.sendMail({
+      from: `Control Gym <${params.gmailUser}>`,
+      to: params.toEmail,
+      subject: `Gimnasio habilitado: ${params.gymName}`,
+      html: buildGymEnabledHtml(params),
+    });
+
+    console.log("Email de habilitación enviado:", info.messageId);
+  } catch (err) {
+    console.error("Error enviando email de habilitación:", err);
+  }
+}

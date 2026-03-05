@@ -14,9 +14,12 @@ import { Payment } from "../models/Payment";
 import { AuditLog } from "../models/AuditLog";
 import { MonthlySnapshot } from "../models/MonthlySnapshot";
 import {
+  getPlatformEmailConfig,
   getPlatformPlanPrices,
+  upsertPlatformEmailConfig,
   upsertPlatformPlanPrices,
 } from "../utils/planPricing";
+import { sendGymEnabledEmail } from "../services/emailService";
 
 const router = Router();
 
@@ -284,6 +287,51 @@ router.put("/plan-prices", async (req, res) => {
   } catch (error) {
     console.error("Error updating plan prices:", error);
     res.status(500).json({ message: "Error al actualizar precios de planes" });
+  }
+});
+
+// ─── SuperAdmin Email Config ────────────────────────────────
+router.get("/email-config", async (req, res) => {
+  try {
+    const emailConfig = await getPlatformEmailConfig();
+    res.json({
+      gmailUser: emailConfig?.gmailUser || "",
+      isConfigured: Boolean(
+        emailConfig?.gmailUser && emailConfig?.gmailAppPassword,
+      ),
+    });
+  } catch (error) {
+    console.error("Error fetching superadmin email config:", error);
+    res.status(500).json({ message: "Error al obtener configuración de email" });
+  }
+});
+
+router.put("/email-config", async (req, res) => {
+  try {
+    const { gmailUser, gmailAppPassword } = req.body as {
+      gmailUser?: string;
+      gmailAppPassword?: string;
+    };
+
+    if (!gmailUser || !gmailAppPassword) {
+      return res
+        .status(400)
+        .json({ message: "Gmail y App Password son requeridos" });
+    }
+
+    await upsertPlatformEmailConfig({
+      gmailUser: gmailUser.trim(),
+      gmailAppPassword: gmailAppPassword.trim(),
+    });
+
+    res.json({
+      message: "Configuración de email actualizada",
+      gmailUser: gmailUser.trim(),
+      isConfigured: true,
+    });
+  } catch (error) {
+    console.error("Error updating superadmin email config:", error);
+    res.status(500).json({ message: "Error al actualizar configuración de email" });
   }
 });
 
@@ -718,6 +766,32 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
     }
 
     await gym.save();
+
+    if (action === "approve") {
+      const adminOwner = await User.findOne({ gymId: gym._id, role: "admin" })
+        .select("name email")
+        .lean();
+      const platformEmailConfig = await getPlatformEmailConfig();
+
+      if (
+        adminOwner?.email &&
+        platformEmailConfig?.gmailUser &&
+        platformEmailConfig?.gmailAppPassword
+      ) {
+        await sendGymEnabledEmail({
+          toEmail: adminOwner.email,
+          adminName: adminOwner.name || "Administrador",
+          gymName: gym.name,
+          plan: gym.plan,
+          gmailUser: platformEmailConfig.gmailUser,
+          gmailAppPassword: platformEmailConfig.gmailAppPassword,
+        });
+      } else if (!platformEmailConfig) {
+        console.warn(
+          `[SuperAdmin] Email no enviado al aprobar ${gym.name}: falta configuración SMTP del superadmin.`,
+        );
+      }
+    }
 
     res.json({
       message:

@@ -9,6 +9,10 @@ export interface IPlatformPlanPrices {
 export interface IPlatformSettings extends Document {
   key: string;
   planPrices: IPlatformPlanPrices;
+  superadminEmailConfig?: {
+    gmailUser: string;
+    gmailAppPassword: string;
+  };
 }
 
 const PlatformSettingsSchema = new Schema<IPlatformSettings>(
@@ -18,6 +22,10 @@ const PlatformSettingsSchema = new Schema<IPlatformSettings>(
       basico: { type: Number, default: 15000 },
       pro: { type: Number, default: 25000 },
       proplus: { type: Number, default: 40000 },
+    },
+    superadminEmailConfig: {
+      gmailUser: { type: String },
+      gmailAppPassword: { type: String },
     },
   },
   { timestamps: true },

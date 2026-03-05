@@ -43,3 +43,44 @@ export const upsertPlatformPlanPrices = async (
     .lean();
   return normalizePlanPrices(settings?.planPrices as Partial<IPlatformPlanPrices>);
 };
+
+export interface IPlatformEmailConfig {
+  gmailUser: string;
+  gmailAppPassword: string;
+}
+
+export const getPlatformEmailConfig = async (): Promise<IPlatformEmailConfig | null> => {
+  const settings = await PlatformSettings.findOne({ key: "global" })
+    .select("superadminEmailConfig")
+    .lean();
+
+  const emailConfig = settings?.superadminEmailConfig as
+    | IPlatformEmailConfig
+    | undefined;
+  if (!emailConfig?.gmailUser || !emailConfig?.gmailAppPassword) {
+    return null;
+  }
+  return {
+    gmailUser: emailConfig.gmailUser,
+    gmailAppPassword: emailConfig.gmailAppPassword,
+  };
+};
+
+export const upsertPlatformEmailConfig = async (
+  emailConfig: IPlatformEmailConfig,
+): Promise<IPlatformEmailConfig> => {
+  const settings = await PlatformSettings.findOneAndUpdate(
+    { key: "global" },
+    { key: "global", superadminEmailConfig: emailConfig },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  )
+    .select("superadminEmailConfig")
+    .lean();
+
+  return {
+    gmailUser: settings?.superadminEmailConfig?.gmailUser || emailConfig.gmailUser,
+    gmailAppPassword:
+      settings?.superadminEmailConfig?.gmailAppPassword ||
+      emailConfig.gmailAppPassword,
+  };
+};

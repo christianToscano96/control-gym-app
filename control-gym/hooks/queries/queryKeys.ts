@@ -31,7 +31,8 @@ export const queryKeys = {
       ["reports", filters] as const,
   },
   emailConfig: {
-    current: ["emailConfig"] as const,
+    current: (scope: "admin" | "superadmin") =>
+      ["emailConfig", scope] as const,
   },
   periodPricing: {
     current: ["periodPricing"] as const,

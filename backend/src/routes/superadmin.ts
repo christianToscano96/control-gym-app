@@ -13,18 +13,191 @@ import { AccessLog } from "../models/AccessLog";
 import { Payment } from "../models/Payment";
 import { AuditLog } from "../models/AuditLog";
 import { MonthlySnapshot } from "../models/MonthlySnapshot";
+import { DeletedGymArchive } from "../models/DeletedGymArchive";
+import {
+  getPlatformEmailConfig,
+  getPlatformPlanPrices,
+  upsertPlatformEmailConfig,
+  upsertPlatformPlanPrices,
+} from "../utils/planPricing";
+import { sendGymEnabledEmail } from "../services/emailService";
 
 const router = Router();
 
 // Todas las rutas requieren superadmin
 router.use(authenticateJWT, requireSuperAdmin);
 
-// ─── Plan Prices ─────────────────────────────────────────────
-const planPrices: Record<string, number> = {
-  basico: 15000,
-  pro: 25000,
-  proplus: 40000,
+const pctDelta = (current: number, previous: number): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Number((((current - previous) / previous) * 100).toFixed(1));
 };
+
+const buildSuperAdminSummary = async () => {
+  const clientCounts = await Client.aggregate([
+    { $match: { isActive: true } },
+    { $group: { _id: "$gymId", count: { $sum: 1 } } },
+  ]);
+
+  const allGyms = await Gym.find().lean();
+  const activeGyms = allGyms.filter(
+    (g) => g.onboardingStatus === "approved" && g.active,
+  ).length;
+  const pendingGyms = allGyms.filter(
+    (g) => g.onboardingStatus === "pending",
+  ).length;
+  const inactiveGyms = allGyms.filter(
+    (g) =>
+      (g.onboardingStatus === "approved" && !g.active) ||
+      g.onboardingStatus === "rejected",
+  ).length;
+  const totalClients = clientCounts.reduce(
+    (sum: number, c: any) => sum + c.count,
+    0,
+  );
+
+  const platformRevenueAgg = await Membership.aggregate([
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const totalPlatformRevenue = platformRevenueAgg[0]?.total || 0;
+
+  const gymRevenueAgg = await Payment.aggregate([
+    { $match: { status: "completed" } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
+
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const [platformRevenueThisMonthAgg, platformRevenueLastMonthAgg] = await Promise.all([
+    Membership.aggregate([
+      { $match: { startDate: { $gte: currentMonthStart, $lt: nextMonthStart } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+    Membership.aggregate([
+      { $match: { startDate: { $gte: previousMonthStart, $lt: currentMonthStart } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+  ]);
+
+  const platformRevenueThisMonth = platformRevenueThisMonthAgg[0]?.total || 0;
+  const platformRevenueLastMonth = platformRevenueLastMonthAgg[0]?.total || 0;
+
+  const gymCreatedThisMonthLive = await Gym.countDocuments({
+    createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
+  });
+  const gymCreatedLastMonthLive = await Gym.countDocuments({
+    createdAt: { $gte: previousMonthStart, $lt: currentMonthStart },
+  });
+  const gymCreatedThisMonthArchived = await DeletedGymArchive.countDocuments({
+    gymCreatedAt: { $gte: currentMonthStart, $lt: nextMonthStart },
+  });
+  const gymCreatedLastMonthArchived = await DeletedGymArchive.countDocuments({
+    gymCreatedAt: { $gte: previousMonthStart, $lt: currentMonthStart },
+  });
+
+  const newGymsThisMonth = gymCreatedThisMonthLive + gymCreatedThisMonthArchived;
+  const newGymsLastMonth = gymCreatedLastMonthLive + gymCreatedLastMonthArchived;
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(now.getDate() + 7);
+
+  const expiringGymMemberships = await Membership.find({
+    active: true,
+    endDate: { $gte: now, $lte: sevenDaysFromNow },
+  })
+    .populate("gymId", "name plan")
+    .lean();
+
+  const expiringGyms = expiringGymMemberships.map((m: any) => ({
+    gymId: m.gymId?._id,
+    gymName: m.gymId?.name || "Sin nombre",
+    plan: m.plan,
+    endDate: m.endDate,
+    daysLeft: Math.ceil(
+      (new Date(m.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    ),
+  }));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayCheckIns = await AccessLog.countDocuments({
+    date: { $gte: today },
+    $or: [{ status: "allowed" }, { status: { $exists: false } }],
+  });
+
+  return {
+    totalGyms: allGyms.length,
+    activeGyms,
+    inactiveGyms,
+    pendingGyms,
+    totalClients,
+    totalPlatformRevenue,
+    totalGymRevenue,
+    todayCheckIns,
+    planDistribution: {
+      basico: allGyms.filter((g) => g.plan === "basico").length,
+      pro: allGyms.filter((g) => g.plan === "pro").length,
+      proplus: allGyms.filter((g) => g.plan === "proplus").length,
+    },
+    kpis: {
+      platformRevenueThisMonth,
+      platformRevenueLastMonth,
+      platformRevenueDeltaPct: pctDelta(
+        platformRevenueThisMonth,
+        platformRevenueLastMonth,
+      ),
+      newGymsThisMonth,
+      newGymsLastMonth,
+      newGymsDelta: newGymsThisMonth - newGymsLastMonth,
+    },
+    expiringGyms,
+  };
+};
+
+// ─── Pending Registrations ───────────────────────────────────
+router.get("/pending-registrations", async (req, res) => {
+  try {
+    const admins = await User.find({ role: "admin" })
+      .select("name email avatar active gymId")
+      .populate("gymId", "name address plan active onboardingStatus paymentReference paymentProofUrl paymentProofUploadedAt")
+      .lean();
+
+    const pendingAdmins = admins
+      .filter((admin: any) => admin.gymId?.onboardingStatus === "pending")
+      .sort((a: any, b: any) => {
+        const aDate = new Date(a.gymId?.paymentProofUploadedAt || a.gymId?.createdAt || 0).getTime();
+        const bDate = new Date(b.gymId?.paymentProofUploadedAt || b.gymId?.createdAt || 0).getTime();
+        return bDate - aDate;
+      })
+      .map((admin: any) => ({
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar,
+        active: admin.active,
+        gym: admin.gymId
+          ? {
+              _id: admin.gymId._id,
+              name: admin.gymId.name,
+              address: admin.gymId.address,
+              plan: admin.gymId.plan,
+              active: admin.gymId.active,
+              onboardingStatus: admin.gymId.onboardingStatus || "pending",
+              paymentReference: admin.gymId.paymentReference || null,
+              hasPaymentProof: Boolean(admin.gymId.paymentProofUrl),
+              clientsCount: 0,
+            }
+          : null,
+      }));
+
+    res.json({ pendingAdmins });
+  } catch (error) {
+    console.error("Error fetching pending registrations:", error);
+    res.status(500).json({ message: "Error al obtener pendientes" });
+  }
+});
 
 // ─── Overview ────────────────────────────────────────────────
 router.get("/overview", async (req, res) => {
@@ -41,57 +214,7 @@ router.get("/overview", async (req, res) => {
     const clientCountMap = new Map(
       clientCounts.map((c: any) => [c._id.toString(), c.count]),
     );
-
-    const allGyms = await Gym.find().lean();
-    const activeGyms = allGyms.filter((g) => g.active).length;
-    const pendingGyms = allGyms.filter((g) => g.onboardingStatus === "pending").length;
-    const totalClients = clientCounts.reduce(
-      (sum: number, c: any) => sum + c.count,
-      0,
-    );
-
-    // Ingresos plataforma (lo que los gyms pagan - Membership SaaS)
-    const platformRevenueAgg = await Membership.aggregate([
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
-    const totalPlatformRevenue = platformRevenueAgg[0]?.total || 0;
-
-    // Ingresos de clientes (lo que los gyms facturan - Payment)
-    const gymRevenueAgg = await Payment.aggregate([
-      { $match: { status: "completed" } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
-    const totalGymRevenue = gymRevenueAgg[0]?.total || 0;
-
-    // Gyms con membresía SaaS por vencer (menos de 7 días)
-    const now = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(now.getDate() + 7);
-
-    const expiringGymMemberships = await Membership.find({
-      active: true,
-      endDate: { $gte: now, $lte: sevenDaysFromNow },
-    })
-      .populate("gymId", "name plan")
-      .lean();
-
-    const expiringGyms = expiringGymMemberships.map((m: any) => ({
-      gymId: m.gymId?._id,
-      gymName: m.gymId?.name || "Sin nombre",
-      plan: m.plan,
-      endDate: m.endDate,
-      daysLeft: Math.ceil(
-        (new Date(m.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    }));
-
-    // Check-ins globales hoy
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayCheckIns = await AccessLog.countDocuments({
-      date: { $gte: today },
-      $or: [{ status: "allowed" }, { status: { $exists: false } }],
-    });
+    const summary = await buildSuperAdminSummary();
 
     const formattedAdmins = admins.map((admin: any) => {
       const gym = admin.gymId;
@@ -117,28 +240,234 @@ router.get("/overview", async (req, res) => {
       };
     });
 
+    const counts = {
+      active: formattedAdmins.filter(
+        (a: any) =>
+          a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      ).length,
+      inactive: formattedAdmins.filter(
+        (a: any) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
+      ).length,
+      pending: formattedAdmins.filter(
+        (a: any) => a.gym?.onboardingStatus === "pending",
+      ).length,
+    };
+
     res.json({
-      summary: {
-        totalGyms: allGyms.length,
-        activeGyms,
-        inactiveGyms: allGyms.length - activeGyms,
-        pendingGyms,
-        totalClients,
-        totalPlatformRevenue,
-        totalGymRevenue,
-        todayCheckIns,
-        planDistribution: {
-          basico: allGyms.filter((g) => g.plan === "basico").length,
-          pro: allGyms.filter((g) => g.plan === "pro").length,
-          proplus: allGyms.filter((g) => g.plan === "proplus").length,
-        },
-        expiringGyms,
-      },
+      summary,
       admins: formattedAdmins,
     });
   } catch (error) {
     console.error("Error in superadmin overview:", error);
     res.status(500).json({ message: "Error al obtener el resumen" });
+  }
+});
+
+// ─── Summary ─────────────────────────────────────────────────
+router.get("/summary", async (req, res) => {
+  try {
+    const summary = await buildSuperAdminSummary();
+    res.json(summary);
+  } catch (error) {
+    console.error("Error in superadmin summary:", error);
+    res.status(500).json({ message: "Error al obtener el summary" });
+  }
+});
+
+// ─── Admins List ─────────────────────────────────────────────
+router.get("/admins", async (req, res) => {
+  try {
+    const { page: pageStr, limit: limitStr, search, status } = req.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      status?: "active" | "inactive" | "pending";
+    };
+    const page = Math.max(Number(pageStr) || 1, 1);
+    const limit = Math.min(Math.max(Number(limitStr) || 20, 1), 100);
+
+    const admins = await User.find({ role: "admin" })
+      .select("name email avatar active gymId")
+      .populate(
+        "gymId",
+        "name address plan active onboardingStatus paymentReference paymentProofUrl",
+      )
+      .lean();
+
+    const clientCounts = await Client.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: "$gymId", count: { $sum: 1 } } },
+    ]);
+    const clientCountMap = new Map(
+      clientCounts.map((c: any) => [c._id.toString(), c.count]),
+    );
+
+    const formattedAdmins = admins.map((admin: any) => {
+      const gym = admin.gymId;
+      return {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        avatar: admin.avatar,
+        active: admin.active,
+        gym: gym
+          ? {
+              _id: gym._id,
+              name: gym.name,
+              address: gym.address,
+              plan: gym.plan,
+              active: gym.active,
+              onboardingStatus: gym.onboardingStatus || "approved",
+              paymentReference: gym.paymentReference || null,
+              hasPaymentProof: Boolean(gym.paymentProofUrl),
+              clientsCount: clientCountMap.get(gym._id.toString()) || 0,
+            }
+          : null,
+      };
+    });
+
+    const counts = {
+      active: formattedAdmins.filter(
+        (a: any) =>
+          a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      ).length,
+      inactive: formattedAdmins.filter(
+        (a: any) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
+      ).length,
+      pending: formattedAdmins.filter(
+        (a: any) => a.gym?.onboardingStatus === "pending",
+      ).length,
+    };
+
+    let filtered = [...formattedAdmins];
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q) ||
+          a.gym?.name?.toLowerCase().includes(q),
+      );
+    }
+
+    if (status === "active") {
+      filtered = filtered.filter(
+        (a) => a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      );
+    } else if (status === "inactive") {
+      filtered = filtered.filter(
+        (a) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
+      );
+    } else if (status === "pending") {
+      filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const paginated = filtered.slice(start, start + limit);
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    res.json({
+      admins: paginated,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      counts,
+    });
+  } catch (error) {
+    console.error("Error fetching superadmin admins:", error);
+    res.status(500).json({ message: "Error al obtener admins" });
+  }
+});
+
+// ─── Plan Prices Config ─────────────────────────────────────
+router.get("/plan-prices", async (req, res) => {
+  try {
+    const planPrices = await getPlatformPlanPrices();
+    res.json({ planPrices });
+  } catch (error) {
+    console.error("Error fetching plan prices:", error);
+    res.status(500).json({ message: "Error al obtener precios de planes" });
+  }
+});
+
+router.put("/plan-prices", async (req, res) => {
+  try {
+    const { planPrices } = req.body as {
+      planPrices?: { basico?: number; pro?: number; proplus?: number };
+    };
+
+    if (!planPrices) {
+      return res.status(400).json({ message: "planPrices es requerido" });
+    }
+    if (
+      [planPrices.basico, planPrices.pro, planPrices.proplus].some(
+        (n) => typeof n !== "number" || Number.isNaN(n) || n < 0,
+      )
+    ) {
+      return res.status(400).json({ message: "Todos los precios deben ser números >= 0" });
+    }
+
+    const updated = await upsertPlatformPlanPrices(planPrices);
+    res.json({ message: "Precios actualizados", planPrices: updated });
+  } catch (error) {
+    console.error("Error updating plan prices:", error);
+    res.status(500).json({ message: "Error al actualizar precios de planes" });
+  }
+});
+
+// ─── SuperAdmin Email Config ────────────────────────────────
+router.get("/email-config", async (req, res) => {
+  try {
+    const emailConfig = await getPlatformEmailConfig();
+    res.json({
+      gmailUser: emailConfig?.gmailUser || "",
+      isConfigured: Boolean(
+        emailConfig?.gmailUser && emailConfig?.gmailAppPassword,
+      ),
+    });
+  } catch (error) {
+    console.error("Error fetching superadmin email config:", error);
+    res.status(500).json({ message: "Error al obtener configuración de email" });
+  }
+});
+
+router.put("/email-config", async (req, res) => {
+  try {
+    const { gmailUser, gmailAppPassword } = req.body as {
+      gmailUser?: string;
+      gmailAppPassword?: string;
+    };
+
+    if (!gmailUser || !gmailAppPassword) {
+      return res
+        .status(400)
+        .json({ message: "Gmail y App Password son requeridos" });
+    }
+
+    await upsertPlatformEmailConfig({
+      gmailUser: gmailUser.trim(),
+      gmailAppPassword: gmailAppPassword.trim(),
+    });
+
+    res.json({
+      message: "Configuración de email actualizada",
+      gmailUser: gmailUser.trim(),
+      isConfigured: true,
+    });
+  } catch (error) {
+    console.error("Error updating superadmin email config:", error);
+    res.status(500).json({ message: "Error al actualizar configuración de email" });
   }
 });
 
@@ -400,6 +729,7 @@ router.post("/gyms", async (req, res) => {
   try {
     const { gymName, gymAddress, adminName, adminEmail, adminPassword, plan } =
       req.body;
+    const planPrices = await getPlatformPlanPrices();
 
     if (!gymName || !adminName || !adminEmail || !adminPassword || !plan) {
       return res.status(400).json({ message: "Todos los campos son requeridos" });
@@ -407,6 +737,7 @@ router.post("/gyms", async (req, res) => {
     if (!["basico", "pro", "proplus"].includes(plan)) {
       return res.status(400).json({ message: "Plan inválido" });
     }
+    const planKey = plan as keyof Awaited<ReturnType<typeof getPlatformPlanPrices>>;
     if (adminPassword.length < 6) {
       return res
         .status(400)
@@ -447,7 +778,7 @@ router.post("/gyms", async (req, res) => {
     await Membership.create({
       gymId: gym._id,
       plan,
-      amount: planPrices[plan] || 0,
+      amount: planPrices[planKey] || 0,
       startDate: now,
       endDate,
       active: true,
@@ -470,6 +801,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
       action: "approve" | "reject";
       rejectionReason?: string;
     };
+    const planPrices = await getPlatformPlanPrices();
 
     if (!action || !["approve", "reject"].includes(action)) {
       return res.status(400).json({ message: "Acción inválida" });
@@ -500,6 +832,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
       if (activeMembership) {
         activeMembership.startDate = now;
         activeMembership.endDate = endDate;
+        activeMembership.amount = planPrices[gym.plan] || 0;
         activeMembership.reviewStatus = "approved";
         activeMembership.reviewedAt = now;
         activeMembership.reviewNotes = undefined;
@@ -520,6 +853,7 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
             reviewNotes: undefined,
             paymentReference: gym.paymentReference,
             paymentProofUrl: gym.paymentProofUrl,
+            amount: planPrices[gym.plan] || 0,
           });
         } else {
           await Membership.create({
@@ -568,6 +902,32 @@ router.put("/gyms/:gymId/registration-review", async (req: AuthRequest, res) => 
     }
 
     await gym.save();
+
+    if (action === "approve") {
+      const adminOwner = await User.findOne({ gymId: gym._id, role: "admin" })
+        .select("name email")
+        .lean();
+      const platformEmailConfig = await getPlatformEmailConfig();
+
+      if (
+        adminOwner?.email &&
+        platformEmailConfig?.gmailUser &&
+        platformEmailConfig?.gmailAppPassword
+      ) {
+        await sendGymEnabledEmail({
+          toEmail: adminOwner.email,
+          adminName: adminOwner.name || "Administrador",
+          gymName: gym.name,
+          plan: gym.plan,
+          gmailUser: platformEmailConfig.gmailUser,
+          gmailAppPassword: platformEmailConfig.gmailAppPassword,
+        });
+      } else if (!platformEmailConfig) {
+        console.warn(
+          `[SuperAdmin] Email no enviado al aprobar ${gym.name}: falta configuración SMTP del superadmin.`,
+        );
+      }
+    }
 
     res.json({
       message:
@@ -707,6 +1067,7 @@ router.put("/admins/:id", async (req, res) => {
 router.put("/gyms/:gymId", async (req, res) => {
   try {
     const { name, address, plan } = req.body;
+    const planPrices = await getPlatformPlanPrices();
     const updateData: any = {};
     if (name) updateData.name = name;
     if (address) updateData.address = address;
@@ -719,7 +1080,8 @@ router.put("/gyms/:gymId", async (req, res) => {
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
-    if (plan && planPrices[plan] !== undefined) {
+    if (plan && ["basico", "pro", "proplus"].includes(plan)) {
+      const planKey = plan as keyof Awaited<ReturnType<typeof getPlatformPlanPrices>>;
       await Membership.updateMany(
         { gymId: gym._id, active: true },
         { active: false, endDate: new Date() },
@@ -732,7 +1094,7 @@ router.put("/gyms/:gymId", async (req, res) => {
       await Membership.create({
         gymId: gym._id,
         plan,
-        amount: planPrices[plan],
+        amount: planPrices[planKey],
         startDate: now,
         endDate,
         active: gym.active,
@@ -749,24 +1111,32 @@ router.put("/gyms/:gymId", async (req, res) => {
   }
 });
 
-// ─── Delete Gym (full cascade) ───────────────────────────────
+// ─── Delete Gym (preserve financial history) ─────────────────
 router.delete("/gyms/:gymId", async (req, res) => {
   try {
     const gym = await Gym.findById(req.params.gymId);
     if (!gym)
       return res.status(404).json({ message: "Gimnasio no encontrado" });
 
+    await DeletedGymArchive.create({
+      originalGymId: String(gym._id),
+      gymName: gym.name,
+      plan: gym.plan,
+      gymCreatedAt: (gym as any).createdAt || new Date(),
+      deletedAt: new Date(),
+    });
+
     await Promise.all([
       User.deleteMany({ gymId: gym._id }),
-      Membership.deleteMany({ gymId: gym._id }),
       Client.deleteMany({ gymId: gym._id }),
       AccessLog.deleteMany({ gymId: gym._id }),
-      Payment.deleteMany({ gymId: gym._id }),
-      MonthlySnapshot.deleteMany({ gymId: gym._id }),
       Gym.findByIdAndDelete(gym._id),
     ]);
 
-    res.json({ message: "Gimnasio eliminado correctamente" });
+    res.json({
+      message:
+        "Gimnasio eliminado correctamente. Historial de ingresos conservado para reportes.",
+    });
   } catch (error) {
     console.error("Error deleting gym:", error);
     res.status(500).json({ message: "Error al eliminar gimnasio" });

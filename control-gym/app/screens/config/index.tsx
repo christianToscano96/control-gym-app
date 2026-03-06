@@ -94,6 +94,7 @@ export default function ConfigScreen() {
   const { primaryColor, colors, isDark, toggleTheme } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
   const isStaff = user?.role === "empleado";
+  const isSuperAdmin = user?.role === "superadmin";
 
   const handleLogout = () => {
     Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas cerrar sesión?", [
@@ -212,7 +213,11 @@ export default function ConfigScreen() {
               />
               <SettingItem
                 icon="email"
-                title="Configuración de Email"
+                title={
+                  isSuperAdmin
+                    ? "Email de Plataforma"
+                    : "Configuración de Email"
+                }
                 onPress={() => router.push("/screens/config/EmailConfigScreen")}
               />
               <SettingItem
@@ -220,6 +225,15 @@ export default function ConfigScreen() {
                 title="Precios por Periodo"
                 onPress={() => router.push("/screens/config/PeriodPricingScreen")}
               />
+              {isSuperAdmin && (
+                <SettingItem
+                  icon="sell"
+                  title="Precios de Planes SaaS"
+                  onPress={() =>
+                    router.push("/screens/config/SuperAdminPlanPricingScreen")
+                  }
+                />
+              )}
             </View>
           </View>
         )}

@@ -31,7 +31,8 @@ export const queryKeys = {
       ["reports", filters] as const,
   },
   emailConfig: {
-    current: ["emailConfig"] as const,
+    current: (scope: "admin" | "superadmin") =>
+      ["emailConfig", scope] as const,
   },
   periodPricing: {
     current: ["periodPricing"] as const,
@@ -47,6 +48,10 @@ export const queryKeys = {
   },
   superadmin: {
     overview: ["superadmin", "overview"] as const,
+    summary: ["superadmin", "summary"] as const,
+    admins: ["superadmin", "admins"] as const,
+    planPrices: ["superadmin", "plan-prices"] as const,
+    pendingRegistrations: ["superadmin", "pending-registrations"] as const,
     gymDetail: (id: string) => ["superadmin", "gym", id] as const,
     membershipHistory: (id: string) =>
       ["superadmin", "gym", id, "memberships"] as const,

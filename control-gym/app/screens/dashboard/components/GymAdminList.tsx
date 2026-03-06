@@ -16,6 +16,9 @@ interface GymAdminListProps {
   filterStatus: FilterStatus;
   onRetry: () => void;
   onAdminPress: (admin: SuperAdminEntry) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export const GymAdminList = ({
@@ -27,6 +30,9 @@ export const GymAdminList = ({
   filterStatus,
   onRetry,
   onAdminPress,
+  onLoadMore,
+  hasMore = false,
+  isLoadingMore = false,
 }: GymAdminListProps) => {
   const { colors, primaryColor, isDark } = useTheme();
 
@@ -87,7 +93,7 @@ export const GymAdminList = ({
         icon="store"
         title="No hay gimnasios"
         description={
-          searchQuery || filterStatus !== "all"
+          searchQuery
             ? "No se encontraron gimnasios con los filtros aplicados"
             : "Aún no hay gimnasios registrados"
         }
@@ -111,6 +117,25 @@ export const GymAdminList = ({
           onPress={() => onAdminPress(admin)}
         />
       ))}
+      {hasMore && (
+        <TouchableOpacity
+          onPress={onLoadMore}
+          disabled={isLoadingMore}
+          style={{
+            marginTop: 10,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            paddingVertical: 10,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: colors.textSecondary, fontWeight: "700", fontSize: 12 }}>
+            {isLoadingMore ? "Cargando..." : "Cargar más"}
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 };

@@ -10,14 +10,22 @@ export interface UpdateEmailConfigData {
   gmailAppPassword: string;
 }
 
-export async function fetchEmailConfig(): Promise<EmailConfigResponse> {
-  return apiClient<EmailConfigResponse>("/api/admin/email-config");
+export type EmailConfigScope = "admin" | "superadmin";
+
+const getEmailConfigEndpoint = (scope: EmailConfigScope) =>
+  scope === "superadmin" ? "/api/superadmin/email-config" : "/api/admin/email-config";
+
+export async function fetchEmailConfig(
+  scope: EmailConfigScope = "admin",
+): Promise<EmailConfigResponse> {
+  return apiClient<EmailConfigResponse>(getEmailConfigEndpoint(scope));
 }
 
 export async function updateEmailConfig(
   data: UpdateEmailConfigData,
+  scope: EmailConfigScope = "admin",
 ): Promise<EmailConfigResponse & { message: string }> {
-  return apiClient("/api/admin/email-config", {
+  return apiClient(getEmailConfigEndpoint(scope), {
     method: "PUT",
     body: data,
   });

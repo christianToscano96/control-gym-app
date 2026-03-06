@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "@/constants/api";
-import { useUserStore } from "@/stores/store";
+import { useUserStore, getToken } from "@/stores/store";
 import { router } from "expo-router";
 
 // ─── Custom Error Class ───────────────────────────────────────────
@@ -35,7 +35,7 @@ export async function apiClient<T = any>(
 
   // 1. Attach token (unless explicitly skipped)
   if (!skipAuth) {
-    const token = useUserStore.getState().user?.token;
+    const token = await getToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

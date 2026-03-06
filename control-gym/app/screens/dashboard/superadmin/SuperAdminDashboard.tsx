@@ -78,10 +78,10 @@ export default function SuperAdminDashboard() {
   const { data: profile } = useProfileQuery();
 
   React.useEffect(() => {
-    if (!profile?.avatar || !user?.token) return;
+    if (!profile?.avatar || !user) return;
     const avatarUrl = `${API_BASE_URL}${profile.avatar}`;
     if (user.avatar !== avatarUrl) {
-      setUser({ ...user, avatar: avatarUrl }, user.token);
+      setUser({ ...user, avatar: avatarUrl });
     }
   }, [profile?.avatar, setUser, user]);
 

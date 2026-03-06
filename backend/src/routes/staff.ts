@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateJWT, requireAdmin, AuthRequest } from "../middleware/auth";
+import { escapeRegex } from "../utils/escapeRegex";
 import { User } from "../models/User";
 import bcrypt from "bcryptjs";
 import multer from "multer";
@@ -403,9 +404,9 @@ router.get(
         gymId,
         role: { $in: ["empleado" /* , "entrenador" */] },
         $or: [
-          { name: { $regex: query, $options: "i" } },
-          { email: { $regex: query, $options: "i" } },
-          { phone: { $regex: query, $options: "i" } },
+          { name: { $regex: escapeRegex(query), $options: "i" } },
+          { email: { $regex: escapeRegex(query), $options: "i" } },
+          { phone: { $regex: escapeRegex(query), $options: "i" } },
         ],
       }).select("-password");
 

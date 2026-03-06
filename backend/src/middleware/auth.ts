@@ -38,7 +38,7 @@ export const authenticateJWT = (
   if (!authHeader) return res.status(401).json({ message: "Token requerido" });
   const token = authHeader.split(" ")[1];
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "secret");
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     // Backward compat: tokens viejos tienen "gym" en vez de "gymId"
     if (decoded.gym && !decoded.gymId) {
       decoded.gymId = decoded.gym;

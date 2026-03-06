@@ -5,6 +5,7 @@ import {
   requireSuperAdmin,
   AuthRequest,
 } from "../middleware/auth";
+import { escapeRegex } from "../utils/escapeRegex";
 import { Gym } from "../models/Gym";
 import { User } from "../models/User";
 import { Membership } from "../models/Membership";
@@ -581,7 +582,7 @@ router.get("/gyms/:gymId/clients", async (req, res) => {
     else if (status === "inactive") filter.isActive = false;
 
     if (search) {
-      const regex = new RegExp(search as string, "i");
+      const regex = new RegExp(escapeRegex(search as string), "i");
       filter.$or = [{ firstName: regex }, { lastName: regex }, { email: regex }];
     }
 

@@ -6,23 +6,35 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./queryKeys";
 
-export function useTodayCashSummaryQuery(enabled: boolean = true) {
+interface QueryOptions {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}
+
+export function useTodayCashSummaryQuery(options: QueryOptions = {}) {
+  const { enabled = true, refetchInterval = 15_000 } = options;
   return useQuery({
     queryKey: queryKeys.cashClosure.today,
     queryFn: getTodayCashSummary,
     enabled,
-    staleTime: 30000,
+    staleTime: 10_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 }
 
-export function useCashClosureHistoryQuery(limit = 10, enabled: boolean = true) {
+export function useCashClosureHistoryQuery(
+  limit = 10,
+  options: QueryOptions = {},
+) {
+  const { enabled = true, refetchInterval = false } = options;
   return useQuery({
     queryKey: queryKeys.cashClosure.history(limit),
     queryFn: () => getCashClosureHistory(limit),
     enabled,
-    staleTime: 30000,
+    staleTime: 30_000,
+    refetchInterval,
   });
 }
 

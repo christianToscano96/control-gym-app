@@ -62,7 +62,7 @@ export default function CashClosureHistoryScreen() {
     isLoading,
     isFetching,
     refetch,
-  } = useCashClosureHistoryQuery(60, true);
+  } = useCashClosureHistoryQuery(60);
 
   const filteredHistory = useMemo(() => {
     if (fromDate && toDate) {

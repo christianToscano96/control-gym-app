@@ -21,6 +21,7 @@ interface Client {
   avatarUri?: string;
   status?: string;
   isActive?: boolean;
+  userType?: "client" | "staff";
 }
 
 export default function ClientsScreen() {
@@ -50,6 +51,7 @@ export default function ClientsScreen() {
       avatarUri: s.avatar,
       status: s.role === "empleado" ? "Staff" : "Trainer",
       isActive: s.active,
+      userType: "staff" as const,
     }));
   }, [staffData]);
 

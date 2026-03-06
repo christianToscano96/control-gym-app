@@ -30,6 +30,7 @@ const ListClients = ({ clients }: ListClientsProps) => {
         daysLeft={daysLeft}
         clientId={item._id}
         membershipType={item.membershipType}
+        userType={item.userType === "staff" ? "staff" : "client"}
       />
     );
   }, []);

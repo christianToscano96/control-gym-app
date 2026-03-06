@@ -1,7 +1,16 @@
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast from "@/components/ui/Toast";
 import { useTheme } from "@/context/ThemeContext";
-import { useClientDetailQuery, useClientPaymentsQuery, useDeleteClient } from "@/hooks/queries/useClients";
+import {
+  useClientDetailQuery,
+  useClientPaymentsQuery,
+  useDeleteClient,
+} from "@/hooks/queries/useClients";
+import {
+  useDeleteStaff,
+  useStaffDetailQuery,
+  useToggleStaffStatus,
+} from "@/hooks/queries/useStaff";
 import { useToast } from "@/hooks/useToast";
 import {
   calculateExpirationDate,
@@ -25,32 +34,49 @@ import { ClientHeader } from "./components/ClientHeader";
 import { ClientInfoCard } from "./components/ClientInfoCard";
 import { PaymentHistory } from "./components/PaymentHistory";
 import { StatsCards } from "./components/StatsCards";
+import { useUserStore } from "@/stores/store";
 
 const UserDetailsScreen = () => {
-  const { clientId } = useLocalSearchParams();
+  const { clientId, userType } = useLocalSearchParams();
+  const isStaffUser = userType === "staff";
   const { primaryColor, colors, isDark } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
+  const { user } = useUserStore();
+
+  const userRole = user?.role;
 
   // ─── TanStack Query ──────────────────────────────────────────
   const {
     data: clientData,
-    isLoading: loading,
-    error: queryError,
-  } = useClientDetailQuery(clientId as string);
+    isLoading: loadingClient,
+    error: clientQueryError,
+  } = useClientDetailQuery(clientId as string, !isStaffUser);
+
+  const { data: payments = [], isLoading: loadingPayments } =
+    useClientPaymentsQuery(clientId as string, !isStaffUser);
 
   const {
-    data: payments = [],
-    isLoading: loadingPayments,
-  } = useClientPaymentsQuery(clientId as string);
+    data: staffData,
+    isLoading: loadingStaff,
+    error: staffQueryError,
+  } = useStaffDetailQuery(clientId as string, isStaffUser);
 
   const deleteClientMutation = useDeleteClient();
-  const deleting = deleteClientMutation.isPending;
+  const deleteStaffMutation = useDeleteStaff();
+  const toggleStaffStatusMutation = useToggleStaffStatus();
+  const deleting =
+    deleteClientMutation.isPending || deleteStaffMutation.isPending;
+  const togglingStaff = toggleStaffStatusMutation.isPending;
 
-  const error = queryError?.message || "";
+  const loading = isStaffUser ? loadingStaff : loadingClient;
+  const error = isStaffUser
+    ? staffQueryError?.message || ""
+    : clientQueryError?.message || "";
+  const resolvedUser = isStaffUser ? staffData : clientData;
 
-  // Derived state
-  const fullName =
-    `${clientData?.firstName || ""} ${clientData?.lastName || ""}`.trim();
+  const fullName = isStaffUser
+    ? staffData?.name || ""
+    : `${clientData?.firstName || ""} ${clientData?.lastName || ""}`.trim();
 
   // Membership expiration calculations
   const expirationDate = calculateExpirationDate(
@@ -63,9 +89,7 @@ const UserDetailsScreen = () => {
   const expirationDateText = formatDate(expirationDate);
   const expirationLabel = expired ? "Expiro" : "Valido hasta";
   const daysLeft = expirationDate
-    ? Math.ceil(
-        (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-      )
+    ? Math.ceil((expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : undefined;
 
   const onDeleteClient = () => {
@@ -91,6 +115,44 @@ const UserDetailsScreen = () => {
         },
       ],
     );
+  };
+
+  const onDeleteStaff = () => {
+    Alert.alert(
+      "Eliminar Staff",
+      `Estas seguro de que deseas eliminar a ${staffData?.name || "este usuario"}? Esta accion no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            deleteStaffMutation.mutate(String(clientId), {
+              onSuccess: () => {
+                showSuccess("Staff eliminado correctamente");
+                setTimeout(() => router.back(), 1000);
+              },
+              onError: (err: any) => {
+                showError(err.message || "No se pudo eliminar el staff");
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  const onToggleStaffStatus = () => {
+    toggleStaffStatusMutation.mutate(String(clientId), {
+      onSuccess: () => {
+        showSuccess(
+          `Staff ${staffData?.active ? "desactivado" : "activado"} correctamente`,
+        );
+      },
+      onError: (err: any) => {
+        showError(err.message || "No se pudo actualizar el estado del staff");
+      },
+    });
   };
 
   if (loading) {
@@ -144,7 +206,7 @@ const UserDetailsScreen = () => {
     );
   }
 
-  if (!clientData) {
+  if (!resolvedUser) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ paddingHorizontal: 24 }}>
@@ -171,7 +233,9 @@ const UserDetailsScreen = () => {
               color: colors.textSecondary,
             }}
           >
-            No se encontro el cliente.
+            {isStaffUser
+              ? "No se encontro el staff."
+              : "No se encontro el cliente."}
           </Text>
         </View>
       </SafeAreaView>
@@ -190,37 +254,80 @@ const UserDetailsScreen = () => {
         contentContainerStyle={{ paddingBottom: 16 }}
       >
         <ClientHeader
-          avatarUri={clientData.avatarUri}
+          avatarUri={isStaffUser ? staffData?.avatar : clientData?.avatarUri}
           fullName={fullName}
-          isActive={clientData.isActive}
-          membershipType={clientData.membershipType}
+          isActive={isStaffUser ? staffData?.active : clientData?.isActive}
+          membershipType={isStaffUser ? undefined : clientData?.membershipType}
         />
 
-        <StatsCards
-          primaryColor={primaryColor}
-          attendanceCount={clientData.attendanceCount || 0}
-          expirationDateText={expirationDateText}
-          expirationLabel={expirationLabel}
-          hasExpired={expired}
-          isExpiringSoon={expiringSoon}
-          statusLabel={clientData.isActive ? "Activo" : "Inactivo"}
-          isActive={clientData.isActive}
-          daysLeft={daysLeft}
-        />
+        {!isStaffUser ? (
+          <>
+            <StatsCards
+              primaryColor={primaryColor}
+              attendanceCount={clientData.attendanceCount || 0}
+              expirationDateText={expirationDateText}
+              expirationLabel={expirationLabel}
+              hasExpired={expired}
+              isExpiringSoon={expiringSoon}
+              statusLabel={clientData.isActive ? "Activo" : "Inactivo"}
+              isActive={clientData.isActive}
+              daysLeft={daysLeft}
+            />
 
-        <ClientInfoCard
-          email={clientData.email}
-          phone={clientData.phone}
-          membershipType={clientData.membershipType}
-          selectedPeriod={clientData.selected_period}
-          dni={clientData.dni}
-        />
+            <ClientInfoCard
+              email={clientData.email}
+              phone={clientData.phone}
+              membershipType={clientData.membershipType}
+              selectedPeriod={clientData.selected_period}
+              dni={clientData.dni}
+            />
 
-        <PaymentHistory
-          payments={payments}
-          primaryColor={primaryColor}
-          loading={loadingPayments}
-        />
+            <PaymentHistory
+              payments={payments}
+              primaryColor={primaryColor}
+              loading={loadingPayments}
+            />
+          </>
+        ) : (
+          <View style={{ paddingHorizontal: 16, marginBottom: 14 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+                marginLeft: 4,
+              }}
+            >
+              Informacion del Staff
+            </Text>
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                borderWidth: isDark ? 0 : 1,
+                borderColor: colors.border,
+                padding: 16,
+                gap: 8,
+              }}
+            >
+              <Text style={{ color: colors.text, fontSize: 14 }}>
+                Email: {staffData?.email || "No registrado"}
+              </Text>
+              <Text style={{ color: colors.text, fontSize: 14 }}>
+                Telefono: {staffData?.phone || "No registrado"}
+              </Text>
+              <Text style={{ color: colors.text, fontSize: 14 }}>
+                Rol: {staffData?.role || "empleado"}
+              </Text>
+              <Text style={{ color: colors.text, fontSize: 14 }}>
+                Estado: {staffData?.active ? "Activo" : "Inactivo"}
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Action Buttons */}
@@ -235,54 +342,88 @@ const UserDetailsScreen = () => {
           borderTopColor: colors.border,
         }}
       >
-        <TouchableOpacity
-          onPress={() => {
-            router.push({
-              pathname: "/screens/clients/client-details/edit",
-              params: { clientId },
-            });
-          }}
-          disabled={deleting}
-          activeOpacity={0.8}
-          style={{
-            flex: 1,
-            backgroundColor: primaryColor,
-            borderRadius: 14,
-            paddingVertical: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            opacity: deleting ? 0.5 : 1,
-          }}
-        >
-          <MaterialIcons name="edit" size={18} color="#fff" />
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-            Editar
-          </Text>
-        </TouchableOpacity>
+        {!isStaffUser ? (
+          <TouchableOpacity
+            onPress={() => {
+              router.push({
+                pathname: "/screens/clients/client-details/edit",
+                params: { clientId },
+              });
+            }}
+            disabled={deleting}
+            activeOpacity={0.8}
+            style={{
+              flex: 1,
+              backgroundColor: primaryColor,
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: deleting ? 0.5 : 1,
+            }}
+          >
+            <MaterialIcons name="edit" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+              Editar
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={onToggleStaffStatus}
+            disabled={deleting || togglingStaff}
+            activeOpacity={0.8}
+            style={{
+              flex: 1,
+              backgroundColor: primaryColor,
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: deleting || togglingStaff ? 0.5 : 1,
+            }}
+          >
+            <MaterialIcons
+              name={staffData?.active ? "toggle-off" : "toggle-on"}
+              size={18}
+              color="#fff"
+            />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+              {togglingStaff
+                ? "Actualizando..."
+                : staffData?.active
+                  ? "Desactivar"
+                  : "Activar"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity
-          onPress={onDeleteClient}
-          disabled={deleting}
-          activeOpacity={0.8}
-          style={{
-            flex: 1,
-            backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
-            borderRadius: 14,
-            paddingVertical: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            opacity: deleting ? 0.5 : 1,
-          }}
-        >
-          <MaterialIcons name="delete-outline" size={18} color="#DC2626" />
-          <Text style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}>
-            {deleting ? "Eliminando..." : "Eliminar"}
-          </Text>
-        </TouchableOpacity>
+        {userRole === "admin" && (
+          <TouchableOpacity
+            onPress={isStaffUser ? onDeleteStaff : onDeleteClient}
+            disabled={deleting}
+            activeOpacity={0.8}
+            style={{
+              flex: 1,
+              backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: deleting ? 0.5 : 1,
+            }}
+          >
+            <MaterialIcons name="delete-outline" size={18} color="#DC2626" />
+            <Text style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}>
+              {deleting ? "Eliminando..." : "Eliminar"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <Toast

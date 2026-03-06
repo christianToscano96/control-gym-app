@@ -1,6 +1,6 @@
 import React from "react";
 import DashboardScreen from "../screens/dashboard/DashboardScreen";
-import SuperAdminDashboard from "../screens/dashboard/SuperAdminDashboard";
+import SuperAdminDashboard from "../screens/dashboard/superadmin/SuperAdminDashboard";
 import { useUserStore } from "@/stores/store";
 
 const dashboardTab = () => {

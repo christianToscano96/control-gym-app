@@ -46,6 +46,10 @@ export const queryKeys = {
   gymStatus: {
     current: ["gymStatus"] as const,
   },
+  cashClosure: {
+    today: ["cashClosure", "today"] as const,
+    history: (limit: number) => ["cashClosure", "history", limit] as const,
+  },
   superadmin: {
     overview: ["superadmin", "overview"] as const,
     summary: ["superadmin", "summary"] as const,

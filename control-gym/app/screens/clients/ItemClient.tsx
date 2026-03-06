@@ -12,6 +12,7 @@ interface ItemClientProps {
   isActive: boolean;
   daysLeft?: number;
   membershipType?: string;
+  userType?: "client" | "staff";
 }
 
 const EXPIRING_SOON_DAYS = 7;
@@ -34,6 +35,7 @@ const ItemClient = ({
   isActive,
   daysLeft,
   membershipType,
+  userType = "client",
 }: ItemClientProps) => {
   const { colors, isDark, primaryColor } = useTheme();
 
@@ -44,9 +46,9 @@ const ItemClient = ({
   const handlePress = useCallback(() => {
     router.push({
       pathname: "/screens/clients/client-details",
-      params: { clientId },
+      params: { clientId, userType },
     });
-  }, [clientId]);
+  }, [clientId, userType]);
 
   const daysLabel = useMemo(() => {
     if (daysLeft == null || !isActive) return null;

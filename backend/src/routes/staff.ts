@@ -347,7 +347,7 @@ router.patch(
   },
 );
 
-// Eliminar staff (soft delete)
+// Eliminar staff (hard delete)
 router.delete(
   "/:id",
   authenticateJWT,
@@ -367,9 +367,16 @@ router.delete(
         return res.status(404).json({ message: "Staff no encontrado" });
       }
 
-      // Desactivar en lugar de eliminar
-      staff.active = false;
-      await staff.save();
+      // Eliminar avatar físico si existe
+      if (staff.avatar) {
+        const normalizedAvatarPath = staff.avatar.replace(/^\/+/, "");
+        const avatarPath = path.join(__dirname, "../../", normalizedAvatarPath);
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+        }
+      }
+
+      await User.deleteOne({ _id: id, gymId });
 
       res.json({ message: "Staff eliminado exitosamente" });
     } catch (error: any) {

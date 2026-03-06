@@ -107,7 +107,9 @@ export function useSuperAdminDashboard() {
   const inactiveCount = useMemo(
     () =>
       baseAdmins.filter(
-        (a) => a.gym?.onboardingStatus === "approved" && !a.gym?.active,
+        (a) =>
+          (a.gym?.onboardingStatus === "approved" && !a.gym?.active) ||
+          a.gym?.onboardingStatus === "rejected",
       ).length,
     [baseAdmins],
   );
@@ -124,10 +126,11 @@ export function useSuperAdminDashboard() {
   }, [pendingData, baseAdmins]);
 
   const summary = summaryData || data?.summary;
+  const serverCounts = adminsPages?.pages?.[0]?.counts;
   const resolvedCounts = {
-    active: summary?.activeGyms ?? activeCount,
-    inactive: summary?.inactiveGyms ?? inactiveCount,
-    pending: summary?.pendingGyms ?? pendingCount,
+    active: serverCounts?.active ?? summary?.activeGyms ?? activeCount,
+    inactive: serverCounts?.inactive ?? summary?.inactiveGyms ?? inactiveCount,
+    pending: serverCounts?.pending ?? summary?.pendingGyms ?? pendingCount,
   };
 
   const filterOptions: { key: FilterStatus; label: string; count?: number }[] =

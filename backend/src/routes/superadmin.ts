@@ -46,7 +46,9 @@ const buildSuperAdminSummary = async () => {
     (g) => g.onboardingStatus === "pending",
   ).length;
   const inactiveGyms = allGyms.filter(
-    (g) => g.onboardingStatus === "approved" && !g.active,
+    (g) =>
+      (g.onboardingStatus === "approved" && !g.active) ||
+      g.onboardingStatus === "rejected",
   ).length;
   const totalClients = clientCounts.reduce(
     (sum: number, c: any) => sum + c.count,
@@ -238,6 +240,21 @@ router.get("/overview", async (req, res) => {
       };
     });
 
+    const counts = {
+      active: formattedAdmins.filter(
+        (a: any) =>
+          a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      ).length,
+      inactive: formattedAdmins.filter(
+        (a: any) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
+      ).length,
+      pending: formattedAdmins.filter(
+        (a: any) => a.gym?.onboardingStatus === "pending",
+      ).length,
+    };
+
     res.json({
       summary,
       admins: formattedAdmins,
@@ -311,6 +328,21 @@ router.get("/admins", async (req, res) => {
       };
     });
 
+    const counts = {
+      active: formattedAdmins.filter(
+        (a: any) =>
+          a.gym?.onboardingStatus === "approved" && a.gym?.active === true,
+      ).length,
+      inactive: formattedAdmins.filter(
+        (a: any) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
+      ).length,
+      pending: formattedAdmins.filter(
+        (a: any) => a.gym?.onboardingStatus === "pending",
+      ).length,
+    };
+
     let filtered = [...formattedAdmins];
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
@@ -328,7 +360,9 @@ router.get("/admins", async (req, res) => {
       );
     } else if (status === "inactive") {
       filtered = filtered.filter(
-        (a) => a.gym?.onboardingStatus === "approved" && a.gym?.active === false,
+        (a) =>
+          (a.gym?.onboardingStatus === "approved" && a.gym?.active === false) ||
+          a.gym?.onboardingStatus === "rejected",
       );
     } else if (status === "pending") {
       filtered = filtered.filter((a) => a.gym?.onboardingStatus === "pending");
@@ -348,6 +382,7 @@ router.get("/admins", async (req, res) => {
         totalPages,
         hasMore: page < totalPages,
       },
+      counts,
     });
   } catch (error) {
     console.error("Error fetching superadmin admins:", error);

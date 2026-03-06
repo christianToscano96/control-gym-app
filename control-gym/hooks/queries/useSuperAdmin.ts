@@ -281,6 +281,7 @@ export function useReviewGymRegistration() {
             ): "pending" | "active" | "inactive" | null => {
               if (status === "pending") return "pending";
               if (status === "approved" && active) return "active";
+              if (status === "rejected") return "inactive";
               if (status === "approved" && !active) return "inactive";
               return null;
             };
@@ -332,6 +333,7 @@ export function useReviewGymRegistration() {
             let newCategory: "pending" | "active" | "inactive" | null = null;
             if (nextStatus === "approved" && nextActive) newCategory = "active";
             if (nextStatus === "approved" && !nextActive) newCategory = "inactive";
+            if (nextStatus === "rejected") newCategory = "inactive";
 
             const next = { ...old };
             if (oldCategory === "pending") {

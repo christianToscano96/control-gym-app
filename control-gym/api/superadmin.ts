@@ -28,6 +28,11 @@ export interface SuperAdminAdminsPagination {
 export interface SuperAdminAdminsPageResponse {
   admins: SuperAdminEntry[];
   pagination: SuperAdminAdminsPagination;
+  counts?: {
+    active: number;
+    inactive: number;
+    pending: number;
+  };
 }
 
 export async function fetchSuperAdminOverview(): Promise<SuperAdminOverview> {

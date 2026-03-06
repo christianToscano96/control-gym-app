@@ -21,11 +21,11 @@ export function useStaffQuery(enabled: boolean = true) {
   });
 }
 
-export function useStaffDetailQuery(staffId: string) {
+export function useStaffDetailQuery(staffId: string, enabled: boolean = true) {
   return useQuery({
     queryKey: queryKeys.staff.detail(staffId),
     queryFn: () => fetchStaffById(staffId),
-    enabled: !!staffId,
+    enabled: !!staffId && enabled,
   });
 }
 
@@ -70,8 +70,10 @@ export function useDeleteStaff() {
 
   return useMutation({
     mutationFn: (staffId: string) => deleteStaff(staffId),
-    onSuccess: () => {
+    onSuccess: (_data, staffId) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.detail(staffId) });
+      queryClient.invalidateQueries({ queryKey: ["staff", "search"] });
     },
   });
 }

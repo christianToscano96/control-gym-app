@@ -13,21 +13,27 @@ export function useClientsQuery(enabled: boolean = true) {
   });
 }
 
-export function useClientDetailQuery(clientId: string | string[]) {
+export function useClientDetailQuery(
+  clientId: string | string[],
+  enabled: boolean = true,
+) {
   const id = String(clientId);
   return useQuery({
     queryKey: queryKeys.clients.detail(id),
     queryFn: () => fetchClientById(id),
-    enabled: !!id,
+    enabled: !!id && enabled,
   });
 }
 
-export function useClientPaymentsQuery(clientId: string) {
+export function useClientPaymentsQuery(
+  clientId: string,
+  enabled: boolean = true,
+) {
   const id = String(clientId);
   return useQuery({
     queryKey: queryKeys.clients.payments(id),
     queryFn: () => fetchClientPayments(id),
-    enabled: !!id,
+    enabled: !!id && enabled,
   });
 }
 

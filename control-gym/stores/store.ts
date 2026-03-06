@@ -1,33 +1,38 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
 
 const TOKEN_KEY = "auth_token";
 
-// SecureStore helpers (fallback to AsyncStorage on web)
+// Try to load SecureStore (unavailable in Expo Go, falls back to AsyncStorage)
+let SecureStore: typeof import("expo-secure-store") | null = null;
+try {
+  SecureStore = require("expo-secure-store");
+} catch {
+  // expo-secure-store native module not available (Expo Go / web)
+}
+
 async function saveToken(token: string) {
-  if (Platform.OS === "web") {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-  } else {
+  if (SecureStore) {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } else {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
   }
 }
 
 async function deleteToken() {
-  if (Platform.OS === "web") {
-    await AsyncStorage.removeItem(TOKEN_KEY);
-  } else {
+  if (SecureStore) {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } else {
+    await AsyncStorage.removeItem(TOKEN_KEY);
   }
 }
 
 export async function getToken(): Promise<string | null> {
-  if (Platform.OS === "web") {
-    return AsyncStorage.getItem(TOKEN_KEY);
+  if (SecureStore) {
+    return SecureStore.getItemAsync(TOKEN_KEY);
   }
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  return AsyncStorage.getItem(TOKEN_KEY);
 }
 
 interface UserState {

@@ -1,8 +1,8 @@
 import { apiClient } from "@/api/client";
 import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
-import { useTheme } from "@/context/ThemeContext";
 import { API_BASE_URL } from "@/constants/api";
+import { useTheme } from "@/context/ThemeContext";
 import { useMembershipStore, useUserStore } from "@/stores/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -35,6 +35,76 @@ interface RegistrationStatusResponse {
   paymentRejectionReason: string | null;
 }
 
+function CopyDataRow({
+  label,
+  value,
+  onCopy,
+  primaryColor,
+  isDark,
+  colors,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+  primaryColor: string;
+  isDark: boolean;
+  colors: {
+    text: string;
+    textSecondary: string;
+    border: string;
+  };
+}) {
+  return (
+    <View
+      style={{
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: isDark ? "#111827" : "#F8FAFC",
+        padding: 12,
+      }}
+    >
+      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{label}</Text>
+      <View
+        style={{
+          marginTop: 4,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <Text
+          selectable
+          style={{
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: "800",
+            flex: 1,
+          }}
+        >
+          {value || "--"}
+        </Text>
+        <TouchableOpacity
+          onPress={onCopy}
+          style={{
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 7,
+            backgroundColor: isDark ? `${primaryColor}25` : "#E7FBEF",
+            borderWidth: 1,
+            borderColor: primaryColor,
+          }}
+        >
+          <Text style={{ color: primaryColor, fontSize: 12, fontWeight: "700" }}>
+            Copiar
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function PendingApprovalScreen() {
   const { colors, primaryColor, isDark } = useTheme();
   const router = useRouter();
@@ -46,17 +116,14 @@ export default function PendingApprovalScreen() {
     adminPassword?: string;
   }>();
   const setUser = useUserStore((s) => s.setUser);
-  const setHasActiveMembership = useMembershipStore(
-    (s) => s.setHasActiveMembership,
-  );
+  const setHasActiveMembership = useMembershipStore((s) => s.setHasActiveMembership);
 
   const gymId = params.gymId || "";
   const initialPaymentReference = params.paymentReference || "";
   const adminEmail = (params.adminEmail || "").trim().toLowerCase();
   const adminPassword = params.adminPassword || "";
 
-  const [statusData, setStatusData] =
-    useState<RegistrationStatusResponse | null>(null);
+  const [statusData, setStatusData] = useState<RegistrationStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [autoLoggingIn, setAutoLoggingIn] = useState(false);
@@ -130,13 +197,7 @@ export default function PendingApprovalScreen() {
     } finally {
       setAutoLoggingIn(false);
     }
-  }, [
-    adminEmail,
-    adminPassword,
-    router,
-    setHasActiveMembership,
-    setUser,
-  ]);
+  }, [adminEmail, adminPassword, router, setHasActiveMembership, setUser]);
 
   useEffect(() => {
     if (statusData?.onboardingStatus !== "approved" || autoLoginTried) return;
@@ -166,10 +227,7 @@ export default function PendingApprovalScreen() {
       return;
     }
     if (!proofUri) {
-      Alert.alert(
-        "Comprobante requerido",
-        "Seleccioná el comprobante antes de continuar.",
-      );
+      Alert.alert("Comprobante requerido", "Seleccioná un comprobante antes de continuar.");
       return;
     }
 
@@ -181,11 +239,14 @@ export default function PendingApprovalScreen() {
 
       const formData = new FormData();
       formData.append("paymentReference", paymentReference);
-      formData.append("proof", {
-        uri: proofUri,
-        name: filename,
-        type,
-      } as any);
+      formData.append(
+        "proof",
+        {
+          uri: proofUri,
+          name: filename,
+          type,
+        } as any,
+      );
 
       await apiClient(`/api/register/${gymId}/proof`, {
         method: "POST",
@@ -231,7 +292,11 @@ export default function PendingApprovalScreen() {
         }
       }
 
-      if (!copied && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      if (
+        !copied &&
+        typeof navigator !== "undefined" &&
+        navigator.clipboard?.writeText
+      ) {
         await navigator.clipboard.writeText(value);
         copied = true;
       }
@@ -282,13 +347,13 @@ export default function PendingApprovalScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 8,
+              gap: 8,
             }}
           >
             <Text
               style={{
                 color: colors.text,
-                fontSize: 21,
+                fontSize: 20,
                 fontWeight: "800",
                 flex: 1,
               }}
@@ -297,146 +362,97 @@ export default function PendingApprovalScreen() {
             </Text>
             <View
               style={{
-                backgroundColor: isDark
-                  ? `${statusColor}30`
-                  : `${statusColor}20`,
+                backgroundColor: isDark ? `${statusColor}30` : `${statusColor}20`,
                 paddingHorizontal: 10,
                 paddingVertical: 4,
                 borderRadius: 999,
               }}
             >
-              <Text
-                style={{ color: statusColor, fontWeight: "700", fontSize: 12 }}
-              >
+              <Text style={{ color: statusColor, fontWeight: "700", fontSize: 12 }}>
                 {statusLabel}
               </Text>
             </View>
           </View>
 
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-            Plan: {statusData?.plan || "--"}
-          </Text>
-          <Text
-            style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}
-          >
-            Monto a transferir:{" "}
-            <Text style={{ color: colors.text, fontWeight: "800" }}>
-              ${Number(statusData?.transferAmount || 0).toLocaleString("es-AR")}
-            </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
+            {showUploadFlow
+              ? "Para activar tu cuenta, transferí y subí el comprobante."
+              : showPendingOnly
+                ? "Tu comprobante ya fue enviado. Estamos revisándolo."
+                : "Tu cuenta fue aprobada. Te estamos ingresando al dashboard."}
           </Text>
 
+          <View style={{ marginTop: 12, flexDirection: "row", gap: 8 }}>
+            <View
+              style={{
+                flex: 1,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: 10,
+                backgroundColor: isDark ? "#111827" : "#F8FAFC",
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Plan</Text>
+              <Text style={{ color: colors.text, fontWeight: "800", fontSize: 14 }}>
+                {(statusData?.plan || "--").toUpperCase()}
+              </Text>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: 10,
+                backgroundColor: isDark ? "#111827" : "#F8FAFC",
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Monto</Text>
+              <Text style={{ color: colors.text, fontWeight: "800", fontSize: 14 }}>
+                ${Number(statusData?.transferAmount || 0).toLocaleString("es-AR")}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {statusData?.paymentRejectionReason ? (
           <View
             style={{
               marginTop: 12,
               borderRadius: 12,
-              backgroundColor: isDark ? "#111827" : "#F8FAFC",
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: 12,
+              backgroundColor: isDark ? "#7F1D1D30" : "#FEE2E2",
+              padding: 10,
             }}
           >
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                marginBottom: 4,
-              }}
-            >
-              ID de pago (concepto de transferencia)
+            <Text style={{ color: colors.error, fontSize: 13, fontWeight: "700" }}>
+              Motivo de rechazo
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-              }}
-            >
-              <Text
-                selectable
-                style={{
-                  color: colors.text,
-                  fontWeight: "800",
-                  fontSize: 18,
-                  flex: 1,
-                }}
-              >
-                {paymentReference || "--"}
-              </Text>
-              <TouchableOpacity
-                onPress={() => copyValue(paymentReference || "", "ID de pago")}
-                disabled={!paymentReference}
-                style={{
-                  borderRadius: 8,
-                  paddingHorizontal: 10,
-                  paddingVertical: 7,
-                  backgroundColor: isDark ? `${primaryColor}25` : "#E7FBEF",
-                  borderWidth: 1,
-                  borderColor: primaryColor,
-                  opacity: paymentReference ? 1 : 0.5,
-                }}
-              >
-                <Text
-                  style={{
-                    color: primaryColor,
-                    fontSize: 12,
-                    fontWeight: "700",
-                  }}
-                >
-                  Copiar
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={{ color: colors.error, fontSize: 13 }}>
+              {statusData.paymentRejectionReason}
+            </Text>
           </View>
-
-          {statusData?.paymentRejectionReason ? (
-            <View
-              style={{
-                marginTop: 12,
-                borderRadius: 12,
-                backgroundColor: isDark ? "#7F1D1D30" : "#FEE2E2",
-                padding: 10,
-              }}
-            >
-              <Text
-                style={{ color: colors.error, fontSize: 13, fontWeight: "700" }}
-              >
-                Motivo de rechazo
-              </Text>
-              <Text style={{ color: colors.error, fontSize: 13 }}>
-                {statusData.paymentRejectionReason}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        ) : null}
 
         {showUploadFlow && (
           <>
             <View style={{ marginTop: 14, gap: 8 }}>
-              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
-                {isRejected ? "Pasos para reenviar" : "Pasos"}
-              </Text>
-              {[
-                "1) Hace la transferencia con ese ID en el concepto.",
-                isRejected ? "2) Subí un nuevo comprobante." : "2) Subí el comprobante.",
-                "3) Esperá aprobación para activar el dashboard.",
-              ].map((step) => (
-                <View
-                  key={step}
-                  style={{
-                    backgroundColor: colors.card,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                  }}
-                >
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                    {step}
-                  </Text>
-                </View>
-              ))}
+              <CopyDataRow
+                label="ID de pago (concepto)"
+                value={paymentReference || "--"}
+                onCopy={() => copyValue(paymentReference || "", "ID de pago")}
+                primaryColor={primaryColor}
+                isDark={isDark}
+                colors={colors}
+              />
+              <CopyDataRow
+                label="CBU para transferir"
+                value={CBU_FICTICIO}
+                onCopy={() => copyValue(CBU_FICTICIO, "CBU")}
+                primaryColor={primaryColor}
+                isDark={isDark}
+                colors={colors}
+              />
             </View>
 
             <View
@@ -450,48 +466,41 @@ export default function PendingApprovalScreen() {
               }}
             >
               <Text style={{ color: colors.text, fontSize: 14, fontWeight: "800" }}>
-                Datos para transferir
+                Subir comprobante
               </Text>
-              <Text
-                style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}
-              >
-                Banco Gym Demo (ficticio)
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                Seleccioná una imagen clara para acelerar la aprobación.
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Titular: Control Gym Demo
-              </Text>
-              <Text
-                selectable
-                style={{
-                  color: colors.text,
-                  fontWeight: "800",
-                  fontSize: 17,
-                  marginTop: 8,
-                }}
-              >
-                CBU: {CBU_FICTICIO}
-              </Text>
-              <TouchableOpacity
-                onPress={() => copyValue(CBU_FICTICIO, "CBU")}
-                activeOpacity={0.85}
-                style={{
-                  marginTop: 10,
-                  borderRadius: 10,
-                  paddingVertical: 10,
-                  alignItems: "center",
-                  backgroundColor: isDark ? `${primaryColor}25` : "#E7FBEF",
-                  borderWidth: 1,
-                  borderColor: primaryColor,
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 6,
-                }}
-              >
-                <MaterialIcons name="content-copy" size={16} color={primaryColor} />
-                <Text style={{ color: primaryColor, fontWeight: "700" }}>
-                  Copiar CBU
-                </Text>
-              </TouchableOpacity>
+
+              <View style={{ marginTop: 12, gap: 10 }}>
+                <TouchableOpacity
+                  onPress={pickProof}
+                  activeOpacity={0.85}
+                  style={{
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: primaryColor,
+                    backgroundColor: colors.card,
+                    paddingVertical: 12,
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <MaterialIcons name="upload-file" size={18} color={primaryColor} />
+                  <Text style={{ color: primaryColor, fontWeight: "700" }}>
+                    {proofUri ? "Cambiar comprobante" : "Seleccionar comprobante"}
+                  </Text>
+                </TouchableOpacity>
+                <ButtonCustom
+                  title={uploading ? "" : "Enviar comprobante"}
+                  onPress={uploadProof}
+                  disabled={uploading}
+                >
+                  {uploading ? <ActivityIndicator size="small" color="#0d1c3d" /> : null}
+                </ButtonCustom>
+              </View>
             </View>
           </>
         )}
@@ -502,10 +511,10 @@ export default function PendingApprovalScreen() {
           </Text>
         )}
 
-        {showUploadFlow && statusData?.paymentProofUrl ? (
+        {statusData?.paymentProofUrl ? (
           <View style={{ marginTop: 14 }}>
             <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>
-              Ultimo comprobante enviado
+              Último comprobante enviado
             </Text>
             <Image
               source={{ uri: `${API_BASE_URL}${statusData.paymentProofUrl}` }}
@@ -518,11 +527,9 @@ export default function PendingApprovalScreen() {
               resizeMode="cover"
             />
             <Text style={{ color: colors.success, marginTop: 6, fontSize: 12 }}>
-              Subido:{" "}
+              Subido: {" "}
               {statusData.paymentProofUploadedAt
-                ? new Date(statusData.paymentProofUploadedAt).toLocaleString(
-                    "es-AR",
-                  )
+                ? new Date(statusData.paymentProofUploadedAt).toLocaleString("es-AR")
                 : "--"}
             </Text>
           </View>
@@ -547,43 +554,7 @@ export default function PendingApprovalScreen() {
         ) : null}
 
         <View style={{ marginTop: 16, gap: 10 }}>
-          {showUploadFlow ? (
-            <>
-              <TouchableOpacity
-                onPress={pickProof}
-                activeOpacity={0.85}
-                style={{
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: primaryColor,
-                  backgroundColor: colors.card,
-                  paddingVertical: 12,
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <MaterialIcons
-                  name="upload-file"
-                  size={18}
-                  color={primaryColor}
-                />
-                <Text style={{ color: primaryColor, fontWeight: "700" }}>
-                  Seleccionar comprobante
-                </Text>
-              </TouchableOpacity>
-              <ButtonCustom
-                title={uploading ? "" : "Enviar comprobante"}
-                onPress={uploadProof}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color="#0d1c3d" />
-                ) : null}
-              </ButtonCustom>
-            </>
-          ) : isApproved ? (
+          {isApproved ? (
             autoLoggingIn ? (
               <View
                 style={{

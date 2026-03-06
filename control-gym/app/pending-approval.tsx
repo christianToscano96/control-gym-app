@@ -3,7 +3,7 @@ import ButtonCustom from "@/components/ui/ButtonCustom";
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import { API_BASE_URL } from "@/constants/api";
 import { useTheme } from "@/context/ThemeContext";
-import { useMembershipStore, useUserStore } from "@/stores/store";
+import { useMembershipStore, useUserStore, saveRefreshToken } from "@/stores/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -170,6 +170,9 @@ export default function PendingApprovalScreen() {
         skipAuth: true,
       });
       setUser(data.user, data.token);
+      if (data.refreshToken) {
+        await saveRefreshToken(data.refreshToken);
+      }
 
       if (data.user.role === "empleado" || data.user.role === "superadmin") {
         setHasActiveMembership(true);

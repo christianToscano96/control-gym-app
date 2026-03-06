@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../../components/ui/ButtonCustom";
 import TextField from "../../components/ui/TextField";
 import { apiClient, ApiError } from "../../api/client";
-import { useMembershipStore, useUserStore } from "../../stores/store";
+import { useMembershipStore, useUserStore, saveRefreshToken } from "../../stores/store";
 
 export const options = { headerShown: false };
 
@@ -73,6 +73,9 @@ export default function LoginScreen() {
         skipAuth: true,
       });
       setUser(data.user, data.token);
+      if (data.refreshToken) {
+        await saveRefreshToken(data.refreshToken);
+      }
       if (data.user.role === "empleado" || data.user.role === "superadmin") {
         setHasActiveMembership(true);
         router.replace("/(tabs)");

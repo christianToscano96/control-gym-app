@@ -6,6 +6,8 @@ import {
   requireRole,
   AuthRequest,
 } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { createClientSchema } from "../schemas/client";
 import { sendWelcomeEmail } from "../services/emailService";
 import QRCode from "qrcode";
 import { calculateEndDate } from "../utils/membershipUtils";
@@ -35,7 +37,7 @@ router.get(
 // Crear cliente en el gimnasio del admin
 import { Gym } from "../models/Gym";
 
-router.post("/", requireAdmin, async (req: AuthRequest, res) => {
+router.post("/", requireAdmin, validate(createClientSchema), async (req: AuthRequest, res) => {
   const gymId = req.user.gymId;
   // Obtener el gimnasio y su plan
   const gym = await Gym.findById(gymId);

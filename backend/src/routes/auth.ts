@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { User } from "../models/User";
 import { Gym } from "../models/Gym";
+import { RefreshToken } from "../models/RefreshToken";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { authenticateJWT, AuthRequest } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { loginSchema } from "../schemas/auth";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -44,7 +48,7 @@ const upload = multer({
 });
 
 // Login
-router.post("/login", async (req, res) => {
+router.post("/login", validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) return res.status(401).json({ message: "Usuario no encontrado" });
@@ -93,14 +97,24 @@ router.post("/login", async (req, res) => {
     gymActive = gym?.active ?? false;
   }
 
+  // Access token (short-lived)
   const token = jwt.sign(
     { id: user._id, role: user.role, gymId: user.gymId },
     process.env.JWT_SECRET!,
-    { expiresIn: "1d" },
+    { expiresIn: "15m" },
   );
+
+  // Refresh token (long-lived, stored in DB)
+  const refreshTokenValue = crypto.randomBytes(64).toString("hex");
+  await RefreshToken.create({
+    token: refreshTokenValue,
+    userId: user._id,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+  });
 
   res.json({
     token,
+    refreshToken: refreshTokenValue,
     user: {
       id: user._id,
       name: user.name,
@@ -111,6 +125,45 @@ router.post("/login", async (req, res) => {
       onboardingStatus: onboardingStatus || "approved",
     },
   });
+});
+
+// Refresh access token using refresh token
+router.post("/refresh", async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Refresh token requerido" });
+  }
+
+  try {
+    const stored = await RefreshToken.findOne({ token: refreshToken });
+    if (!stored || stored.expiresAt < new Date()) {
+      if (stored) await stored.deleteOne();
+      return res.status(401).json({ message: "Refresh token inválido o expirado" });
+    }
+
+    const user = await User.findById(stored.userId);
+    if (!user || !user.active) {
+      await stored.deleteOne();
+      return res.status(401).json({ message: "Usuario no encontrado o inactivo" });
+    }
+
+    // Issue new access token
+    const newToken = jwt.sign(
+      { id: user._id, role: user.role, gymId: user.gymId },
+      process.env.JWT_SECRET!,
+      { expiresIn: "15m" },
+    );
+
+    // Rotate refresh token
+    const newRefreshToken = crypto.randomBytes(64).toString("hex");
+    stored.token = newRefreshToken;
+    stored.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await stored.save();
+
+    res.json({ token: newToken, refreshToken: newRefreshToken });
+  } catch (err) {
+    res.status(500).json({ message: "Error al refrescar token" });
+  }
 });
 
 // Check gym active status (lightweight polling endpoint)

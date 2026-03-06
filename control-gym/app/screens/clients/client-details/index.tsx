@@ -1,7 +1,11 @@
 import HeaderTopScrenn from "@/components/ui/HeaderTopScrenn";
 import Toast from "@/components/ui/Toast";
 import { useTheme } from "@/context/ThemeContext";
-import { useClientDetailQuery, useClientPaymentsQuery, useDeleteClient } from "@/hooks/queries/useClients";
+import {
+  useClientDetailQuery,
+  useClientPaymentsQuery,
+  useDeleteClient,
+} from "@/hooks/queries/useClients";
 import {
   useDeleteStaff,
   useStaffDetailQuery,
@@ -30,12 +34,16 @@ import { ClientHeader } from "./components/ClientHeader";
 import { ClientInfoCard } from "./components/ClientInfoCard";
 import { PaymentHistory } from "./components/PaymentHistory";
 import { StatsCards } from "./components/StatsCards";
+import { useUserStore } from "@/stores/store";
 
 const UserDetailsScreen = () => {
   const { clientId, userType } = useLocalSearchParams();
   const isStaffUser = userType === "staff";
   const { primaryColor, colors, isDark } = useTheme();
   const { toast, showSuccess, showError, hideToast } = useToast();
+  const { user } = useUserStore();
+
+  const userRole = user?.role;
 
   // ─── TanStack Query ──────────────────────────────────────────
   const {
@@ -44,10 +52,8 @@ const UserDetailsScreen = () => {
     error: clientQueryError,
   } = useClientDetailQuery(clientId as string, !isStaffUser);
 
-  const {
-    data: payments = [],
-    isLoading: loadingPayments,
-  } = useClientPaymentsQuery(clientId as string, !isStaffUser);
+  const { data: payments = [], isLoading: loadingPayments } =
+    useClientPaymentsQuery(clientId as string, !isStaffUser);
 
   const {
     data: staffData,
@@ -58,7 +64,8 @@ const UserDetailsScreen = () => {
   const deleteClientMutation = useDeleteClient();
   const deleteStaffMutation = useDeleteStaff();
   const toggleStaffStatusMutation = useToggleStaffStatus();
-  const deleting = deleteClientMutation.isPending || deleteStaffMutation.isPending;
+  const deleting =
+    deleteClientMutation.isPending || deleteStaffMutation.isPending;
   const togglingStaff = toggleStaffStatusMutation.isPending;
 
   const loading = isStaffUser ? loadingStaff : loadingClient;
@@ -82,9 +89,7 @@ const UserDetailsScreen = () => {
   const expirationDateText = formatDate(expirationDate);
   const expirationLabel = expired ? "Expiro" : "Valido hasta";
   const daysLeft = expirationDate
-    ? Math.ceil(
-        (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-      )
+    ? Math.ceil((expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : undefined;
 
   const onDeleteClient = () => {
@@ -396,27 +401,29 @@ const UserDetailsScreen = () => {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          onPress={isStaffUser ? onDeleteStaff : onDeleteClient}
-          disabled={deleting}
-          activeOpacity={0.8}
-          style={{
-            flex: 1,
-            backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
-            borderRadius: 14,
-            paddingVertical: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            opacity: deleting ? 0.5 : 1,
-          }}
-        >
-          <MaterialIcons name="delete-outline" size={18} color="#DC2626" />
-          <Text style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}>
-            {deleting ? "Eliminando..." : "Eliminar"}
-          </Text>
-        </TouchableOpacity>
+        {userRole === "admin" && (
+          <TouchableOpacity
+            onPress={isStaffUser ? onDeleteStaff : onDeleteClient}
+            disabled={deleting}
+            activeOpacity={0.8}
+            style={{
+              flex: 1,
+              backgroundColor: isDark ? "#DC262620" : "#FEE2E2",
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: deleting ? 0.5 : 1,
+            }}
+          >
+            <MaterialIcons name="delete-outline" size={18} color="#DC2626" />
+            <Text style={{ color: "#DC2626", fontWeight: "700", fontSize: 15 }}>
+              {deleting ? "Eliminando..." : "Eliminar"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <Toast

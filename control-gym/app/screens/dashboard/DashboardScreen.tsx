@@ -6,7 +6,6 @@ import GymSubscriptionAlert from "@/components/ui/GymSubscriptionAlert";
 import InactiveClientsAlert from "@/components/ui/InactiveClientsAlert";
 import FAB from "@/components/ui/FAB";
 import Header from "@/components/ui/Header";
-import ModalCustom from "@/components/ui/ModalCustom";
 //import MembershipDistributionChart from "@/components/ui/MembershipDistributionChart";
 import PeakHoursChart from "@/components/ui/PeakHoursChart";
 import QuickActionsMenu from "@/components/ui/QuickActionsMenu";
@@ -20,7 +19,6 @@ import {
   useDashboardStatsQuery,
   useExpiringMembershipsQuery,
   useGymSubscriptionQuery,
-  useMembershipDistributionQuery,
   useWeeklyAttendanceQuery,
 } from "@/hooks/queries/useDashboard";
 import { useClientsQuery } from "@/hooks/queries/useClients";
@@ -29,13 +27,7 @@ import { queryKeys } from "@/hooks/queries/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "../../../stores/store";
 
@@ -85,7 +77,7 @@ export default function DashboardScreen() {
         setUser({ ...user, avatar: avatarUrl }, user.token);
       }
     }
-  }, [profile?.avatar]);
+  }, [profile?.avatar, setUser, user]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -275,11 +267,21 @@ export default function DashboardScreen() {
                 </View>
               )}
               {/* Alerta de membresías por vencer */}
-              <ExpiringMembershipsAlert
-                count={expiringData?.count ?? 0}
-                expiringData={expiringData}
-              />
-              <InactiveClientsAlert clients={clients} />
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  marginHorizontal: 6,
+                  marginTop: 8,
+                }}
+              >
+                <ExpiringMembershipsAlert
+                  count={expiringData?.count ?? 0}
+                  expiringData={expiringData}
+                  compact
+                />
+                <InactiveClientsAlert clients={clients} compact />
+              </View>
               {/* ─── Tendencias ─── */}
               <Text
                 style={{ color: colors.textSecondary }}

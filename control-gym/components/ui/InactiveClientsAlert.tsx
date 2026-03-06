@@ -15,9 +15,13 @@ interface ClientLite {
 
 interface InactiveClientsAlertProps {
   clients: ClientLite[];
+  compact?: boolean;
 }
 
-const InactiveClientsAlert: React.FC<InactiveClientsAlertProps> = ({ clients }) => {
+const InactiveClientsAlert: React.FC<InactiveClientsAlertProps> = ({
+  clients,
+  compact = false,
+}) => {
   const { colors } = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,25 +45,53 @@ const InactiveClientsAlert: React.FC<InactiveClientsAlertProps> = ({ clients }) 
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => setIsModalOpen(true)}
-        style={{ backgroundColor: "#FEE2E2" }}
-        className="rounded-2xl p-4 mx-1 my-2 flex-row items-center"
+        style={{
+          backgroundColor: "#FEE2E2",
+          flex: compact ? 1 : undefined,
+          minHeight: compact ? 86 : undefined,
+        }}
+        className={`rounded-2xl ${compact ? "p-3 flex-row items-center" : "p-4 mx-1 my-2 flex-row items-center"}`}
       >
         <View
           style={{ backgroundColor: "#FECACA" }}
-          className="w-10 h-10 rounded-full items-center justify-center mr-3"
+          className={`rounded-full items-center justify-center ${compact ? "w-8 h-8 mr-2" : "w-10 h-10 mr-3"}`}
         >
-          <MaterialIcons name="person-off" size={22} color="#B91C1C" />
+          <MaterialIcons name="person-off" size={compact ? 18 : 22} color="#B91C1C" />
         </View>
         <View className="flex-1">
-          <Text style={{ color: "#7F1D1D" }} className="text-sm font-bold">
-            {inactiveClients.length}{" "}
-            {inactiveClients.length === 1 ? "cliente inactivo" : "clientes inactivos"}
+          {compact ? (
+            <Text
+              style={{
+                color: "#7F1D1D",
+                fontSize: 18,
+                fontWeight: "800",
+                lineHeight: 20,
+              }}
+            >
+              {inactiveClients.length}
+            </Text>
+          ) : null}
+          <Text
+            style={{ color: "#7F1D1D" }}
+            className={`font-bold ${compact ? "text-[11px]" : "text-sm"}`}
+          >
+            {compact
+              ? inactiveClients.length === 1
+                ? "Cliente inactivo"
+                : "Clientes inactivos"
+              : `${inactiveClients.length} ${inactiveClients.length === 1 ? "cliente inactivo" : "clientes inactivos"}`}
           </Text>
-          <Text style={{ color: "#991B1B" }} className="text-xs mt-0.5">
-            Toca para ver detalles
-          </Text>
+          {!compact ? (
+            <Text style={{ color: "#991B1B" }} className="text-xs mt-1">
+              Ver detalles
+            </Text>
+          ) : null}
         </View>
-        <MaterialIcons name="chevron-right" size={24} color="#B91C1C" />
+        <MaterialIcons
+          name="chevron-right"
+          size={compact ? 18 : 24}
+          color="#B91C1C"
+        />
       </TouchableOpacity>
 
       <ModalCustom

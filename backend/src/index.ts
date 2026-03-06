@@ -21,6 +21,7 @@ import userRoutes from "./routes/user";
 import dashboardRoutes from "./routes/dashboard";
 import snapshotRoutes from "./routes/snapshot";
 import reportsRoutes from "./routes/reports";
+import cashClosureRoutes from "./routes/cashClosure";
 import { startCronJobs } from "./jobs/cronScheduler";
 
 const app = express();
@@ -78,6 +79,9 @@ app.use("/api/snapshots", snapshotRoutes);
 
 // Rutas para reportes mensuales persistidos
 app.use("/api/reports", reportsRoutes);
+
+// Rutas para cierre de caja diario
+app.use("/api/cash-closure", cashClosureRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Gym SaaS funcionando");

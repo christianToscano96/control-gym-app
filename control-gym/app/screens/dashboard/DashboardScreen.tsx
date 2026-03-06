@@ -22,12 +22,26 @@ import {
   useWeeklyAttendanceQuery,
 } from "@/hooks/queries/useDashboard";
 import { useClientsQuery } from "@/hooks/queries/useClients";
+import {
+  useCloseCashRegisterMutation,
+  useCashClosureHistoryQuery,
+  useTodayCashSummaryQuery,
+} from "@/hooks/queries/useCashClosure";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { queryKeys } from "@/hooks/queries/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import {
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "../../../stores/store";
 
@@ -37,6 +51,9 @@ export default function DashboardScreen() {
   const setUser = useUserStore((state) => state.setUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+  const [countedCashInput, setCountedCashInput] = useState("");
+  const [cashNotes, setCashNotes] = useState("");
   const { colors, primaryColor } = useTheme();
   const isStaff = user?.role === "empleado";
   const queryClient = useQueryClient();
@@ -60,6 +77,14 @@ export default function DashboardScreen() {
     useGymSubscriptionQuery(!isStaff);
   const { data: clients = [], refetch: refetchClients } =
     useClientsQuery(!isStaff);
+  const {
+    data: cashSummary,
+    isFetching: fetchingCashSummary,
+    refetch: refetchCashSummary,
+  } = useTodayCashSummaryQuery(Boolean(user?.gymId));
+  const { data: cashHistory = [], refetch: refetchCashHistory } =
+    useCashClosureHistoryQuery(7, Boolean(user?.gymId));
+  const closeCashMutation = useCloseCashRegisterMutation();
 
   // Calculate days left for gym subscription
   const subscriptionDaysLeft = gymSubscription?.endDate
@@ -89,6 +114,8 @@ export default function DashboardScreen() {
       refetchExpiring(),
       refetchSubscription(),
       refetchClients(),
+      refetchCashSummary(),
+      refetchCashHistory(),
       queryClient.invalidateQueries({ queryKey: queryKeys.access.recent }),
     ]);
     setRefreshing(false);
@@ -100,8 +127,55 @@ export default function DashboardScreen() {
     refetchExpiring,
     refetchSubscription,
     refetchClients,
+    refetchCashSummary,
+    refetchCashHistory,
     queryClient,
   ]);
+
+  const lastClosed = cashHistory[0];
+  const previousClosed = cashHistory[1];
+  const closureDeltaVsPrevious =
+    lastClosed && previousClosed
+      ? lastClosed.breakdown.total - previousClosed.breakdown.total
+      : 0;
+
+  const openCashClosureModal = () => {
+    setCountedCashInput(String(cashSummary?.expectedCash ?? 0));
+    setCashNotes(cashSummary?.closure?.notes || "");
+    setIsCashModalOpen(true);
+  };
+
+  const closeCashModal = () => {
+    if (closeCashMutation.isPending) return;
+    setIsCashModalOpen(false);
+  };
+
+  const handleConfirmCashClosure = async () => {
+    const parsedCountedCash = Number(
+      countedCashInput.replace(/\./g, "").replace(",", "."),
+    );
+    if (!Number.isFinite(parsedCountedCash) || parsedCountedCash < 0) {
+      Alert.alert(
+        "Monto inválido",
+        "Ingresa un valor numérico válido para efectivo contado.",
+      );
+      return;
+    }
+
+    try {
+      await closeCashMutation.mutateAsync({
+        countedCash: parsedCountedCash,
+        notes: cashNotes.trim(),
+      });
+      Alert.alert("Caja cerrada", "El cierre del día se guardó correctamente.");
+      setIsCashModalOpen(false);
+    } catch (error: any) {
+      Alert.alert(
+        "No se pudo cerrar la caja",
+        error?.message || "Ocurrió un error inesperado.",
+      );
+    }
+  };
 
   const handleActionPress = (action: string) => {
     if (action === "new-client") {
@@ -282,6 +356,279 @@ export default function DashboardScreen() {
                 />
                 <InactiveClientsAlert clients={clients} compact />
               </View>
+
+              <View className="px-2 mt-3">
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: 8,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 14,
+                        fontWeight: "800",
+                      }}
+                    >
+                      Cierre de caja
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(
+                            "/screens/dashboard/cash-closure-history" as any,
+                          )
+                        }
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "800",
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          Historial
+                        </Text>
+                      </TouchableOpacity>
+                      <View
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 999,
+                          backgroundColor:
+                            cashSummary?.status === "closed"
+                              ? "#DCFCE7"
+                              : "#FEF3C7",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "800",
+                            color:
+                              cashSummary?.status === "closed"
+                                ? "#166534"
+                                : "#92400E",
+                          }}
+                        >
+                          {cashSummary?.status === "closed"
+                            ? "CERRADA"
+                            : "ABIERTA"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Efectivo esperado: $
+                    {(cashSummary?.expectedCash ?? 0).toLocaleString("es-AR")}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Efectivo: $
+                    {(cashSummary?.breakdown?.cash ?? 0).toLocaleString(
+                      "es-AR",
+                    )}{" "}
+                    · Transferencia: $
+                    {(cashSummary?.breakdown?.transfer ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Tarjeta: $
+                    {(cashSummary?.breakdown?.card ?? 0).toLocaleString(
+                      "es-AR",
+                    )}{" "}
+                    · Otros: $
+                    {(cashSummary?.breakdown?.other ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    Total del día: $
+                    {(cashSummary?.breakdown?.total ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </Text>
+
+                  {cashSummary?.status === "closed" && (
+                    <Text
+                      style={{
+                        color:
+                          (cashSummary?.closure?.difference ?? 0) >= 0
+                            ? "#15803D"
+                            : "#DC2626",
+                        fontSize: 12,
+                        fontWeight: "700",
+                      }}
+                    >
+                      Diferencia registrada: $
+                      {(cashSummary?.closure?.difference ?? 0).toLocaleString(
+                        "es-AR",
+                      )}
+                    </Text>
+                  )}
+
+                  <TouchableOpacity
+                    disabled={
+                      fetchingCashSummary || closeCashMutation.isPending
+                    }
+                    onPress={openCashClosureModal}
+                    style={{
+                      marginTop: 4,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: primaryColor,
+                      paddingVertical: 10,
+                      alignItems: "center",
+                      backgroundColor: `${primaryColor}18`,
+                      opacity:
+                        fetchingCashSummary || closeCashMutation.isPending
+                          ? 0.7
+                          : 1,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: primaryColor,
+                        fontWeight: "800",
+                        fontSize: 12,
+                      }}
+                    >
+                      {cashSummary?.status === "closed"
+                        ? "Editar cierre de hoy"
+                        : "Cerrar caja del día"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="px-2 mt-2">
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 13,
+                      fontWeight: "800",
+                    }}
+                  >
+                    Historial y comparativa
+                  </Text>
+
+                  <View
+                    style={{
+                      borderRadius: 10,
+                      backgroundColor: `${primaryColor}12`,
+                      padding: 10,
+                    }}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                      Último cierre vs anterior
+                    </Text>
+                    <Text
+                      style={{
+                        color:
+                          closureDeltaVsPrevious >= 0 ? "#15803D" : "#DC2626",
+                        fontSize: 16,
+                        fontWeight: "800",
+                        marginTop: 2,
+                      }}
+                    >
+                      {closureDeltaVsPrevious >= 0 ? "+" : ""}$
+                      {Math.abs(closureDeltaVsPrevious).toLocaleString("es-AR")}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                      {lastClosed && previousClosed
+                        ? `${lastClosed.dateKey} vs ${previousClosed.dateKey}`
+                        : "Aún no hay suficientes cierres para comparar"}
+                    </Text>
+                  </View>
+
+                  {cashHistory.slice(0, 4).map((item) => (
+                    <View
+                      key={item._id}
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 10,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <View>
+                        <Text
+                          style={{
+                            color: colors.text,
+                            fontSize: 12,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {item.dateKey}
+                        </Text>
+                        <Text
+                          style={{ color: colors.textSecondary, fontSize: 11 }}
+                        >
+                          Esperado: ${item.expectedCash.toLocaleString("es-AR")}{" "}
+                          · Contado: ${item.countedCash.toLocaleString("es-AR")}
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          color: item.difference >= 0 ? "#15803D" : "#DC2626",
+                          fontSize: 12,
+                          fontWeight: "800",
+                        }}
+                      >
+                        {item.difference >= 0 ? "+" : ""}$
+                        {Math.abs(item.difference).toLocaleString("es-AR")}
+                      </Text>
+                    </View>
+                  ))}
+
+                  {cashHistory.length === 0 && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                      Todavía no hay cierres registrados.
+                    </Text>
+                  )}
+                </View>
+              </View>
               {/* ─── Tendencias ─── */}
               <Text
                 style={{ color: colors.textSecondary }}
@@ -313,6 +660,110 @@ export default function DashboardScreen() {
             </>
           )}
 
+          {isStaff && (
+            <View className="px-2 mt-2">
+              <View
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: 16,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 14,
+                      fontWeight: "800",
+                    }}
+                  >
+                    Cierre de caja
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push("/screens/dashboard/cash-closure-history" as any)
+                    }
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "800",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      Historial
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Efectivo esperado: $
+                  {(cashSummary?.expectedCash ?? 0).toLocaleString("es-AR")}
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                  Total del día: $
+                  {(cashSummary?.breakdown?.total ?? 0).toLocaleString("es-AR")}
+                </Text>
+                {cashSummary?.status === "closed" && (
+                  <Text
+                    style={{
+                      color:
+                        (cashSummary?.closure?.difference ?? 0) >= 0
+                          ? "#15803D"
+                          : "#DC2626",
+                      fontSize: 12,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Diferencia registrada: $
+                    {(cashSummary?.closure?.difference ?? 0).toLocaleString("es-AR")}
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  disabled={fetchingCashSummary || closeCashMutation.isPending}
+                  onPress={openCashClosureModal}
+                  style={{
+                    marginTop: 4,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: primaryColor,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    backgroundColor: `${primaryColor}18`,
+                    opacity:
+                      fetchingCashSummary || closeCashMutation.isPending ? 0.7 : 1,
+                  }}
+                >
+                  <Text
+                    style={{ color: primaryColor, fontWeight: "800", fontSize: 12 }}
+                  >
+                    {cashSummary?.status === "closed"
+                      ? "Editar cierre de hoy"
+                      : "Cerrar caja del día"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* ─── Actividad ─── */}
           <Text
             style={{ color: colors.textSecondary }}
@@ -331,6 +782,134 @@ export default function DashboardScreen() {
           />
         </>
       </View>
+
+      <Modal
+        visible={isCashModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCashModal}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            justifyContent: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}
+            >
+              Cierre de caja
+            </Text>
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                marginTop: 4,
+                marginBottom: 10,
+              }}
+            >
+              Ingrese el efectivo contado al cierre del día.
+            </Text>
+
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+              Efectivo esperado
+            </Text>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 18,
+                fontWeight: "800",
+                marginBottom: 10,
+              }}
+            >
+              ${(cashSummary?.expectedCash ?? 0).toLocaleString("es-AR")}
+            </Text>
+
+            <TextInput
+              value={countedCashInput}
+              onChangeText={setCountedCashInput}
+              keyboardType="numeric"
+              placeholder="Efectivo contado"
+              placeholderTextColor={colors.textSecondary}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.text,
+                marginBottom: 10,
+              }}
+            />
+
+            <TextInput
+              value={cashNotes}
+              onChangeText={setCashNotes}
+              placeholder="Observaciones (opcional)"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={3}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                minHeight: 86,
+                color: colors.text,
+                textAlignVertical: "top",
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+              <TouchableOpacity
+                onPress={closeCashModal}
+                style={{
+                  flex: 1,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: "center",
+                  paddingVertical: 10,
+                }}
+              >
+                <Text
+                  style={{ color: colors.textSecondary, fontWeight: "700" }}
+                >
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleConfirmCashClosure}
+                disabled={closeCashMutation.isPending}
+                style={{
+                  flex: 1,
+                  borderRadius: 10,
+                  backgroundColor: primaryColor,
+                  alignItems: "center",
+                  paddingVertical: 10,
+                  opacity: closeCashMutation.isPending ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ color: "#0d1c3d", fontWeight: "800" }}>
+                  {closeCashMutation.isPending ? "Guardando..." : "Confirmar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <FAB isOpen={isMenuOpen} onPress={() => setIsMenuOpen(!isMenuOpen)} />
     </SafeAreaView>
   );

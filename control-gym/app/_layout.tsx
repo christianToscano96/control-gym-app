@@ -39,7 +39,7 @@ function NavigationGuard() {
   // Auth guard
   useEffect(() => {
     if (!isMounted) return;
-    
+
     const publicRoutes = [
       "/login",
       "/login/register",
@@ -59,7 +59,7 @@ function NavigationGuard() {
   useEffect(() => {
     if (!isMounted) return;
     if (!user || !isAdmin || gymStatus === undefined) return;
-    
+
     if (!gymStatus.active && pathname !== "/gym-suspended") {
       router.replace("/gym-suspended");
     }
@@ -151,6 +151,10 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="screens/clients/client-details/edit"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="screens/dashboard/cash-closure-history"
               options={{ headerShown: false }}
             />
           </Stack>

@@ -4,15 +4,14 @@ import { Gym } from "../models/Gym";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../services/emailService";
+import { validate } from "../middleware/validate";
+import { forgotPasswordSchema, resetPasswordSchema } from "../schemas/auth";
 
 const router = Router();
 
 // Solicitar recuperación de contraseña
-router.post("/forgot", async (req, res) => {
+router.post("/forgot", validate(forgotPasswordSchema), async (req, res) => {
   const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ message: "El email es obligatorio" });
-  }
 
   try {
     const user = await User.findOne({ email });
@@ -65,20 +64,8 @@ router.post("/forgot", async (req, res) => {
 });
 
 // Cambiar contraseña usando código
-router.post("/reset", async (req, res) => {
+router.post("/reset", validate(resetPasswordSchema), async (req, res) => {
   const { email, code, newPassword } = req.body;
-
-  if (!email || !code || !newPassword) {
-    return res
-      .status(400)
-      .json({ message: "Email, código y nueva contraseña son obligatorios" });
-  }
-
-  if (newPassword.length < 6) {
-    return res
-      .status(400)
-      .json({ message: "La contraseña debe tener al menos 6 caracteres" });
-  }
 
   try {
     const user = await User.findOne({ email, resetToken: code });

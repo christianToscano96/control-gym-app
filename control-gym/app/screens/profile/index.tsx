@@ -53,7 +53,7 @@ export default function EditProfile() {
       showError("El nombre completo es requerido");
       return;
     }
-    if (!user?.token) {
+    if (!user) {
       showError("No hay sesión activa");
       return;
     }
@@ -62,15 +62,11 @@ export default function EditProfile() {
       { name: fullName, phone: phone || undefined },
       {
         onSuccess: (updatedUser: any) => {
-          setUser(
-            {
-              id: updatedUser._id,
-              name: updatedUser.name,
-              role: updatedUser.role,
-              token: user.token,
-            },
-            user.token,
-          );
+          setUser({
+            id: updatedUser._id,
+            name: updatedUser.name,
+            role: updatedUser.role,
+          });
           showSuccess("Perfil actualizado correctamente");
           setTimeout(() => router.back(), 1500);
         },
@@ -157,7 +153,7 @@ export default function EditProfile() {
   };
 
   const handleUploadAvatar = (imageUri: string) => {
-    if (!user?.token) {
+    if (!user) {
       showError("No hay sesión activa");
       return;
     }
@@ -166,7 +162,7 @@ export default function EditProfile() {
       onSuccess: (result: any) => {
         const avatarUrl = `${API_BASE_URL}${result.avatar}`;
         setAvatarUri(avatarUrl);
-        setUser({ ...user, avatar: avatarUrl }, user.token);
+        setUser({ ...user, avatar: avatarUrl });
         showSuccess("Foto actualizada correctamente");
       },
       onError: (err: any) => {

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { decrypt, isEncrypted } from "../utils/crypto";
 
 interface WelcomeEmailParams {
   clientEmail: string;
@@ -13,11 +14,14 @@ interface WelcomeEmailParams {
 }
 
 function createTransporter(gmailUser: string, gmailAppPassword: string) {
+  const password = isEncrypted(gmailAppPassword)
+    ? decrypt(gmailAppPassword)
+    : gmailAppPassword;
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
       user: gmailUser,
-      pass: gmailAppPassword,
+      pass: password,
     },
   });
 }

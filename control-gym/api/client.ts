@@ -1,6 +1,49 @@
 import { API_BASE_URL } from "@/constants/api";
-import { useUserStore } from "@/stores/store";
+import {
+  useUserStore,
+  getToken,
+  getRefreshToken,
+  saveRefreshToken,
+} from "@/stores/store";
 import { router } from "expo-router";
+
+// Prevent multiple refresh calls at once
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    // Save new tokens via store (saveToken is called inside setUser for access token)
+    const { default: AsyncStorage } = await import(
+      "@react-native-async-storage/async-storage"
+    );
+    // Save access token directly (store.setUser expects user data)
+    let SecureStore: typeof import("expo-secure-store") | null = null;
+    try {
+      SecureStore = require("expo-secure-store");
+    } catch {}
+    if (SecureStore) {
+      await SecureStore.setItemAsync("auth_token", data.token);
+    } else {
+      await AsyncStorage.setItem("auth_token", data.token);
+    }
+    await saveRefreshToken(data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ─── Custom Error Class ───────────────────────────────────────────
 export class ApiError extends Error {
@@ -35,7 +78,7 @@ export async function apiClient<T = any>(
 
   // 1. Attach token (unless explicitly skipped)
   if (!skipAuth) {
-    const token = useUserStore.getState().user?.token;
+    const token = await getToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -83,8 +126,37 @@ export async function apiClient<T = any>(
     );
   }
 
-  // ─── Handle 401 Unauthorized ────────────────────────────────
+  // ─── Handle 401 Unauthorized — try refresh ─────────────────
   if (res.status === 401 && !skipAuth) {
+    // Deduplicate concurrent refresh attempts
+    if (!refreshPromise) {
+      refreshPromise = tryRefreshToken().finally(() => {
+        refreshPromise = null;
+      });
+    }
+    const refreshed = await refreshPromise;
+
+    if (refreshed) {
+      // Retry original request with new token
+      const newToken = await getToken();
+      if (newToken) {
+        headers["Authorization"] = `Bearer ${newToken}`;
+      }
+      const retryRes = await fetch(url, {
+        ...fetchOptions,
+        headers,
+        body: processedBody,
+      });
+      if (retryRes.ok) {
+        const ct = retryRes.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          return (await retryRes.json()) as T;
+        }
+        return retryRes as unknown as T;
+      }
+    }
+
+    // Refresh failed — logout
     await useUserStore.getState().logout();
     setTimeout(() => {
       router.replace("/login");

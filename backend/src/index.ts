@@ -2,8 +2,17 @@ import express from "express";
 import { connectDB } from "./db";
 import dotenv from "dotenv";
 import path from "path";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
+
+// Validate required env vars at startup
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error("FATAL: JWT_SECRET is missing or too short. Set a strong secret in .env");
+  process.exit(1);
+}
 
 import clientRoutes from "./routes/client";
 import authRoutes from "./routes/auth";
@@ -23,11 +32,40 @@ import snapshotRoutes from "./routes/snapshot";
 import reportsRoutes from "./routes/reports";
 import cashClosureRoutes from "./routes/cashClosure";
 import { startCronJobs } from "./jobs/cronScheduler";
+import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
-app.use(express.json());
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+// Rate limiting: general
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Demasiadas solicitudes. Intenta de nuevo más tarde." },
+}));
+
+// Rate limiting: auth endpoints (stricter)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Demasiados intentos. Espera 15 minutos." },
+});
+app.use("/api/auth/login", authLimiter);
+app.use("/api/password", authLimiter);
+
+app.use(express.json({ limit: "2mb" }));
 
 // Servir archivos estáticos (avatares)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
@@ -83,9 +121,12 @@ app.use("/api/reports", reportsRoutes);
 // Rutas para cierre de caja diario
 app.use("/api/cash-closure", cashClosureRoutes);
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send("API Gym SaaS funcionando");
 });
+
+// Global error handler (must be after all routes)
+app.use(errorHandler);
 
 connectDB().then(() => {
   app.listen(PORT, "0.0.0.0", () => {

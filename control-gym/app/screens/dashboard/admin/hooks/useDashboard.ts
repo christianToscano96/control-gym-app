@@ -78,10 +78,10 @@ export function useDashboard() {
 
   // ─── Sync avatar ───────────────────────────────────────────
   useEffect(() => {
-    if (profile?.avatar && user?.token) {
+    if (profile?.avatar && user) {
       const avatarUrl = `${API_BASE_URL}${profile.avatar}`;
       if (user.avatar !== avatarUrl) {
-        setUser({ ...user, avatar: avatarUrl }, user.token);
+        setUser({ ...user, avatar: avatarUrl });
       }
     }
   }, [profile?.avatar, setUser, user]);

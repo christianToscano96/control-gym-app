@@ -1,4 +1,5 @@
 import { PlatformSettings, IPlatformPlanPrices } from "../models/PlatformSettings";
+import { encrypt } from "./crypto";
 
 export const DEFAULT_PLAN_PRICES: IPlatformPlanPrices = {
   basico: 15000,
@@ -69,9 +70,13 @@ export const getPlatformEmailConfig = async (): Promise<IPlatformEmailConfig | n
 export const upsertPlatformEmailConfig = async (
   emailConfig: IPlatformEmailConfig,
 ): Promise<IPlatformEmailConfig> => {
+  const encrypted = {
+    gmailUser: emailConfig.gmailUser,
+    gmailAppPassword: encrypt(emailConfig.gmailAppPassword),
+  };
   const settings = await PlatformSettings.findOneAndUpdate(
     { key: "global" },
-    { key: "global", superadminEmailConfig: emailConfig },
+    { key: "global", superadminEmailConfig: encrypted },
     { new: true, upsert: true, setDefaultsOnInsert: true },
   )
     .select("superadminEmailConfig")

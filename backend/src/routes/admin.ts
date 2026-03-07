@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticateJWT, requireAdmin, AuthRequest } from "../middleware/auth";
 import { Gym } from "../models/Gym";
 import { Membership } from "../models/Membership";
+import { encrypt } from "../utils/crypto";
 
 const router = Router();
 
@@ -58,7 +59,7 @@ router.put(
 
     const gym = await Gym.findByIdAndUpdate(
       req.user.gymId,
-      { emailConfig: { gmailUser, gmailAppPassword } },
+      { emailConfig: { gmailUser, gmailAppPassword: encrypt(gmailAppPassword) } },
       { new: true },
     );
 
